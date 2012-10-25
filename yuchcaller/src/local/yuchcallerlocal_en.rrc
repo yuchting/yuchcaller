@@ -1,0 +1,4 @@
+APPLICATION_DESC#0="Phone Call Assistent";
+App_Title#0="YuchCaller";
+PHONE_HANGUP_VIBRATE_TIME#0="Hangup Vibration Time(millisecond):";
+PHONE_RECV_VIBRATE_TIME#0="Recv Vibration Time(millisecond):";
