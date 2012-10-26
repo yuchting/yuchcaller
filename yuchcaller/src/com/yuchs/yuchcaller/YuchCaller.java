@@ -1,5 +1,10 @@
 package com.yuchs.yuchcaller;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+
+import com.flurry.blackberry.FlurryAgent;
+
 import local.yuchcallerlocalResource;
 import net.rim.blackberry.api.options.OptionsManager;
 import net.rim.blackberry.api.options.OptionsProvider;
@@ -34,6 +39,9 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	
 	public static YuchCaller		sm_instance;
 	
+	//! data base index manager class
+	private DbIndex			m_dbIndex	= new DbIndex();
+	
 	
 	//! the config editField of recv-phone vibration
 	private EditField m_recvVibrationTime = null;
@@ -47,11 +55,42 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	public static void main(String[] args) {
 		if (ApplicationManager.getApplicationManager().inStartup()){
 			
+			initFlurry();
+			
 			//Enter the auto start portion of the application.
 			//Register an options provider and exit.
 			sm_instance = new YuchCaller();
 			sm_instance.init();
 			sm_instance.enterEventDispatcher();
+		}
+	}
+	
+	/**
+	 * intialize the flurry
+	 */
+	private static void initFlurry(){
+		
+		try{
+			InputStream t_file = Class.forName("com.yuchs.yuchcaller.YuchCaller").getResourceAsStream("/FlurryKey.txt");
+			try{
+
+				ByteArrayOutputStream os = new ByteArrayOutputStream();
+				try{
+					int t_readByte;
+					while((t_readByte = t_file.read()) != -1){
+						os.write(t_readByte);
+					}
+					
+					FlurryAgent.onStartApp(new String(os.toByteArray()));
+					
+				}finally{
+					os.close();
+				}				
+			}finally{
+				t_file.close();
+			}			
+		}catch(Exception e){
+			System.out.println("Flurry init failed!"+e.getMessage());
 		}
 	}
 	
@@ -152,19 +191,9 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 
 	
 	//@{ PhoneListener
-	public void callAdded(int callId) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public void callAnswered(int callId) {
-		// start vibrate
-		
-	}
-
-	public void callConferenceCallEstablished(int callId) {
-		// TODO Auto-generated method stub
-	}
+	public void callAdded(int callId) {}
+	public void callAnswered(int callId) {}
+	public void callConferenceCallEstablished(int callId) {}
 
 	public void callConnected(int callId) {
 		if(YuchCallerProp.instance().getRecvPhoneVibrationTime() != 0){
@@ -172,66 +201,23 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		}				
 	}
 
-	public void callDirectConnectConnected(int callId) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public void callDirectConnectDisconnected(int callId) {
-		// TODO Auto-generated method stub
-		
-	}
-
 	public void callDisconnected(int callId) {
 		if(YuchCallerProp.instance().getHangupPhoneVibrationTime() != 0){
 			Alert.startVibrate(YuchCallerProp.instance().getHangupPhoneVibrationTime());
 		}		
-	}
+	}	
 
-	public void callEndedByUser(int callId) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public void callFailed(int callId, int reason) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public void callHeld(int callId) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public void callIncoming(int callId) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public void callInitiated(int callid) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public void callRemoved(int callId) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public void callResumed(int callId) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public void callWaiting(int callid) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public void conferenceCallDisconnected(int callId) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void callDirectConnectConnected(int callId) {}
+	public void callDirectConnectDisconnected(int callId) {}
+	public void callEndedByUser(int callId) {}
+	public void callFailed(int callId, int reason) {}
+	public void callHeld(int callId) {}
+	public void callIncoming(int callId) {}
+	public void callInitiated(int callid) {}
+	public void callRemoved(int callId) {}
+	public void callResumed(int callId) {}
+	public void callWaiting(int callid) {}
+	public void conferenceCallDisconnected(int callId) {}
 	//@}
 
 }

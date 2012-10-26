@@ -1,4 +1,4 @@
-package com.yuchs.yuchcaller.db;
+package com.yuchs.yuchcaller;
 
 import java.io.InputStream;
 import java.io.OutputStream;
