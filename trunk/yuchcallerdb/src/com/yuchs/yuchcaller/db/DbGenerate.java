@@ -29,7 +29,7 @@ public class DbGenerate {
 	
 	public static final String fsm_outputFilename = "yuchcaller.db";
 	
-	public static final int	fsm_version = 1;
+	public static final int	fsm_version = 267235;
 	
 	public static final String[] fsm_carrier = 
 	{
@@ -170,10 +170,13 @@ public class DbGenerate {
 		ByteArrayOutputStream t_orig = new ByteArrayOutputStream();
 		
 		// magic number string
-		sendReceive.WriteString(t_orig, "yc");
-		
+		t_orig.write('y');
+		t_orig.write('u');
+		t_orig.write('c');
+		t_orig.write('h');
+				
 		// write number
-		sendReceive.WriteShort(t_orig, (short)fsm_version);
+		sendReceive.WriteInt(t_orig, fsm_version);
 		
 		// write the table
 		sendReceive.WriteStringVector(t_orig, fsm_carrier);
@@ -196,8 +199,7 @@ public class DbGenerate {
 		zo.write(t_orig.toByteArray());
 		zo.close();
 		
-		byte[] t_zipData = zos.toByteArray();
-		
+		byte[] t_zipData = zos.toByteArray();		
 		FileOutputStream t_file = new FileOutputStream(fsm_outputFilename);
 		try{
 			t_file.write(t_zipData);
