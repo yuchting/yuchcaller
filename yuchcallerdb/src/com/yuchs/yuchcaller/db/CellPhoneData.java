@@ -10,20 +10,20 @@ import java.io.OutputStream;
  */
 public class CellPhoneData extends PhoneData
 {
-	public int			m_phoneNumberEnd;
+	public short			m_phoneNumberEnd;
 	public byte		m_carrier;
 	
 	public void Read(InputStream in)throws Exception{
 		super.Read(in);
 		
-		m_phoneNumberEnd	= sendReceive.ReadInt(in);
+		m_phoneNumberEnd	= sendReceive.ReadShort(in);
 		m_carrier		= (byte)in.read(); 
 	}
 	
 	public void Write(OutputStream os)throws Exception{
 		super.Write(os);
 		
-		sendReceive.WriteInt(os,m_phoneNumberEnd);
+		sendReceive.WriteShort(os,m_phoneNumberEnd);
 		os.write(m_carrier);
 	}
 }

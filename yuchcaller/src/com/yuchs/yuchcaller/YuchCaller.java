@@ -3,13 +3,12 @@ package com.yuchs.yuchcaller;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 
-import com.flurry.blackberry.FlurryAgent;
-
 import local.yuchcallerlocalResource;
 import net.rim.blackberry.api.options.OptionsManager;
 import net.rim.blackberry.api.options.OptionsProvider;
 import net.rim.blackberry.api.phone.Phone;
 import net.rim.blackberry.api.phone.PhoneListener;
+import net.rim.device.api.compress.GZIPInputStream;
 import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.system.Alert;
 import net.rim.device.api.system.Application;
@@ -19,12 +18,16 @@ import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.system.CodeModuleManager;
 import net.rim.device.api.system.DeviceInfo;
 import net.rim.device.api.system.Display;
+import net.rim.device.api.ui.Font;
+import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.UiEngine;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.EditField;
 import net.rim.device.api.ui.container.MainScreen;
+
+import com.flurry.blackberry.FlurryAgent;
 
 public class YuchCaller extends Application implements OptionsProvider,PhoneListener{
 
@@ -49,6 +52,12 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	//! the config editField of hangup-phone vibration
 	private EditField m_hangupVibrationTime = null;
 	
+	//! user answer the call id to avoid vibrate
+	private int	m_userAnswerCall = -1;
+	
+	//! user end this call id to avoid vibrate
+	private int	m_userEndCall = -1;
+	
 	/**
 	 * @param args
 	 */
@@ -56,7 +65,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		if (ApplicationManager.getApplicationManager().inStartup()){
 			
 			initFlurry();
-			
+						
 			//Enter the auto start portion of the application.
 			//Register an options provider and exit.
 			sm_instance = new YuchCaller();
@@ -93,7 +102,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 			System.out.println("Flurry init failed!"+e.getMessage());
 		}
 	}
-	
+		
 	/**
 	 * initialize the application state:
 	 * 
@@ -106,6 +115,27 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		
 		// register the Phone lister
 		Phone.addPhoneListener(this);
+		
+		// initialize the database
+		(new Thread(){
+			public void run(){
+				try{
+					InputStream t_file = Class.forName("com.yuchs.yuchcaller.YuchCaller").getResourceAsStream("/yuchcaller.db");
+					try{
+						GZIPInputStream t_in = new GZIPInputStream(t_file);
+						try{
+							YuchCaller.this.m_dbIndex.ReadIdxFile(t_in);
+						}finally{
+							t_in.close();
+						}						
+					}finally{
+						t_file.close();
+					}			
+				}catch(Exception e){
+					System.out.println("DbIndex init failed!"+e.getMessage());
+				}				
+			}
+		}).start();
 	}
 	
 	private Dialog m_alartDlg = null;
@@ -192,27 +222,53 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	
 	//@{ PhoneListener
 	public void callAdded(int callId) {}
-	public void callAnswered(int callId) {}
+	public void callAnswered(int callId) {
+		m_userAnswerCall = callId;
+	}
 	public void callConferenceCallEstablished(int callId) {}
 
 	public void callConnected(int callId) {
-		if(YuchCallerProp.instance().getRecvPhoneVibrationTime() != 0){
+		if(m_userAnswerCall != callId && YuchCallerProp.instance().getRecvPhoneVibrationTime() != 0){
 			Alert.startVibrate(YuchCallerProp.instance().getRecvPhoneVibrationTime());
 		}				
 	}
 
 	public void callDisconnected(int callId) {
-		if(YuchCallerProp.instance().getHangupPhoneVibrationTime() != 0){
+		if(m_userEndCall != callId && YuchCallerProp.instance().getHangupPhoneVibrationTime() != 0){
 			Alert.startVibrate(YuchCallerProp.instance().getHangupPhoneVibrationTime());
 		}		
-	}	
+	}
+	
+	static Font sm_font = Font.getDefault().derive(Font.getDefault().getStyle() | Font.BOLD,Font.getDefault().getHeight() + 2);
 
 	public void callDirectConnectConnected(int callId) {}
 	public void callDirectConnectDisconnected(int callId) {}
-	public void callEndedByUser(int callId) {}
+	public void callEndedByUser(int callId) {
+		m_userEndCall = callId;
+	}
 	public void callFailed(int callId, int reason) {}
 	public void callHeld(int callId) {}
-	public void callIncoming(int callId) {}
+	public void callIncoming(int callId) {
+		
+		UiApplication.getUiApplication().invokeLater(new Runnable() {
+			
+			public void run() {
+				Graphics t_graphics = UiApplication.getUiApplication().getActiveScreen().getGraphics();
+				int t_backColor = t_graphics.getColor();
+				Font t_font		= t_graphics.getFont();
+				try{
+					t_graphics.setColor(0);
+					t_graphics.setFont(sm_font);
+					
+					t_graphics.drawText("Hello YuchCaller",0,0);
+				}finally{
+					t_graphics.setColor(t_backColor);
+					t_graphics.setFont(t_font);
+				}
+				
+			}
+		});
+	}
 	public void callInitiated(int callid) {}
 	public void callRemoved(int callId) {}
 	public void callResumed(int callId) {}
