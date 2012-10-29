@@ -98,7 +98,7 @@ public class DbGenerate {
 						&& t_preCellPhone.m_city == t_cityId
 						&& t_preCellPhone.m_carrier == t_carrierId){
 							
-							t_preCellPhone.m_phoneNumberEnd = t_phoneNum;
+							t_preCellPhone.m_phoneNumberEnd = (short)t_phoneNum;
 							
 							t_added = false;
 						}
