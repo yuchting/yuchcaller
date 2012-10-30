@@ -2,6 +2,7 @@ package com.yuchs.yuchcaller;
 
 import net.rim.device.api.system.PersistentObject;
 import net.rim.device.api.system.PersistentStore;
+import net.rim.device.api.ui.Font;
 import net.rim.device.api.util.Persistable;
 
 public class YuchCallerProp implements Persistable {
@@ -36,6 +37,18 @@ public class YuchCallerProp implements Persistable {
 	//! hangup phone vibration time
 	private int m_hangupPhoneVibrationTime = 100;
 	
+	//! location information position x
+	private int m_locationInfoPosition_x	= 0;
+	
+	//! location information position 
+	private int m_locationInfoPosition_y	= YuchCaller.fsm_display_height - YuchCaller.fsm_display_height / 3;
+	
+	//! location information color
+	private int m_locationInfoColor		= YuchCaller.fsm_OS_version.startsWith("4.")?0:0xffffff;
+	
+	//! default height
+	private int m_locationInfoHeight		= Font.getDefault().getHeight();
+			
 	//! get the receive phone vibration time(milli-second)
 	public int getRecvPhoneVibrationTime(){
 		return m_receivePhoneVibrationTime;
@@ -55,6 +68,18 @@ public class YuchCallerProp implements Persistable {
 	public void setHangupPhoneVibrationTime(int _time){
 		m_hangupPhoneVibrationTime = _time;
 	}
+	
+	public int getLocationPosition_x(){return m_locationInfoPosition_x;}
+	public void setLocationPosition_x(int _x){m_locationInfoPosition_x = _x;}
+	
+	public int getLocationPosition_y(){return m_locationInfoPosition_y;}
+	public void setLocationPosition_y(int _y){m_locationInfoPosition_y = _y;}
+	
+	public int getLocationColor(){return m_locationInfoColor;}
+	public void setLocationColor(int _color){m_locationInfoColor = _color;}
+	
+	public int getLocationHeight(){return m_locationInfoHeight;}
+	public void setLocationHeight(int _height){m_locationInfoHeight = _height;}
 	
 	//Retrieves a copy of the effective properties set from storage.
     public static YuchCallerProp instance(){

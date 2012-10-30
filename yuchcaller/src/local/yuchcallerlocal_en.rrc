@@ -1,7 +1,17 @@
 APPLICATION_DESC#0="Phone Call Assistent";
 App_Title#0="YuchCaller";
+PHONE_CALL#0="Phone Call:";
+PHONE_CALL_TEXT_COLOR#0="Info Text Color:";
+PHONE_CALL_TEXT_COLOR_BLACK#0="Black";
+PHONE_CALL_TEXT_COLOR_DUMMY#0="Color";
+PHONE_CALL_TEXT_COLOR_SAMPLE#0="Text Color Sample";
+PHONE_CALL_TEXT_COLOR_WHITE#0="White";
+PHONE_CALL_TEXT_HEIGHT#0="Text Height(20-40):";
+PHONE_CALL_TEXT_POSITION_X#0="Info Position X:";
+PHONE_CALL_TEXT_POSITION_Y#0="Info Position Y:";
 PHONE_ERROR_DB_INDEX_FILE#0="This db file is broken!";
 PHONE_HANGUP_VIBRATE_TIME#0="Hangup Vibration Time(millisecond):";
 PHONE_LOCAL_PHONE#0="Local Phone";
 PHONE_RECV_VIBRATE_TIME#0="Recv Vibration Time(millisecond):";
 PHONE_UNKNOWN_NUMBER#0="Unknown Area";
+PHONE_VIBRATION#0="Vibration:";

@@ -30,19 +30,10 @@ public class DbGenerate {
 	public static final String fsm_outputFilename = "yuchcaller.db";
 	
 	public static final int	fsm_version = 267235;
-	
-	public static final String[] fsm_carrier = 
-	{
-		"座机",
-		"移动GSM卡",
-		"联通GSM卡",
-		"联通CDMA卡",
-		"电信CDMA卡",
-		"电信天翼卡",
-	};
-	
+		
 	private Vector<String>			m_province	= new Vector<String>();
-	private Vector<String>			m_city		= new Vector<String>();	
+	private Vector<String>			m_city		= new Vector<String>();
+	private Vector<String>			m_carrierList		= new Vector<String>();	
 	
 	private Vector<CellPhoneData>	m_cellPhone = new Vector<CellPhoneData>();
 	private Vector<PhoneData>		m_phone = new Vector<PhoneData>();
@@ -66,6 +57,7 @@ public class DbGenerate {
 	private void prepareData(String _file) throws Exception{
 		BufferedReader in = new BufferedReader(new InputStreamReader(
 									new FileInputStream(_file),"UTF-8"));
+		
 		try{
 			String line = null;
 			
@@ -88,7 +80,7 @@ public class DbGenerate {
 					t_phoneNum		= Integer.parseInt(t_param[0]);
 					t_provinceId	= addList(m_province,t_param[1]);
 					t_cityId		= addList(m_city,t_param[2]);
-					t_carrierId		= findCarrier(t_param[3]);
+					t_carrierId		= findCarrier(t_param[3],t_param[2]);
 					t_areaId		= Integer.parseInt(t_param[4]);
 					
 					t_added 		= true;
@@ -98,8 +90,8 @@ public class DbGenerate {
 						&& t_preCellPhone.m_city == t_cityId
 						&& t_preCellPhone.m_carrier == t_carrierId){
 							
-							t_preCellPhone.m_phoneNumberEnd = (short)t_phoneNum;
-							
+							t_preCellPhone.m_phoneNumberEnd++;
+														
 							t_added = false;
 						}
 					}
@@ -110,6 +102,10 @@ public class DbGenerate {
 						t_preCellPhone.m_province		= (byte)t_provinceId;
 						t_preCellPhone.m_city			= (short)t_cityId;
 						t_preCellPhone.m_carrier		= (byte)t_carrierId;
+						
+						if(t_preCellPhone.m_carrier == -1){
+							System.err.println("Fuck!");							
+						}
 						
 						m_cellPhone.add(t_preCellPhone);
 					}
@@ -144,14 +140,20 @@ public class DbGenerate {
 	}
 	
 	// find the carrier idx
-	private static int findCarrier(String _carrier){
-		for(int i = 0;i< fsm_carrier.length;i++){
-			if(_carrier.indexOf(fsm_carrier[i]) != -1){
+	private int findCarrier(String _carrier,String _city){
+		for(int i = 0;i< m_carrierList.size();i++){
+			if(_carrier.indexOf(m_carrierList.elementAt(i)) != -1){
 				return i;
 			}	
 		}
 		
-		return -1;
+		if(_carrier.indexOf(_city) != -1){
+			_carrier = _carrier.substring(_city.length());
+		}
+		
+		m_carrierList.addElement(_carrier);
+		
+		return m_carrierList.size() - 1;
 	}
 	
 	//! has area phone
@@ -179,7 +181,7 @@ public class DbGenerate {
 		sendReceive.WriteInt(t_orig, fsm_version);
 		
 		// write the table
-		sendReceive.WriteStringVector(t_orig, fsm_carrier);
+		sendReceive.WriteStringVector(t_orig, m_carrierList);
 		sendReceive.WriteStringVector(t_orig, m_province);
 		sendReceive.WriteStringVector(t_orig, m_city);
 
