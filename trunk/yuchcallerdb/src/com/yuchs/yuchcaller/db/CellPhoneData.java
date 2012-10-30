@@ -10,7 +10,7 @@ import java.io.OutputStream;
  */
 public class CellPhoneData extends PhoneData
 {
-	public short			m_phoneNumberEnd;
+	public short		m_phoneNumberEnd;
 	public byte		m_carrier;
 	
 	public void Read(InputStream in)throws Exception{
@@ -25,5 +25,17 @@ public class CellPhoneData extends PhoneData
 		
 		sendReceive.WriteShort(os,m_phoneNumberEnd);
 		os.write(m_carrier);
+	}	
+
+	//! compare with a number for bineary search
+	public int Compare(int _number){
+		
+		if((m_phoneNumber + m_phoneNumberEnd) < _number){
+			return -1;
+		}else if(m_phoneNumber > _number){
+			return 1;
+		}else{
+			return 0;
+		}		
 	}
 }

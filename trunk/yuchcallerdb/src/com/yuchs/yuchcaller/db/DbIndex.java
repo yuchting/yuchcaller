@@ -1,10 +1,9 @@
-package com.yuchs.yuchcaller;
+package com.yuchs.yuchcaller.db;
 
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Vector;
-
-import net.rim.device.api.compress.GZIPInputStream;
-import net.rim.device.api.io.FileInputStream;
+import java.util.zip.GZIPInputStream;
 
 public class DbIndex {
 
@@ -182,16 +181,16 @@ public class DbIndex {
 	}
 	
 	public static void main(String[] _args)throws Exception{
-//		DbIndex t_dbIdx = new DbIndex();
-//		
-//		FileInputStream t_file = new FileInputStream("yuchcaller.db");
-//		try{
-//			GZIPInputStream zip = new GZIPInputStream(t_file);
-//			t_dbIdx.ReadIdxFile(zip);
-//		}finally{
-//			t_file.close();
-//		}
-//		
-//		System.out.println(t_dbIdx.findPhoneData("13260009715"));
+		DbIndex t_dbIdx = new DbIndex();
+		
+		FileInputStream t_file = new FileInputStream("yuchcaller.db");
+		try{
+			GZIPInputStream zip = new GZIPInputStream(t_file);
+			t_dbIdx.ReadIdxFile(zip);
+		}finally{
+			t_file.close();
+		}
+		
+		System.out.println(t_dbIdx.findPhoneData("13260009715"));
 	}
 }

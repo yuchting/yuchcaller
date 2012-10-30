@@ -25,4 +25,15 @@ public class PhoneData
 		os.write(m_province);
 		sendReceive.WriteShort(os, m_city);
 	}
+	
+	//! compare with a number for bineary search
+	public int Compare(int _number){
+		if(m_phoneNumber < _number){
+			return -1;
+		}else if(m_phoneNumber > _number){
+			return 1;
+		}else{
+			return 0;
+		}		
+	}
 }

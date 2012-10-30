@@ -2,14 +2,18 @@ package com.yuchs.yuchcaller;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.util.Date;
+import java.util.Vector;
 
 import local.yuchcallerlocalResource;
 import net.rim.blackberry.api.options.OptionsManager;
 import net.rim.blackberry.api.options.OptionsProvider;
 import net.rim.blackberry.api.phone.Phone;
+import net.rim.blackberry.api.phone.PhoneCall;
 import net.rim.blackberry.api.phone.PhoneListener;
 import net.rim.device.api.compress.GZIPInputStream;
 import net.rim.device.api.i18n.ResourceBundle;
+import net.rim.device.api.i18n.SimpleDateFormat;
 import net.rim.device.api.system.Alert;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.system.ApplicationDescriptor;
@@ -18,14 +22,16 @@ import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.system.CodeModuleManager;
 import net.rim.device.api.system.DeviceInfo;
 import net.rim.device.api.system.Display;
+import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Manager;
+import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.UiEngine;
 import net.rim.device.api.ui.component.Dialog;
-import net.rim.device.api.ui.component.EditField;
 import net.rim.device.api.ui.container.MainScreen;
+import net.rim.device.api.ui.container.VerticalFieldManager;
 
 import com.flurry.blackberry.FlurryAgent;
 
@@ -43,20 +49,60 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	public static YuchCaller		sm_instance;
 	
 	//! data base index manager class
-	private DbIndex			m_dbIndex	= new DbIndex();
-	
-	
-	//! the config editField of recv-phone vibration
-	private EditField m_recvVibrationTime = null;
-	
-	//! the config editField of hangup-phone vibration
-	private EditField m_hangupVibrationTime = null;
+	private DbIndex			m_dbIndex	= new DbIndex();	
 	
 	//! user answer the call id to avoid vibrate
 	private int	m_userAnswerCall = -1;
 	
 	//! user end this call id to avoid vibrate
 	private int	m_userEndCall = -1;
+	
+	//! the active phone call manager
+	private ReplaceVerticalFieldManager	m_activePhoneCallManager = null;
+	
+	//! error string list
+	private Vector			m_errorString		= new Vector();
+	
+	//! the alert dialog
+	private Dialog m_alartDlg = null;
+	
+	//! config manager to show the yuchCaller config
+	private ConfigManager	m_configManager		= null;
+	
+	/**
+	 * replace vertical field manager for acvtive phone call screen's manager
+	 * @author tzz
+	 *
+	 */
+	private class ReplaceVerticalFieldManager extends VerticalFieldManager{
+		
+		public String	m_locationInfo	= "Hello YuchCaller";
+		public Font		m_font			= null;
+		
+		public ReplaceVerticalFieldManager(){
+			m_font = generateLocationTextFont();			
+		}
+		
+		protected void subpaint(Graphics _g){
+			super.subpaint(_g);
+			
+			int t_color = _g.getColor();
+			Font t_font = _g.getFont();
+			
+			try{
+				_g.setColor(YuchCallerProp.instance().getLocationColor());
+				_g.setFont(m_font);
+				
+				_g.drawText(m_locationInfo,
+							YuchCallerProp.instance().getLocationPosition_x(),
+							YuchCallerProp.instance().getLocationPosition_y());
+				
+			}finally{
+				_g.setColor(t_color);
+				_g.setFont(t_font);
+			}
+		}
+	}
 	
 	/**
 	 * @param args
@@ -117,6 +163,13 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		Phone.addPhoneListener(this);
 		
 		// initialize the database
+		initDbIndex();
+	}
+	
+	/**
+	 * initialize the dbindex
+	 */
+	private void initDbIndex(){
 		(new Thread(){
 			public void run(){
 				try{
@@ -138,7 +191,6 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		}).start();
 	}
 	
-	private Dialog m_alartDlg = null;
 	public void DialogAlert(final String _msg){
 		
 		if(m_alartDlg != null){
@@ -168,54 +220,51 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		});				
     }
 	
+	public synchronized void SetErrorString(final String _error){
+		ErrorInfo ei = new ErrorInfo(_error);
+		m_errorString.addElement(ei);
+		if(m_errorString.size() > 100){
+			m_errorString.removeElementAt(0);
+		}
+		
+		if(DeviceInfo.isSimulator()){
+			System.err.println("[YuchCaller]"+ei.toString());
+		}
+	}
+	
+	public void SetErrorString(String _label,Exception e){
+		SetErrorString(_label + " " + e.getMessage() + " " + e.getClass().getName());
+	}
+	
+	//! change location TextFont
+	public void changeLocationTextFont(){
+		if(m_activePhoneCallManager != null){
+			m_activePhoneCallManager.m_font = generateLocationTextFont();
+		}
+	}
+	
+	//! generate the location text font
+	private Font generateLocationTextFont(){
+		return Font.getDefault().derive(Font.getDefault().getStyle(),YuchCallerProp.instance().getLocationHeight());
+	}
+	
 
 	//@{ OptionsProvider
 	public String getTitle() {
 		return sm_local.getString(yuchcallerlocalResource.App_Title);
 	}
 	
-	
 
 	// fill the main screen
 	public void populateMainScreen(MainScreen mainScreen) {
-		 
-		m_recvVibrationTime = new EditField(sm_local.getString(yuchcallerlocalResource.PHONE_RECV_VIBRATE_TIME),
-											Integer.toString(YuchCallerProp.instance().getRecvPhoneVibrationTime()),
-											// Vibration time in milliseconds, from 0 to 25500.
-											//
-											4,
-											EditField.NO_NEWLINE | EditField.FILTER_NUMERIC );
-		
-		m_hangupVibrationTime = new EditField(sm_local.getString(yuchcallerlocalResource.PHONE_HANGUP_VIBRATE_TIME),
-											Integer.toString(YuchCallerProp.instance().getHangupPhoneVibrationTime()),
-											// Vibration time in milliseconds, from 0 to 25500.
-											//
-											4,
-											EditField.NO_NEWLINE | EditField.FILTER_NUMERIC );
-		
-		mainScreen.add(m_recvVibrationTime);
-		mainScreen.add(m_hangupVibrationTime);
-		
+		m_configManager = new ConfigManager();
+		mainScreen.add(m_configManager);		
 	}
 
+	// save the property
 	public void save() {
-		try{
-
-			String t_recvStr	= m_recvVibrationTime.getText();
-			String t_hangupStr	= m_hangupVibrationTime.getText();
-			
-			int t_recv		= t_recvStr.length() == 0 ? 0 : Integer.parseInt(m_recvVibrationTime.getText());
-			int t_hangup	= t_hangupStr.length() == 0 ? 0 : Integer.parseInt(m_hangupVibrationTime.getText());
-			
-			YuchCallerProp.instance().setRecvPhoneVibrationTime(t_recv);
-			YuchCallerProp.instance().setHangupPhoneVibrationTime(t_hangup);
-			
-			YuchCallerProp.instance().save();
-			
-		}catch(Exception ex){
-			ex.printStackTrace();
-			DialogAlert("Error! " + ex.getMessage());
-		}
+		m_configManager.saveProp();
+		m_configManager = null;
 	}
 	//@}
 
@@ -230,7 +279,9 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	public void callConnected(int callId) {
 		if(m_userAnswerCall != callId && YuchCallerProp.instance().getRecvPhoneVibrationTime() != 0){
 			Alert.startVibrate(YuchCallerProp.instance().getRecvPhoneVibrationTime());
-		}				
+		}
+		
+		replaceActivePhoneCallManager(callId);		
 	}
 
 	public void callDisconnected(int callId) {
@@ -238,8 +289,6 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 			Alert.startVibrate(YuchCallerProp.instance().getHangupPhoneVibrationTime());
 		}		
 	}
-	
-	static Font sm_font = Font.getDefault().derive(Font.getDefault().getStyle() | Font.BOLD,Font.getDefault().getHeight() + 2);
 
 	public void callDirectConnectConnected(int callId) {}
 	public void callDirectConnectDisconnected(int callId) {}
@@ -249,32 +298,59 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	public void callFailed(int callId, int reason) {}
 	public void callHeld(int callId) {}
 	public void callIncoming(int callId) {
-		
-		UiApplication.getUiApplication().invokeLater(new Runnable() {
-			
-			public void run() {
-				Graphics t_graphics = UiApplication.getUiApplication().getActiveScreen().getGraphics();
-				int t_backColor = t_graphics.getColor();
-				Font t_font		= t_graphics.getFont();
-				try{
-					t_graphics.setColor(0);
-					t_graphics.setFont(sm_font);
-					
-					t_graphics.drawText("Hello YuchCaller",0,0);
-				}finally{
-					t_graphics.setColor(t_backColor);
-					t_graphics.setFont(t_font);
-				}
-				
-			}
-		});
+		UiApplication.getUiApplication().requestForeground();
 	}
-	public void callInitiated(int callid) {}
+	public void callInitiated(int callId) {
+		replaceActivePhoneCallManager(callId);
+	}	
 	public void callRemoved(int callId) {}
 	public void callResumed(int callId) {}
 	public void callWaiting(int callid) {}
 	public void conferenceCallDisconnected(int callId) {}
 	//@}
+	
+	/**
+	 * replace the active phone call manager to display own Phone
+	 */
+	private void replaceActivePhoneCallManager(int callId){
+		
+		if(m_activePhoneCallManager == null){
+			try{
+				m_activePhoneCallManager = new ReplaceVerticalFieldManager();
+				
+				Screen t_screen = UiApplication.getUiApplication().getActiveScreen();
+				
+				Field t_orig = t_screen.getField(0);
+				t_screen.deleteAll();				
+				
+				m_activePhoneCallManager.add(t_orig);
+				t_screen.add(m_activePhoneCallManager);
+				
+			}catch(Exception ex){
+				SetErrorString("RAPCM", ex);
+			}
+		}
+		
+		PhoneCall t_phone = Phone.getCall(callId);
+		m_activePhoneCallManager.m_locationInfo = m_dbIndex.findPhoneData(t_phone.getDisplayPhoneNumber());
+	}
+	
+	private final static SimpleDateFormat fsm_errorInfoTimeFormat = new SimpleDateFormat("HH:mm:ss");
+
+	// error information class to manager error
+	final class ErrorInfo{
+		Date		m_time;
+		String		m_info;
+		
+		ErrorInfo(String _info){
+			m_info	= _info;
+			m_time	= new Date();
+		}
+		
+		public String toString(){
+			return fsm_errorInfoTimeFormat.format(m_time) + ":" + m_info;
+		}
+	}
 
 }
 
