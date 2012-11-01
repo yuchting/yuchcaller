@@ -44,9 +44,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	public final static long		fsm_PIN					= DeviceInfo.getDeviceId();
 	public final static String	fsm_IMEI				= "bb";
 	
-	public final static ResourceBundle sm_local = ResourceBundle.getBundle(yuchcallerlocalResource.BUNDLE_ID, yuchcallerlocalResource.BUNDLE_NAME);
-	
-	public static YuchCaller		sm_instance;
+	public final ResourceBundle 	m_local = ResourceBundle.getBundle(yuchcallerlocalResource.BUNDLE_ID, yuchcallerlocalResource.BUNDLE_NAME);
 	
 	//! data base index manager class
 	private DbIndex			m_dbIndex	= new DbIndex();	
@@ -68,6 +66,9 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	
 	//! config manager to show the yuchCaller config
 	private ConfigManager	m_configManager		= null;
+	
+	//! replace incoming call screen to close it when phone call is disconnect
+	public ReplaceIncomingCallScreen m_replaceIncomingCallScreen = null;
 	
 	/**
 	 * replace vertical field manager for acvtive phone call screen's manager
@@ -114,9 +115,9 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 						
 			//Enter the auto start portion of the application.
 			//Register an options provider and exit.
-			sm_instance = new YuchCaller();
-			sm_instance.init();
-			sm_instance.enterEventDispatcher();
+			YuchCaller t_caller = new YuchCaller();
+			t_caller.init();
+			t_caller.enterEventDispatcher();
 		}
 	}
 	
@@ -251,13 +252,13 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 
 	//@{ OptionsProvider
 	public String getTitle() {
-		return sm_local.getString(yuchcallerlocalResource.App_Title);
+		return m_local.getString(yuchcallerlocalResource.App_Title);
 	}
 	
 
 	// fill the main screen
 	public void populateMainScreen(MainScreen mainScreen) {
-		m_configManager = new ConfigManager();
+		m_configManager = new ConfigManager(this);
 		mainScreen.add(m_configManager);		
 	}
 
@@ -287,18 +288,28 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	public void callDisconnected(int callId) {
 		if(m_userEndCall != callId && YuchCallerProp.instance().getHangupPhoneVibrationTime() != 0){
 			Alert.startVibrate(YuchCallerProp.instance().getHangupPhoneVibrationTime());
-		}		
+		}
+		
+		closeReplaceIncomingCallScreen();
 	}
 
 	public void callDirectConnectConnected(int callId) {}
-	public void callDirectConnectDisconnected(int callId) {}
+	public void callDirectConnectDisconnected(int callId) {
+		closeReplaceIncomingCallScreen();
+	}
 	public void callEndedByUser(int callId) {
 		m_userEndCall = callId;
 	}
 	public void callFailed(int callId, int reason) {}
 	public void callHeld(int callId) {}
 	public void callIncoming(int callId) {
-		UiApplication.getUiApplication().requestForeground();
+		if(m_replaceIncomingCallScreen == null){
+			PhoneCall t_call = Phone.getCall(callId);
+			String t_dp = t_call.getDisplayPhoneNumber();
+			String t_status = t_call.getStatusString();
+			m_replaceIncomingCallScreen = new ReplaceIncomingCallScreen(Phone.getCall(callId).getDisplayPhoneNumber(),this);
+			UiApplication.getUiApplication().pushGlobalScreen(m_replaceIncomingCallScreen,0,UiEngine.GLOBAL_MODAL);
+		}		
 	}
 	public void callInitiated(int callId) {
 		replaceActivePhoneCallManager(callId);
@@ -306,9 +317,18 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	public void callRemoved(int callId) {}
 	public void callResumed(int callId) {}
 	public void callWaiting(int callid) {}
-	public void conferenceCallDisconnected(int callId) {}
+	public void conferenceCallDisconnected(int callId) {
+		closeReplaceIncomingCallScreen();
+	}
 	//@}
 	
+	private void closeReplaceIncomingCallScreen(){
+		if(m_replaceIncomingCallScreen != null){
+			m_replaceIncomingCallScreen.close();
+			m_replaceIncomingCallScreen = null;
+		}
+	}
+		
 	/**
 	 * replace the active phone call manager to display own Phone
 	 */
