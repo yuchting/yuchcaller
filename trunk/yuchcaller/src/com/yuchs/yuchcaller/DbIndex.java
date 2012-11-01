@@ -3,9 +3,6 @@ package com.yuchs.yuchcaller;
 import java.io.InputStream;
 import java.util.Vector;
 
-import net.rim.device.api.compress.GZIPInputStream;
-import net.rim.device.api.io.FileInputStream;
-
 public class DbIndex {
 
 	//! phone data index list
@@ -181,7 +178,7 @@ public class DbIndex {
 		System.out.println("DbIndex read successfully!");
 	}
 	
-	public static void main(String[] _args)throws Exception{
+//	public static void main(String[] _args)throws Exception{
 //		DbIndex t_dbIdx = new DbIndex();
 //		
 //		FileInputStream t_file = new FileInputStream("yuchcaller.db");
@@ -193,5 +190,6 @@ public class DbIndex {
 //		}
 //		
 //		System.out.println(t_dbIdx.findPhoneData("13260009715"));
-	}
+//	}
+	
 }

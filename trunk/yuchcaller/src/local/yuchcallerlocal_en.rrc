@@ -1,6 +1,8 @@
 APPLICATION_DESC#0="Phone Call Assistent";
 App_Title#0="YuchCaller";
 PHONE_CALL#0="Phone Call:";
+PHONE_CALL_ANSWER#0="Answer";
+PHONE_CALL_IGNORE#0="Ignore";
 PHONE_CALL_TEXT_COLOR#0="Info Text Color:";
 PHONE_CALL_TEXT_COLOR_BLACK#0="Black";
 PHONE_CALL_TEXT_COLOR_DUMMY#0="Color";
