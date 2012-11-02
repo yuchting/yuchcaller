@@ -11,6 +11,8 @@ import net.rim.blackberry.api.options.OptionsProvider;
 import net.rim.blackberry.api.phone.Phone;
 import net.rim.blackberry.api.phone.PhoneCall;
 import net.rim.blackberry.api.phone.PhoneListener;
+import net.rim.blackberry.api.phone.phonegui.PhoneScreen;
+import net.rim.blackberry.api.phone.phonegui.ScreenModel;
 import net.rim.device.api.compress.GZIPInputStream;
 import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.i18n.SimpleDateFormat;
@@ -24,6 +26,7 @@ import net.rim.device.api.system.CodeModuleManager;
 import net.rim.device.api.system.DeviceInfo;
 import net.rim.device.api.system.Display;
 import net.rim.device.api.system.EncodedImage;
+import net.rim.device.api.ui.Color;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
@@ -32,6 +35,7 @@ import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.UiEngine;
 import net.rim.device.api.ui.component.Dialog;
+import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.container.MainScreen;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 
@@ -347,6 +351,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		}else if(!fsm_OS_version.startsWith("4")){
 			CallScreenPlugin.apply(this, callId,CallScreenPlugin.INCOMING);
 		}
+		
 	}
 	public void callInitiated(int callId) {
 		replaceActivePhoneCallManager(callId);
