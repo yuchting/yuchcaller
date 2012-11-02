@@ -178,7 +178,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 			public void run(){
 				try{
 
-					if(fsm_OS_version.startsWith("4.5") && m_backgroundBitmap == null){
+					if(m_backgroundBitmap == null){
 							
 						byte[] bytes = IOUtilities.streamToBytes(YuchCaller.this.getClass().getResourceAsStream("/background.png"));		
 						m_backgroundBitmap =  EncodedImage.createEncodedImage(bytes , 0, bytes .length).getBitmap();
