@@ -8,7 +8,7 @@ import java.io.OutputStream;
  * @author tzz
  *
  */
-public class PhoneData 
+public class PhoneData extends BinSearchNumber implements Comparable<PhoneData>
 {
 	public int			m_phoneNumber;
 	public byte		m_province;
@@ -35,5 +35,17 @@ public class PhoneData
 		}else{
 			return 0;
 		}		
+	}
+
+	@Override
+	public int compareTo(PhoneData o) {
+		
+		if(m_phoneNumber < o.m_phoneNumber){
+			return -1;
+		}else if(m_phoneNumber > o.m_phoneNumber){
+			return 1;
+		}
+		
+		return 0;
 	}
 }

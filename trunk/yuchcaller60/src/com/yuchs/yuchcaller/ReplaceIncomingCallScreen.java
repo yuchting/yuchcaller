@@ -12,7 +12,6 @@ import net.rim.blackberry.api.pdap.BlackBerryContactList;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Keypad;
-import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.container.FullScreen;
 
@@ -51,7 +50,7 @@ public class ReplaceIncomingCallScreen extends FullScreen {
 		loadRightContactList();
 		fillRightContactField();					
 		
-		m_locationInfo = m_mainApp.m_dbIndex.findPhoneData(m_currIncomingNumber);
+		m_locationInfo = m_mainApp.searchLocation(m_currIncomingNumber);
 	}
 	
 	//! load the contact list 
@@ -104,21 +103,7 @@ public class ReplaceIncomingCallScreen extends FullScreen {
 					}
 					
 					if(t_isRightContact){
-						
-						switch(bbContact.getAttributes(Contact.TEL, j)){
-						case Contact.ATTR_HOME:
-							m_phoneSuffix = m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_HOME);
-							break;
-						case Contact.ATTR_MOBILE:
-							m_phoneSuffix = m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_MOBILE);
-							break;
-						case Contact.ATTR_WORK:
-							m_phoneSuffix = m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_WORK);
-							break;
-						default:
-							m_phoneSuffix = m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_OTHER);
-							break;
-						}
+						m_phoneSuffix = m_mainApp.getPrefixByTelAttr(bbContact.getAttributes(Contact.TEL, j));
 						break;
 					}
 				}
