@@ -51,6 +51,8 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	
 	private EditField m_locationInfoHeight			= null;
 	
+	private EditField m_searchNumberInput			= null;
+	
 	private ColorSampleField m_locationTextColorSample = null;
 	
 	private YuchCaller	m_mainApp = null;
@@ -85,25 +87,29 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		t_label.setFont(m_mainLabelBoldFont);
 		add(t_label);
 		
-		m_locationInfoPosition_x = new EditField(_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_POSITION_X),
-												Integer.toString(YuchCallerProp.instance().getLocationPosition_x()),
-												3,
-												EditField.NO_NEWLINE | EditField.FILTER_NUMERIC );
-		
-		m_locationInfoPosition_y = new EditField(_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_POSITION_Y),
-												Integer.toString(YuchCallerProp.instance().getLocationPosition_y()),
-												3,
-												EditField.NO_NEWLINE | EditField.FILTER_NUMERIC );
+		if(YuchCaller.fsm_OS_version.startsWith("4.5")){
+			m_locationInfoPosition_x = new EditField(_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_POSITION_X),
+					Integer.toString(YuchCallerProp.instance().getLocationPosition_x()),
+					3,
+					EditField.NO_NEWLINE | EditField.FILTER_NUMERIC );
+
+			m_locationInfoPosition_y = new EditField(_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_POSITION_Y),
+								Integer.toString(YuchCallerProp.instance().getLocationPosition_y()),
+								3,
+								EditField.NO_NEWLINE | EditField.FILTER_NUMERIC );
+			
+			
+			
+			add(m_locationInfoPosition_x);
+			add(m_locationInfoPosition_y);
+		}
 		
 		m_locationInfoHeight = new EditField(_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_HEIGHT),
-												Integer.toString(YuchCallerProp.instance().getLocationHeight()),
-												2,
-												EditField.NO_NEWLINE | EditField.FILTER_NUMERIC );
-		
+				Integer.toString(YuchCallerProp.instance().getLocationHeight()),
+				2,
+				EditField.NO_NEWLINE | EditField.FILTER_NUMERIC );
+
 		m_locationInfoHeight.setChangeListener(this);
-		
-		add(m_locationInfoPosition_x);
-		add(m_locationInfoPosition_y);
 		add(m_locationInfoHeight);		
 		
 		// initialize the ObjectChoiceField select colorField and find the index of current color
@@ -121,12 +127,25 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 													t_choiceObj,t_choiceIdx);
 		
 		add(m_locationInfoColor);
+		m_locationInfoColor.setChangeListener(this);
+		
+		// add SeparatorField
+		add(new SeparatorField(Field.NON_FOCUSABLE));
+		
+		// search the phone
+		t_label = new LabelField(_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SEARCH),Field.NON_FOCUSABLE);
+		t_label.setFont(m_mainLabelBoldFont);
+		add(t_label);
+		
+		m_searchNumberInput		= new EditField("","",11,EditField.NO_NEWLINE | EditField.FILTER_NUMERIC );
+		add(m_searchNumberInput);
 		
 		// initialize the sample
 		m_locationTextColorSample = new ColorSampleField(fsm_locationCandColor[t_choiceIdx]);
+		m_locationTextColorSample.setFont(m_mainApp.generateLocationTextFont());
 		add(m_locationTextColorSample);
 		
-		m_locationInfoColor.setChangeListener(this);
+		m_searchNumberInput.setChangeListener(this);
 	}
 	
 
@@ -148,7 +167,12 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			
 			replace(m_locationTextColorSample, t_newField);
 			m_locationTextColorSample = t_newField;
-		}	
+		}else if(field == m_searchNumberInput){
+			if(m_searchNumberInput.getTextLength() > 0){
+				String t_number = m_searchNumberInput.getText();
+				m_locationTextColorSample.setText(m_mainApp.searchLocation(t_number));
+			}			 
+		}
 	}	
 	
 	// save the properties
@@ -157,8 +181,12 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 
 			YuchCallerProp.instance().setRecvPhoneVibrationTime(getTextFieldNum(m_recvVibrationTime));
 			YuchCallerProp.instance().setHangupPhoneVibrationTime(getTextFieldNum(m_hangupVibrationTime));
-			YuchCallerProp.instance().setLocationPosition_x(getTextFieldNum(m_locationInfoPosition_x));
-			YuchCallerProp.instance().setLocationPosition_y(getTextFieldNum(m_locationInfoPosition_y));
+			
+			if(m_locationInfoPosition_x != null){
+				YuchCallerProp.instance().setLocationPosition_x(getTextFieldNum(m_locationInfoPosition_x));
+				YuchCallerProp.instance().setLocationPosition_y(getTextFieldNum(m_locationInfoPosition_y));
+			}
+			
 			YuchCallerProp.instance().setLocationColor(fsm_locationCandColor[m_locationInfoColor.getSelectedIndex()]);
 			YuchCallerProp.instance().setLocationHeight(MathUtilities.clamp(20, getTextFieldNum(m_locationInfoHeight), 40));
 						
@@ -198,7 +226,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		int m_color;
 		
 		public ColorSampleField(int _color){
-			super(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_COLOR_SAMPLE),Field.NON_FOCUSABLE | Field.FIELD_RIGHT);
+			super(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_COLOR_SAMPLE),Field.NON_FOCUSABLE);
 			m_color = _color;
 		}
 		

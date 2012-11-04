@@ -17,7 +17,7 @@ public class CellPhoneData extends PhoneData
 		super.Read(in);
 		
 		m_phoneNumberEnd	= sendReceive.ReadShort(in);
-		m_carrier		= (byte)in.read(); 
+		m_carrier			= (byte)in.read(); 
 	}
 	
 	public void Write(OutputStream os)throws Exception{

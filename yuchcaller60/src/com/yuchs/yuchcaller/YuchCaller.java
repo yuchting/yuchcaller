@@ -3,16 +3,23 @@ package com.yuchs.yuchcaller;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.Date;
+import java.util.Random;
 import java.util.Vector;
 
+import javax.microedition.io.Connector;
+import javax.microedition.io.HttpConnection;
+import javax.microedition.pim.Contact;
+
 import local.yuchcallerlocalResource;
+import net.rim.blackberry.api.menuitem.ApplicationMenuItem;
+import net.rim.blackberry.api.menuitem.ApplicationMenuItemRepository;
 import net.rim.blackberry.api.options.OptionsManager;
 import net.rim.blackberry.api.options.OptionsProvider;
+import net.rim.blackberry.api.pdap.BlackBerryContact;
 import net.rim.blackberry.api.phone.Phone;
 import net.rim.blackberry.api.phone.PhoneCall;
 import net.rim.blackberry.api.phone.PhoneListener;
-import net.rim.blackberry.api.phone.phonegui.PhoneScreen;
-import net.rim.blackberry.api.phone.phonegui.ScreenModel;
+import net.rim.blackberry.api.phone.phonelogs.PhoneCallLog;
 import net.rim.device.api.compress.GZIPInputStream;
 import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.i18n.SimpleDateFormat;
@@ -20,13 +27,13 @@ import net.rim.device.api.io.IOUtilities;
 import net.rim.device.api.system.Alert;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.system.ApplicationDescriptor;
-import net.rim.device.api.system.ApplicationManager;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.system.CodeModuleManager;
 import net.rim.device.api.system.DeviceInfo;
 import net.rim.device.api.system.Display;
 import net.rim.device.api.system.EncodedImage;
-import net.rim.device.api.ui.Color;
+import net.rim.device.api.system.RadioInfo;
+import net.rim.device.api.system.WLANInfo;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
@@ -35,7 +42,6 @@ import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.UiEngine;
 import net.rim.device.api.ui.component.Dialog;
-import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.container.MainScreen;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 
@@ -57,7 +63,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	public final ResourceBundle 	m_local = ResourceBundle.getBundle(yuchcallerlocalResource.BUNDLE_ID, yuchcallerlocalResource.BUNDLE_NAME);
 	
 	//! data base index manager class
-	public DbIndex	m_dbIndex	= new DbIndex();	
+	private DbIndex	m_dbIndex	= new DbIndex();	
 	
 	//! user answer the call id to avoid vibrate
 	private int	m_userAnswerCall = -1;
@@ -76,6 +82,9 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	
 	//! config manager to show the yuchCaller config
 	private ConfigManager	m_configManager		= null;
+	
+	//! call screen plugin for display text to phone screen
+	private CallScreenPlugin	m_callScreenPlugin = new CallScreenPlugin(this);
 	
 	//! replace incoming call screen to close it when phone call is disconnect
 	public ReplaceIncomingCallScreen m_replaceIncomingCallScreen = null;
@@ -104,9 +113,18 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 				_g.setColor(YuchCallerProp.instance().getLocationColor());
 				_g.setFont(m_font);
 				
-				_g.drawText(m_locationInfo,
-							YuchCallerProp.instance().getLocationPosition_x(),
-							YuchCallerProp.instance().getLocationPosition_y());
+				String t_displayLoc;
+				if(m_locationInfo != null && m_locationInfo.length() > 0){
+					t_displayLoc = m_locationInfo;
+					
+				}else{
+					t_displayLoc = m_local.getString(yuchcallerlocalResource.PHONE_UNKNOWN_NUMBER);
+				}
+				
+				_g.drawText(t_displayLoc,
+						YuchCallerProp.instance().getLocationPosition_x(),
+						YuchCallerProp.instance().getLocationPosition_y());
+				
 				
 			}finally{
 				_g.setColor(t_color);
@@ -119,16 +137,14 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		if (ApplicationManager.getApplicationManager().inStartup()){
-			
-			initFlurry();
-						
-			//Enter the auto start portion of the application.
-			//Register an options provider and exit.
-			YuchCaller t_caller = new YuchCaller();
-			t_caller.init();
-			t_caller.enterEventDispatcher();
-		}
+		
+		initFlurry();
+					
+		//Enter the auto start portion of the application.
+		//Register an options provider and exit.
+		YuchCaller t_caller = new YuchCaller();
+		t_caller.init();
+		t_caller.enterEventDispatcher();
 	}
 	
 	/**
@@ -168,21 +184,21 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	 */
 	private void init(){
 		
-		// register the system option menu item
-		OptionsManager.registerOptionsProvider(this);
-		
 		// register the Phone lister
 		Phone.addPhoneListener(this);
 		
 		// initialize the database
 		initDbIndex();
 		
+		// add menu to device application
+		initMenus();
+		
 		// initialize the bitmap of replace incoming call screen
 		(new Thread(){
 			public void run(){
 				try{
 
-					if(m_backgroundBitmap == null){
+					if(m_backgroundBitmap == null && fsm_OS_version.startsWith("4.5")){
 							
 						byte[] bytes = IOUtilities.streamToBytes(YuchCaller.this.getClass().getResourceAsStream("/background.png"));		
 						m_backgroundBitmap =  EncodedImage.createEncodedImage(bytes , 0, bytes .length).getBitmap();
@@ -221,11 +237,39 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 					}			
 				}catch(Exception e){
 					System.out.println("DbIndex init failed!"+e.getMessage());
-				}				
+				}
+				
+				// register the system option menu item
+				// after read the version
+				OptionsManager.registerOptionsProvider(YuchCaller.this);
 			}
 		}).start();
 	}
 	
+	/**
+	 * add the menus to device application
+	 */
+	private void initMenus(){
+		invokeLater(new Runnable() {
+			
+			public void run() {
+				CheckLocationMenu t_addrMenu = new CheckLocationMenu();
+				ApplicationMenuItemRepository t_repository = ApplicationMenuItemRepository.getInstance();
+				
+				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSBOOK_LIST, t_addrMenu);
+				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSCARD_EDIT, t_addrMenu);
+				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSCARD_VIEW, t_addrMenu);
+				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_PHONE, t_addrMenu);
+				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_PHONELOG_VIEW, t_addrMenu);
+				 
+			}
+		});
+	}
+	
+	/**
+	 * popup a dialog to show user some message
+	 * @param _msg
+	 */
 	public void DialogAlert(final String _msg){
 		
 		if(m_alartDlg != null){
@@ -283,13 +327,11 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		return Font.getDefault().derive(Font.getDefault().getStyle(),YuchCallerProp.instance().getLocationHeight());
 	}
 	
-
 	//@{ OptionsProvider
 	public String getTitle() {
-		return m_local.getString(yuchcallerlocalResource.App_Title) + "  DataBase Ver." + m_dbIndex.getVersion();
+		return m_local.getString(yuchcallerlocalResource.App_Title) + " ("+fsm_client_version+") DataBase (" + m_dbIndex.getVersion() + ")";
 	}
 	
-
 	// fill the main screen
 	public void populateMainScreen(MainScreen mainScreen) {
 		m_configManager = new ConfigManager(this);
@@ -349,7 +391,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 				m_replaceIncomingCallScreen = null;
 			}
 		}else if(!fsm_OS_version.startsWith("4")){
-			CallScreenPlugin.apply(this, callId,CallScreenPlugin.INCOMING);
+			m_callScreenPlugin.apply(callId,CallScreenPlugin.INCOMING);
 		}
 		
 	}
@@ -398,10 +440,10 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 			
 			PhoneCall t_phone = Phone.getCall(callId);
 			m_activePhoneCallManager.m_locationInfo = m_dbIndex.findPhoneData(parsePhoneNumber(t_phone.getDisplayPhoneNumber()));
-		}else if(fsm_OS_version.startsWith("5.0")){
+		}else{
 			// 5.0 OS will add in calling screen 
 			//
-			CallScreenPlugin.apply(this, callId,CallScreenPlugin.ACTIVECALL);
+			m_callScreenPlugin.apply(callId,CallScreenPlugin.ACTIVECALL);
 		}
 	}
 	
@@ -420,6 +462,71 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		return t_sb.toString();
 	}
 	
+	//! start
+	private Thread m_checkVersionThread = null;
+	
+	// download the version to get know the version
+	public synchronized void checkVersion(){
+		
+		if(m_checkVersionThread == null && !canNotConnectNetwork()){
+			
+			m_checkVersionThread = new Thread(){
+				public void run(){
+					try{
+						HttpConnection conn = (HttpConnection)Connector.open("http://yuchcaller.googlecode.com/files/latest_version?a=" + (new Random()).nextInt());
+						try{
+							
+						}finally{
+							conn.close();
+							conn = null;
+						}
+						
+						
+					}catch(Exception ex){
+						SetErrorString("CV", ex);
+					}
+					
+					synchronized (YuchCaller.this) {
+						m_checkVersionThread = null;
+					}					
+				}
+			};
+			
+			m_checkVersionThread.start();
+		}
+	}
+	
+	//! cannot visit data network
+	public static boolean canNotConnectNetwork(){
+		boolean t_radioNotAvail = (RadioInfo.getSignalLevel() <= -110 || !RadioInfo.isDataServiceOperational());
+		
+		return t_radioNotAvail && (WLANInfo.getAPInfo() == null);
+	}
+	
+	//! get the prefix of tele attribute
+	public String getPrefixByTelAttr(int _attr){
+		switch(_attr){
+		case Contact.ATTR_HOME:
+			return m_local.getString(yuchcallerlocalResource.PHONE_CALL_HOME);
+		case Contact.ATTR_MOBILE:
+			return m_local.getString(yuchcallerlocalResource.PHONE_CALL_MOBILE);
+		case Contact.ATTR_WORK:
+			return m_local.getString(yuchcallerlocalResource.PHONE_CALL_WORK);
+		default:
+			return m_local.getString(yuchcallerlocalResource.PHONE_CALL_OTHER);
+		}
+	}
+	
+	//! search number
+	public String searchLocation(String _number){
+		String t_info = m_dbIndex.findPhoneData(_number);
+		if(t_info.length() == 0){
+			t_info = m_local.getString(yuchcallerlocalResource.PHONE_UNKNOWN_NUMBER);
+		}
+	
+		return t_info;
+	}
+	
 	private final static SimpleDateFormat fsm_errorInfoTimeFormat = new SimpleDateFormat("HH:mm:ss");
 
 	// error information class to manager error
@@ -434,6 +541,67 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		
 		public String toString(){
 			return fsm_errorInfoTimeFormat.format(m_time) + ":" + m_info;
+		}
+	}
+	
+	/**
+	 * check location menu to add to AddressBook Phone application to show location 
+	 * @author tzz
+	 *
+	 */
+	public class CheckLocationMenu extends ApplicationMenuItem{
+		public CheckLocationMenu(){
+			super(0);
+		}
+
+		public Object run(Object context) {
+			if(context != null){
+				if(context instanceof BlackBerryContact){
+					// MENUITEM_ADDRESSBOOK_LIST
+					// MENUITEM_ADDRESSCARD_EDIT
+					// MENUITEM_ADDRESSCARD_VIEW
+					DialogAlert(getLocationInfo((BlackBerryContact)context));
+				}else if(context instanceof PhoneCallLog){
+					// MENUITEM_PHONELOG_VIEW
+					//
+					PhoneCallLog t_log = (PhoneCallLog)context;
+					DialogAlert(searchLocation(t_log.getParticipant().getNumber()));					
+				}
+				
+			}
+			return null;
+		}
+
+		public String toString() {
+			return m_local.getString(yuchcallerlocalResource.PHONE_CHECK_LOCATION);
+		}
+		
+		// get the blackberry contact phone number location info 
+		private String getLocationInfo(BlackBerryContact bbContact){
+			
+			int t_valueNum = bbContact.countValues(Contact.TEL);
+			if(t_valueNum == 0){
+				return m_local.getString(yuchcallerlocalResource.PHONE_NON_PHONE_NUMBER);
+			}
+
+			StringBuffer t_sb = new StringBuffer();
+			
+			for(int j = 0;j < t_valueNum;j++){
+				
+				String t_number = bbContact.getString(Contact.TEL, j);
+				
+				if(t_number != null){
+					t_sb.append(searchLocation(t_number)).append(' ')
+						.append(getPrefixByTelAttr(bbContact.getAttributes(Contact.TEL, j)));
+						
+				}
+				
+				if(j + 1 < t_valueNum){
+					t_sb.append('\n');
+				}
+			}
+			
+			return t_sb.toString();
 		}
 	}
 

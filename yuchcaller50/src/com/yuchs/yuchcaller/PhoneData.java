@@ -8,7 +8,7 @@ import java.io.OutputStream;
  * @author tzz
  *
  */
-public class PhoneData 
+public class PhoneData extends BinSearchNumber
 {
 	public int			m_phoneNumber;
 	public byte		m_province;
