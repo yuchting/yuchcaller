@@ -52,9 +52,10 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	public final static int 		fsm_display_width		= Display.getWidth();
 	public final static int 		fsm_display_height		= Display.getHeight();
 	public final static String	fsm_OS_version			= CodeModuleManager.getModuleVersion((CodeModuleManager.getModuleHandleForObject("")));
-	public final static String	fsm_client_version		= ApplicationDescriptor.currentApplicationDescriptor().getVersion();
 	public final static long		fsm_PIN					= DeviceInfo.getDeviceId();
-	public final static String	fsm_IMEI				= "bb";
+	
+	// current Client version
+	public final String			ClientVersion			= ApplicationDescriptor.currentApplicationDescriptor().getVersion();
 	
 	public Bitmap	m_backgroundBitmap		= null;
 	public Bitmap	m_answerBitmap			= null;
@@ -329,7 +330,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	
 	//@{ OptionsProvider
 	public String getTitle() {
-		return m_local.getString(yuchcallerlocalResource.App_Title) + " ("+fsm_client_version+") DataBase (" + m_dbIndex.getVersion() + ")";
+		return m_local.getString(yuchcallerlocalResource.App_Title) + " ("+ClientVersion+") DataBase (" + m_dbIndex.getVersion() + ")";
 	}
 	
 	// fill the main screen
