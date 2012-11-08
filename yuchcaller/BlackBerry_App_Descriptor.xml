@@ -1,5 +1,5 @@
 <Properties ModelVersion="1.1.2">
-  <General Title="YuchCaller" Version="0.2" Vendor="YuchTing" Description=""/>
+  <General Title="YuchCaller" Version="0.2.1" Vendor="YuchTing" Description=""/>
   <Application Type="BlackBerry Application" MainMIDletName="" MainArgs="" HomeScreenPosition="0" StartupTier="7" IsSystemModule="true" IsAutostartup="true"/>
   <Resources hasTitleResource="true" TitleResourceBundleName="yuchcallerlocal" TitleResourceBundleRelativePath="src/local/yuchcallerlocal.rrh" TitleResourceBundleClassName="local.yuchcallerlocal" TitleResourceBundleKey="App_Title" DescriptionId="APPLICATION_DESC">
     <Icons/>

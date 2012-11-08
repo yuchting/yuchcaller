@@ -81,6 +81,9 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	//! error string list
 	private Vector			m_errorString		= new Vector();
 	
+	//! flurry agent key
+	private String			m_flurryKey			= null;
+	
 	//! the alert dialog
 	private Dialog m_alartDlg = null;
 	
@@ -140,46 +143,13 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) {
-		
-		initFlurry();
-					
+	public static void main(String[] args) {			
 		//Enter the auto start portion of the application.
 		//Register an options provider and exit.
 		YuchCaller t_caller = new YuchCaller();
 		t_caller.init();
 		t_caller.enterEventDispatcher();
-	}
-	
-	/**
-	 * intialize the flurry
-	 */
-	private static void initFlurry(){
-		
-		try{
-			InputStream t_file = Class.forName("com.yuchs.yuchcaller.YuchCaller").getResourceAsStream("/FlurryKey.txt");
-			try{
-
-				ByteArrayOutputStream os = new ByteArrayOutputStream();
-				try{
-					int t_readByte;
-					while((t_readByte = t_file.read()) != -1){
-						os.write(t_readByte);
-					}
-					
-					FlurryAgent.onStartApp(new String(os.toByteArray()));
-					
-				}finally{
-					os.close();
-				}				
-			}finally{
-				t_file.close();
-			}			
-		}catch(Exception e){
-			System.out.println("Flurry init failed!"+e.getMessage());
-		}
-	}
-	 
+	} 
 		
 	/**
 	 * initialize the application state:
@@ -187,6 +157,9 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	 * 1, register the options Provider
 	 */
 	private void init(){
+		
+		// init Flurry
+		initFlurry();
 		
 		// register the Phone lister
 		Phone.addPhoneListener(this);
@@ -222,13 +195,43 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	}
 	
 	/**
+	 * intialize the flurry
+	 */
+	private void initFlurry(){
+		
+		try{
+			InputStream t_file = getClass().getResourceAsStream("/FlurryKey.txt");
+			try{
+
+				ByteArrayOutputStream os = new ByteArrayOutputStream();
+				try{
+					int t_readByte;
+					while((t_readByte = t_file.read()) != -1){
+						os.write(t_readByte);
+					}
+					m_flurryKey = new String(os.toByteArray());
+					
+					FlurryAgent.onStartApp(m_flurryKey);
+					
+				}finally{
+					os.close();
+				}				
+			}finally{
+				t_file.close();
+			}			
+		}catch(Exception e){
+			System.out.println("Flurry init failed!"+e.getMessage());
+		}
+	}
+	
+	/**
 	 * initialize the dbindex
 	 */
 	private void initDbIndex(){
 		(new Thread(){
 			public void run(){
 				try{
-					InputStream t_file = Class.forName("com.yuchs.yuchcaller.YuchCaller").getResourceAsStream("/yuchcaller.db");
+					InputStream t_file = getClass().getResourceAsStream("/yuchcaller.db");
 					try{
 						GZIPInputStream t_in = new GZIPInputStream(t_file);
 						try{
@@ -651,6 +654,11 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		String t_info = m_dbIndex.findPhoneData(_number);
 		if(t_info.length() == 0){
 			t_info = m_local.getString(yuchcallerlocalResource.PHONE_UNKNOWN_NUMBER);
+		}else{
+			if(m_flurryKey != null){
+				// event for flurry agent
+				FlurryAgent.onEvent("Validate Search");
+			}
 		}
 	
 		return t_info;
