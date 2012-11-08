@@ -11,6 +11,8 @@ import javax.microedition.io.HttpConnection;
 import javax.microedition.pim.Contact;
 
 import local.yuchcallerlocalResource;
+import net.rim.blackberry.api.browser.Browser;
+import net.rim.blackberry.api.browser.BrowserSession;
 import net.rim.blackberry.api.menuitem.ApplicationMenuItem;
 import net.rim.blackberry.api.menuitem.ApplicationMenuItemRepository;
 import net.rim.blackberry.api.options.OptionsManager;
@@ -42,6 +44,7 @@ import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.UiEngine;
 import net.rim.device.api.ui.component.Dialog;
+import net.rim.device.api.ui.component.DialogClosedListener;
 import net.rim.device.api.ui.container.MainScreen;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 
@@ -52,9 +55,10 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	public final static int 		fsm_display_width		= Display.getWidth();
 	public final static int 		fsm_display_height		= Display.getHeight();
 	public final static String	fsm_OS_version			= CodeModuleManager.getModuleVersion((CodeModuleManager.getModuleHandleForObject("")));
-	public final static String	fsm_client_version		= ApplicationDescriptor.currentApplicationDescriptor().getVersion();
 	public final static long		fsm_PIN					= DeviceInfo.getDeviceId();
-	public final static String	fsm_IMEI				= "bb";
+	
+	// current Client version
+	public final String			ClientVersion			= ApplicationDescriptor.currentApplicationDescriptor().getVersion();
 	
 	public Bitmap	m_backgroundBitmap		= null;
 	public Bitmap	m_answerBitmap			= null;
@@ -329,13 +333,16 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	
 	//@{ OptionsProvider
 	public String getTitle() {
-		return m_local.getString(yuchcallerlocalResource.App_Title) + " ("+fsm_client_version+") DataBase (" + m_dbIndex.getVersion() + ")";
+		return m_local.getString(yuchcallerlocalResource.App_Title) + " ("+ClientVersion+") DataBase (" + m_dbIndex.getVersion() + ")";
 	}
 	
 	// fill the main screen
 	public void populateMainScreen(MainScreen mainScreen) {
 		m_configManager = new ConfigManager(this);
-		mainScreen.add(m_configManager);		
+		mainScreen.add(m_configManager);
+		
+		// check the version
+		checkVersion();
 	}
 
 	// save the property
@@ -462,30 +469,112 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		return t_sb.toString();
 	}
 	
-	//! start
+	/**
+	 * find the chinese apn
+	 * @return
+	 */
+	public static String findNetworkAPN(){
+		
+		String t_carrierName = RadioInfo.getCurrentNetworkName();
+		
+		String t_apn = null;
+		if(t_carrierName.equals("中国移动") || t_carrierName.toLowerCase().equals("china mobile")){
+			t_apn = "cmnet";
+		}else if(t_carrierName.equals("中国联通") || t_carrierName.toLowerCase().equals("china unicom")){
+			t_apn = "uninet";
+		}else if(t_carrierName.equals("中国电信") || t_carrierName.toLowerCase().equals("china telecom")){
+			t_apn = "ctnet";
+		}
+		
+		return t_apn;
+	}
+
+	/**
+	 * get the HTTP request which is opened by Connector.open() append string 
+	 * @return
+	 */
+	public static String getHTTPAppendString(){
+		String t_append = ";deviceside=true";
+		
+		if( WLANInfo.getAPInfo() != null){
+			t_append += ";interface=wifi";
+		}else{
+			
+			String apn = findNetworkAPN();
+			if(apn != null){
+				t_append += ";apn=" + apn;
+			}
+		}
+		
+		return t_append;
+	}
+	
+	//! start check new version thread
 	private Thread m_checkVersionThread = null;
+	
+	//! uiapp to popup dialog to download new version
+	private UiApplication m_systemOptionApp = null;
+	
+	//! former check time 
+	private long	m_formerCheckTime	= 0;
 	
 	// download the version to get know the version
 	public synchronized void checkVersion(){
+		
+		// check new version per one day 
+		if(System.currentTimeMillis() - m_formerCheckTime < 24 * 3600000){
+			return;			
+		}
+		
+		m_formerCheckTime = System.currentTimeMillis();
+		m_systemOptionApp = UiApplication.getUiApplication(); 
 		
 		if(m_checkVersionThread == null && !canNotConnectNetwork()){
 			
 			m_checkVersionThread = new Thread(){
 				public void run(){
 					try{
-						HttpConnection conn = (HttpConnection)Connector.open("http://yuchcaller.googlecode.com/files/latest_version?a=" + (new Random()).nextInt());
+						
+						HttpConnection conn = (HttpConnection)Connector.open("http://yuchcaller.googlecode.com/files/latest_version?a=" + (new Random()).nextInt() + getHTTPAppendString());
+						
 						try{
-							
+							InputStream in = conn.openInputStream();
+						    try{
+						    	int length = (int) conn.getLength();
+						    	String result;
+						    	
+						    	if (length != -1){
+						    		byte servletData[] = new byte[length];
+						    		in.read(servletData);
+						    		result = new String(servletData);
+						    	}else{
+						    		ByteArrayOutputStream os = new ByteArrayOutputStream();
+						    		int ch;
+							        while ((ch = in.read()) != -1){
+							        	os.write(ch);
+							        }
+							        result = new String(os.toByteArray(),"UTF-8");
+						    	}
+						    	
+						    	if(!result.equals(ClientVersion)){
+						    		// popup dialog to lead 
+						    		//
+						    		popupLatestVersionDlg(result);
+						    	}
+						    	
+						    }finally{
+						    	in.close();
+						    	in = null;
+						    }
 						}finally{
 							conn.close();
 							conn = null;
 						}
-						
-						
+												
 					}catch(Exception ex){
 						SetErrorString("CV", ex);
 					}
-					
+										
 					synchronized (YuchCaller.this) {
 						m_checkVersionThread = null;
 					}					
@@ -494,6 +583,46 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 			
 			m_checkVersionThread.start();
 		}
+	}
+	
+	
+	//! popup lates version dialog
+	private void popupLatestVersionDlg(String _newVersion){
+						
+		final Dialog t_dlg = new Dialog(Dialog.D_OK_CANCEL,m_local.getString(yuchcallerlocalResource.LATEST_VER_REPORT) + _newVersion,
+				Dialog.OK,Bitmap.getPredefinedBitmap(Bitmap.EXCLAMATION),Manager.VERTICAL_SCROLL);
+		
+		t_dlg.setDialogClosedListener(new DialogClosedListener(){
+		
+			public void dialogClosed(Dialog dialog, int choice) {
+				
+				switch (choice) {
+					case Dialog.OK:
+						openURL("http://ota.yuchs.com/");
+						break;
+					
+					default:
+						break;
+				}
+			}
+		});
+		
+		t_dlg.setEscapeEnabled(true);
+		m_systemOptionApp.invokeLater(new Runnable() {
+			
+			public void run() {
+				synchronized (getEventLock()) {
+					m_systemOptionApp.pushGlobalScreen(t_dlg,1, UiEngine.GLOBAL_QUEUE);
+				}				
+			}
+		});
+		
+	}
+	
+	//! open URL by native browser
+	public static void openURL(String _url){
+		BrowserSession browserSession = Browser.getDefaultSession();
+		browserSession.displayPage(_url);
 	}
 	
 	//! cannot visit data network
