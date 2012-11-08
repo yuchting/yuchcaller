@@ -1,5 +1,6 @@
 APPLICATION_DESC#0="Phone Call Assistent";
 App_Title#0="YuchCaller";
+LATEST_VER_REPORT#0="There is a new version of YuchCaller,click OK to download. Version:";
 PHONE_CALL#0="Phone Call:";
 PHONE_CALL_ANSWER#0="Answer";
 PHONE_CALL_HOME#0="(Home)";

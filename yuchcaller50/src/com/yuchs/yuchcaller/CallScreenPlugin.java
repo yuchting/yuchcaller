@@ -38,7 +38,7 @@ public class CallScreenPlugin {
 			PhoneCall t_pc				= Phone.getCall(callId);
 			String t_number 			= YuchCaller.parsePhoneNumber(t_pc.getPhoneNumber());
 			
-			m_formerLocation			= m_formerNumber.equals(t_number)?m_formerLocation:m_mainApp.m_dbIndex.findPhoneData(t_number);
+			m_formerLocation			= m_formerNumber.equals(t_number)?m_formerLocation:m_mainApp.searchLocation(t_number);
 			m_formerNumber				= t_number;
 			
 			if(m_formerLocation.length() == 0){

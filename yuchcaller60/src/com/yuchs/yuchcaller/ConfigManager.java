@@ -61,7 +61,41 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		
 		m_mainApp = _mainApp;
 		
-		LabelField t_label = new LabelField(_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_VIBRATION),Field.NON_FOCUSABLE);
+		// initialize the ObjectChoiceField select colorField and find the index of current color
+		int t_choiceIdx = 0;
+		Object[] t_choiceObj = new Object[fsm_locationCandColor.length];
+		for(int i = 0;i < fsm_locationCandColor.length;i++){
+			t_choiceObj[i] = new ColorChoiceField(fsm_locationCandColor[i]);
+			
+			if(fsm_locationCandColor[i] == YuchCallerProp.instance().getLocationColor()){
+				t_choiceIdx = i;				
+			}
+		}
+		
+		// search the phone
+		LabelField t_label = new LabelField(_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SEARCH),Field.NON_FOCUSABLE);
+		t_label.setFont(m_mainLabelBoldFont);
+		add(t_label);
+		
+		// create the EditField to return dirty false
+		m_searchNumberInput		= new EditField("","",11,EditField.NO_NEWLINE | EditField.FILTER_NUMERIC ){
+			public boolean isDirty() {
+				return false;
+			}
+		};
+		
+		add(m_searchNumberInput);
+		m_searchNumberInput.setChangeListener(this);
+		
+		// initialize the sample
+		m_locationTextColorSample = new ColorSampleField(fsm_locationCandColor[t_choiceIdx]);
+		m_locationTextColorSample.setFont(m_mainApp.generateLocationTextFont());
+		add(m_locationTextColorSample);
+		
+		// add SeparatorField
+		add(new SeparatorField(Field.NON_FOCUSABLE));
+		
+		t_label = new LabelField(_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_VIBRATION),Field.NON_FOCUSABLE);
 		t_label.setFont(m_mainLabelBoldFont);
 		add(t_label);
 		
@@ -81,6 +115,8 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		add(m_recvVibrationTime);
 		add(m_hangupVibrationTime);
 		
+		
+		// separator
 		add(new SeparatorField());
 		
 		t_label = new LabelField(_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL),Field.NON_FOCUSABLE);
@@ -112,40 +148,11 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		m_locationInfoHeight.setChangeListener(this);
 		add(m_locationInfoHeight);		
 		
-		// initialize the ObjectChoiceField select colorField and find the index of current color
-		int t_choiceIdx = 0;
-		Object[] t_choiceObj = new Object[fsm_locationCandColor.length];
-		for(int i = 0;i < fsm_locationCandColor.length;i++){
-			t_choiceObj[i] = new ColorChoiceField(fsm_locationCandColor[i]);
-			
-			if(fsm_locationCandColor[i] == YuchCallerProp.instance().getLocationColor()){
-				t_choiceIdx = i;				
-			}
-		}
-		
 		m_locationInfoColor	= new ObjectChoiceField(_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_COLOR),
 													t_choiceObj,t_choiceIdx);
 		
 		add(m_locationInfoColor);
 		m_locationInfoColor.setChangeListener(this);
-		
-		// add SeparatorField
-		add(new SeparatorField(Field.NON_FOCUSABLE));
-		
-		// search the phone
-		t_label = new LabelField(_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SEARCH),Field.NON_FOCUSABLE);
-		t_label.setFont(m_mainLabelBoldFont);
-		add(t_label);
-		
-		m_searchNumberInput		= new EditField("","",11,EditField.NO_NEWLINE | EditField.FILTER_NUMERIC );
-		add(m_searchNumberInput);
-		
-		// initialize the sample
-		m_locationTextColorSample = new ColorSampleField(fsm_locationCandColor[t_choiceIdx]);
-		m_locationTextColorSample.setFont(m_mainApp.generateLocationTextFont());
-		add(m_locationTextColorSample);
-		
-		m_searchNumberInput.setChangeListener(this);
 	}
 	
 
