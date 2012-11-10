@@ -43,6 +43,7 @@ import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.UiEngine;
+import net.rim.device.api.ui.XYRect;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.DialogClosedListener;
 import net.rim.device.api.ui.container.MainScreen;
@@ -50,7 +51,7 @@ import net.rim.device.api.ui.container.VerticalFieldManager;
 
 import com.flurry.blackberry.FlurryAgent;
 
-public class YuchCaller extends Application implements OptionsProvider,PhoneListener{
+public class YuchCaller extends Application implements OptionsProvider,PhoneListener,DbIndex.DbIndexDebugOut{
 
 	public final static int 		fsm_display_width		= Display.getWidth();
 	public final static int 		fsm_display_height		= Display.getHeight();
@@ -67,7 +68,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	public final ResourceBundle 	m_local = ResourceBundle.getBundle(yuchcallerlocalResource.BUNDLE_ID, yuchcallerlocalResource.BUNDLE_NAME);
 	
 	//! data base index manager class
-	private DbIndex	m_dbIndex	= new DbIndex();	
+	private DbIndex	m_dbIndex	= new DbIndex(this);	
 	
 	//! user answer the call id to avoid vibrate
 	private int	m_userAnswerCall = -1;
@@ -88,13 +89,19 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	private Dialog m_alartDlg = null;
 	
 	//! config manager to show the yuchCaller config
-	private ConfigManager	m_configManager		= null;
+	public ConfigManager	m_configManager		= null;
 	
 	//! call screen plugin for display text to phone screen
 	private CallScreenPlugin	m_callScreenPlugin = new CallScreenPlugin(this);
 	
 	//! replace incoming call screen to close it when phone call is disconnect
 	public ReplaceIncomingCallScreen m_replaceIncomingCallScreen = null;
+	
+	//! debug information screen
+	public DebugInfoScreen m_debugInfoScreen	= null;
+	
+	//! search menu
+	private SearchLocationMenu m_addrSearchMenu = new SearchLocationMenu();
 	
 	/**
 	 * replace vertical field manager for acvtive phone call screen's manager
@@ -168,7 +175,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		initDbIndex();
 		
 		// add menu to device application
-		initMenus();
+		initMenus(true);
 		
 		// initialize the bitmap of replace incoming call screen
 		(new Thread(){
@@ -211,7 +218,12 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 					}
 					m_flurryKey = new String(os.toByteArray());
 					
-					FlurryAgent.onStartApp(m_flurryKey);
+					// invoke later to make sure flurry run in YuchCaller context
+					invokeLater(new Runnable() {
+						public void run() {
+							FlurryAgent.onStartApp(m_flurryKey);							
+						}
+					});					
 					
 				}finally{
 					os.close();
@@ -243,7 +255,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 						t_file.close();
 					}			
 				}catch(Exception e){
-					System.out.println("DbIndex init failed!"+e.getMessage());
+					SetErrorString("DbIndex init failed!"+e.getMessage());
 				}
 				
 				// register the system option menu item
@@ -255,22 +267,42 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	
 	/**
 	 * add the menus to device application
-	 */
-	private void initMenus(){
-		invokeLater(new Runnable() {
+	 */	
+	public void initMenus(boolean _appInit){
+		
+		try{
+
+			ApplicationMenuItemRepository t_repository = ApplicationMenuItemRepository.getInstance();
 			
-			public void run() {
-				CheckLocationMenu t_addrMenu = new CheckLocationMenu();
-				ApplicationMenuItemRepository t_repository = ApplicationMenuItemRepository.getInstance();
+			if(YuchCallerProp.instance().showSystemMenu()){
 				
-				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSBOOK_LIST, t_addrMenu);
-				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSCARD_EDIT, t_addrMenu);
-				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSCARD_VIEW, t_addrMenu);
-				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_PHONE, t_addrMenu);
-				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_PHONELOG_VIEW, t_addrMenu);
-				 
+				if(!_appInit){
+					t_repository.removeMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSBOOK_LIST, m_addrSearchMenu);
+					t_repository.removeMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSCARD_EDIT, m_addrSearchMenu);
+					t_repository.removeMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSCARD_VIEW, m_addrSearchMenu);
+					t_repository.removeMenuItem(ApplicationMenuItemRepository.MENUITEM_PHONE, m_addrSearchMenu);
+					t_repository.removeMenuItem(ApplicationMenuItemRepository.MENUITEM_PHONELOG_VIEW, m_addrSearchMenu);
+				}
+				
+				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_SYSTEM, m_addrSearchMenu);
+				
+			}else{			
+
+				if(!_appInit){
+					t_repository.removeMenuItem(ApplicationMenuItemRepository.MENUITEM_SYSTEM, m_addrSearchMenu);
+				}
+				
+				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSBOOK_LIST, m_addrSearchMenu);
+				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSCARD_EDIT, m_addrSearchMenu);
+				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSCARD_VIEW, m_addrSearchMenu);
+				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_PHONE, m_addrSearchMenu);
+				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_PHONELOG_VIEW, m_addrSearchMenu);
+							
 			}
-		});
+			
+		}catch(Exception e){
+			SetErrorString("IM:",e);
+		}
 	}
 	
 	/**
@@ -314,12 +346,40 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		}
 		
 		if(DeviceInfo.isSimulator()){
-			System.err.println("[YuchCaller]"+ei.toString());
+			System.err.println("[YuchCaller] "+ei.toString());
+		}
+		
+		if(m_debugInfoScreen != null){
+			m_debugInfoScreen.RefreshText();
 		}
 	}
 	
 	public void SetErrorString(String _label,Exception e){
 		SetErrorString(_label + " " + e.getMessage() + " " + e.getClass().getName());
+	}
+	
+	//@{ DbIndex.DbIndexDebugOut
+	public void debug(String tag, Exception e) {
+		SetErrorString(tag,e);
+	}
+	public void debug(String info) {
+		SetErrorString(info);
+	}
+	//@}
+		
+	// popup the debug information screen
+	public void popupDebugInfoScreen(){
+		try{
+			if(m_debugInfoScreen == null){
+				m_debugInfoScreen = new DebugInfoScreen(this);
+				UiApplication.getUiApplication().pushScreen(m_debugInfoScreen);
+			}
+			
+		}catch(Exception e){
+			// UiApplication.getUiApplication() may be throw the exception
+			//
+			SetErrorString("PDS",e);
+		}
 	}
 	
 	//! change location TextFont
@@ -429,32 +489,41 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	private void replaceActivePhoneCallManager(int callId){
 		
 		if(fsm_OS_version.startsWith("4.")){
+			replaceActivePhoneCallManager_impl(callId);
+		}else{
 			// 5.0 os has native method to display
 			//
-			if(m_activePhoneCallManager == null){
-				try{
-					m_activePhoneCallManager = new ReplaceVerticalFieldManager();
-					
-					Screen t_screen = UiApplication.getUiApplication().getActiveScreen();
-					
-					Field t_orig = t_screen.getField(0);
-					t_screen.deleteAll();				
-					
-					m_activePhoneCallManager.add(t_orig);
-					t_screen.add(m_activePhoneCallManager);
-					
-				}catch(Exception ex){
-					SetErrorString("RAPCM", ex);
-				}
-			}
-			
-			PhoneCall t_phone = Phone.getCall(callId);
-			m_activePhoneCallManager.m_locationInfo = m_dbIndex.findPhoneData(parsePhoneNumber(t_phone.getDisplayPhoneNumber()));
-		}else{
-			// 5.0 OS will add in calling screen 
-			//
-			m_callScreenPlugin.apply(callId,CallScreenPlugin.ACTIVECALL);
+			if(!m_callScreenPlugin.apply(callId,CallScreenPlugin.ACTIVECALL)){
+				replaceActivePhoneCallManager_impl(callId);
+			}			
 		}
+	}
+	
+	/**
+	 * replace avtive phone call mananger implement function
+	 * @param callId
+	 */
+	private void replaceActivePhoneCallManager_impl(int callId){
+
+		if(m_activePhoneCallManager == null){
+			try{
+				m_activePhoneCallManager = new ReplaceVerticalFieldManager();
+				
+				Screen t_screen = UiApplication.getUiApplication().getActiveScreen();
+				
+				Field t_orig = t_screen.getField(0);
+				t_screen.deleteAll();				
+				
+				m_activePhoneCallManager.add(t_orig);
+				t_screen.add(m_activePhoneCallManager);
+					
+			}catch(Exception ex){
+				SetErrorString("RAPCM", ex);
+			}
+		}
+		
+		PhoneCall t_phone = Phone.getCall(callId);
+		m_activePhoneCallManager.m_locationInfo = m_dbIndex.findPhoneData(parsePhoneNumber(t_phone.getDisplayPhoneNumber()));
 	}
 	
 
@@ -619,7 +688,29 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 				}				
 			}
 		});
+	}
+	
+	//! popup the MainScreen with ConfigManager
+	private MainScreen popupConfigScreen(){
 		
+		try{
+
+			if(UiApplication.getUiApplication() != null){
+				
+				MainScreen t_mainScreen = CallScreenPlugin.getConfigMainScreen(this);				
+				UiApplication.getUiApplication().pushScreen(t_mainScreen);
+				
+				// check the version
+				checkVersion();
+				
+				return t_mainScreen;
+			}
+			
+		}catch(Exception e){
+			SetErrorString("PCS:",e);
+		}
+		
+		return null;
 	}
 	
 	//! open URL by native browser
@@ -657,11 +748,47 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		}else{
 			if(m_flurryKey != null){
 				// event for flurry agent
-				FlurryAgent.onEvent("Validate Search");
+				// invoke later to make sure flurry run in YuchCaller context
+				invokeLater(new Runnable() {
+					public void run() {
+						FlurryAgent.onEvent("Validate_Search");
+					}
+				});
 			}
 		}
 	
 		return t_info;
+	}
+	
+	public synchronized String GetAllErrorString(){
+		if(!m_errorString.isEmpty()){
+
+			SimpleDateFormat t_format = new SimpleDateFormat("HH:mm:ss");
+			
+			ErrorInfo t_info = (ErrorInfo)m_errorString.elementAt(0);
+			
+			StringBuffer t_text = new StringBuffer();
+			
+			for(int i = m_errorString.size() - 1;i >= 0;i--){				
+				t_info = (ErrorInfo)m_errorString.elementAt(i);
+				t_text.append(t_format.format(t_info.m_time)).append(":").append(t_info.m_info).append("\n");
+			}
+			
+			return t_text.toString();
+		}
+		
+		return "";
+	}
+	
+	public void clearDebugMenu(){
+		m_errorString.removeAllElements();
+		
+		if(m_debugInfoScreen != null){
+			m_debugInfoScreen.RefreshText();
+		}
+	}
+	public final Vector GetErrorString(){
+		return m_errorString;
 	}
 	
 	private final static SimpleDateFormat fsm_errorInfoTimeFormat = new SimpleDateFormat("HH:mm:ss");
@@ -686,8 +813,8 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	 * @author tzz
 	 *
 	 */
-	public class CheckLocationMenu extends ApplicationMenuItem{
-		public CheckLocationMenu(){
+	public class SearchLocationMenu extends ApplicationMenuItem{
+		public SearchLocationMenu(){
 			super(0);
 		}
 
@@ -703,8 +830,11 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 					//
 					PhoneCallLog t_log = (PhoneCallLog)context;
 					DialogAlert(searchLocation(t_log.getParticipant().getNumber()));					
+				}else{
+					return popupConfigScreen();
 				}
-				
+			}else{
+				return popupConfigScreen();
 			}
 			return null;
 		}
@@ -741,6 +871,5 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 			return t_sb.toString();
 		}
 	}
-
 }
 

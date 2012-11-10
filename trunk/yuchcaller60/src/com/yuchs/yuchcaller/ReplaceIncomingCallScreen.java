@@ -246,11 +246,7 @@ public class ReplaceIncomingCallScreen extends FullScreen {
     	
     	return super.keyDown(keycode, time);
     }
-    public void removeFocus(){
-    	super.removeFocus();
-    	
-    	System.out.print(false);
-    }
+    
 	protected void onObscured(){
 		try{
 			m_phoneApp.suspendPainting(true);

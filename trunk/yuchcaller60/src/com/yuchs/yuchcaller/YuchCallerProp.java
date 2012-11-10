@@ -46,6 +46,9 @@ public class YuchCallerProp implements Persistable {
 	//! location information color
 	private int m_locationInfoColor		= YuchCaller.fsm_OS_version.startsWith("4.5")?0:0xffffff;
 	
+	//! show system menu or only show phone/contact screen
+	private boolean m_showSystemMenu		= true;
+	
 	//! default height
 	private int m_locationInfoHeight		= Font.getDefault().getHeight();
 	
@@ -91,6 +94,9 @@ public class YuchCallerProp implements Persistable {
 	
 	public int getLocationHeight(){return m_locationInfoHeight;}
 	public void setLocationHeight(int _height){m_locationInfoHeight = _height;}
+	
+	public boolean showSystemMenu(){return m_showSystemMenu;}
+	public void setShowSystemMenu(boolean _show){m_showSystemMenu = _show;}
 	
 	//Retrieves a copy of the effective properties set from storage.
     public static YuchCallerProp instance(){
