@@ -7,6 +7,16 @@ import java.util.Vector;
 
 public class DbIndex {
 	
+	/**
+	 * debug index error debug inforamtion output interface
+	 * @author tzz
+	 *
+	 */
+	public interface DbIndexDebugOut{
+		public void debug(String _tag,Exception e);
+		public void debug(String _info);
+	}
+	
 	//! main inputStream to read data
 	private ByteArrayInputStream	m_mainInputStream = null;
 		
@@ -32,6 +42,31 @@ public class DbIndex {
 	
 	//! the version of db index
 	private int		m_dbIndexVersion	= 0;
+	
+	//! interface to debug infor output
+	private DbIndexDebugOut		m_debugOutput	= null;
+	
+	/**
+	 * initailize the data base index with debugouput interface
+	 * @param _debugOutput
+	 */
+	public DbIndex(DbIndexDebugOut _debugOutput){
+		m_debugOutput		= _debugOutput;
+	}
+	
+	//! output debug information
+	private void debugInfo(String _tag,Exception e){
+		if(m_debugOutput != null){
+			m_debugOutput.debug(_tag,e);
+		}
+	}
+
+	//! output debug information
+	private void debugInfo(String _info){
+		if(m_debugOutput != null){
+			m_debugOutput.debug(_info);
+		}
+	}
 	
 	//! index the phone number
 	public synchronized String findPhoneData(String _number){
@@ -92,7 +127,7 @@ public class DbIndex {
 			}
 			
 		}catch(Exception e){
-			System.out.println("DbIndex Error:" + e.getMessage());
+			debugInfo("FPD", e);
 		}
 		
 		return  "";
@@ -131,7 +166,7 @@ public class DbIndex {
 				return t_sn.m_presents;
 			}
 		}catch(Exception ex){
-			System.out.println(ex.getMessage());
+			debugInfo("SN", ex);
 		}
 		
 		return "";		
@@ -158,11 +193,12 @@ public class DbIndex {
 			
 			int t_num3 = Integer.parseInt(_cityNumber.substring(0, 3));			
 			return (PhoneData)binSearch(t_num3,0);
+			
 		}catch(Exception ex){
-			System.out.println(ex.getMessage());	
-			return null;
+			debugInfo("SPD", ex);
 		}
 		
+		return null;
 	}
 	
 	//! search the cell phone data
@@ -171,10 +207,11 @@ public class DbIndex {
 			
 			int t_num7 = Integer.parseInt(_cellPhone.substring(0,7));
 			return (CellPhoneData)binSearch(t_num7,1);
+			
 		}catch(Exception ex){
-			System.out.println(ex.getMessage());
-			return null;
+			debugInfo("SCPD",ex);	
 		}
+		return null;
 	}
 	
 	//! bineary search 
