@@ -50,11 +50,7 @@ public class CallScreenPlugin {
 			
 			m_formerLocation			= m_formerNumber.equals(t_number)?m_formerLocation:m_mainApp.searchLocation(t_number);
 			m_formerNumber				= t_number;
-			
-			if(m_formerLocation.length() == 0){
-				m_formerLocation		= m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_UNKNOWN_NUMBER);
-			}
-									
+
 			PhoneScreen ps = new PhoneScreen(callId, m_mainApp);
 			
 			final Font t_textFont = m_mainApp.generateLocationTextFont();
