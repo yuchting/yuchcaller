@@ -23,6 +23,7 @@ import net.rim.blackberry.api.phone.PhoneCall;
 import net.rim.blackberry.api.phone.PhoneListener;
 import net.rim.blackberry.api.phone.phonelogs.PhoneCallLog;
 import net.rim.device.api.compress.GZIPInputStream;
+import net.rim.device.api.i18n.Locale;
 import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.i18n.SimpleDateFormat;
 import net.rim.device.api.io.IOUtilities;
@@ -43,7 +44,6 @@ import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.UiEngine;
-import net.rim.device.api.ui.XYRect;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.DialogClosedListener;
 import net.rim.device.api.ui.container.MainScreen;
@@ -57,7 +57,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	public final static int 		fsm_display_height		= Display.getHeight();
 	public final static String	fsm_OS_version			= CodeModuleManager.getModuleVersion((CodeModuleManager.getModuleHandleForObject("")));
 	public final static long		fsm_PIN					= DeviceInfo.getDeviceId();
-	
+		
 	// current Client version
 	public final String			ClientVersion			= ApplicationDescriptor.currentApplicationDescriptor().getVersion();
 	
@@ -68,7 +68,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	public final ResourceBundle 	m_local = ResourceBundle.getBundle(yuchcallerlocalResource.BUNDLE_ID, yuchcallerlocalResource.BUNDLE_NAME);
 	
 	//! data base index manager class
-	private DbIndex	m_dbIndex	= new DbIndex(this);	
+	private DbIndex	m_dbIndex	= new DbIndex(this,getLocaleCode());	
 	
 	//! user answer the call id to avoid vibrate
 	private int	m_userAnswerCall = -1;
@@ -100,6 +100,9 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	//! debug information screen
 	public DebugInfoScreen m_debugInfoScreen	= null;
 	
+	//! properties store
+	private YuchCallerProp	m_prop				= new YuchCallerProp(this);
+	
 	//! search menu
 	private SearchLocationMenu m_addrSearchMenu = new SearchLocationMenu();
 	
@@ -124,7 +127,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 			Font t_font = _g.getFont();
 			
 			try{
-				_g.setColor(YuchCallerProp.instance().getLocationColor());
+				_g.setColor(getProperties().getLocationColor());
 				_g.setFont(m_font);
 				
 				String t_displayLoc;
@@ -136,8 +139,8 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 				}
 				
 				_g.drawText(t_displayLoc,
-						YuchCallerProp.instance().getLocationPosition_x(),
-						YuchCallerProp.instance().getLocationPosition_y());
+							getProperties().getLocationPosition_x(),
+							getProperties().getLocationPosition_y());
 				
 				
 			}finally{
@@ -274,7 +277,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 
 			ApplicationMenuItemRepository t_repository = ApplicationMenuItemRepository.getInstance();
 			
-			if(YuchCallerProp.instance().showSystemMenu()){
+			if(getProperties().showSystemMenu()){
 				
 				if(!_appInit){
 					t_repository.removeMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSBOOK_LIST, m_addrSearchMenu);
@@ -303,6 +306,14 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		}catch(Exception e){
 			SetErrorString("IM:",e);
 		}
+	}
+	
+	/**
+	 * get the properties of YuchCaller
+	 * @return YuchCallerProp
+	 */
+	public YuchCallerProp getProperties(){
+		return m_prop;
 	}
 	
 	/**
@@ -391,7 +402,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	
 	//! generate the location text font
 	public Font generateLocationTextFont(){
-		return Font.getDefault().derive(Font.getDefault().getStyle(),YuchCallerProp.instance().getLocationHeight());
+		return Font.getDefault().derive(Font.getDefault().getStyle(),getProperties().getLocationHeight());
 	}
 	
 	//@{ OptionsProvider
@@ -424,16 +435,16 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	public void callConferenceCallEstablished(int callId) {}
 
 	public void callConnected(int callId) {
-		if(m_userAnswerCall != callId && YuchCallerProp.instance().getRecvPhoneVibrationTime() != 0){
-			Alert.startVibrate(YuchCallerProp.instance().getRecvPhoneVibrationTime());
+		if(m_userAnswerCall != callId && getProperties().getRecvPhoneVibrationTime() != 0){
+			Alert.startVibrate(getProperties().getRecvPhoneVibrationTime());
 		}
 		
 		replaceActivePhoneCallManager(callId);		
 	}
 
 	public void callDisconnected(int callId) {
-		if(m_userEndCall != callId && YuchCallerProp.instance().getHangupPhoneVibrationTime() != 0){
-			Alert.startVibrate(YuchCallerProp.instance().getHangupPhoneVibrationTime());
+		if(m_userEndCall != callId && getProperties().getHangupPhoneVibrationTime() != 0){
+			Alert.startVibrate(getProperties().getHangupPhoneVibrationTime());
 		}
 		
 		closeReplaceIncomingCallScreen();
@@ -791,6 +802,30 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		return m_errorString;
 	}
 	
+	/**
+	 * get the local code 
+	 * @return
+	 */
+	public static int getLocaleCode(){
+		int t_code = Locale.getDefaultForSystem().getCode();
+		
+		switch(t_code){
+			case Locale.LOCALE_zh:
+			case Locale.LOCALE_zh_CN:
+				t_code = 0;
+				break;
+			case Locale.LOCALE_zh_HK:
+				t_code = 1;
+				break;
+			default:
+				t_code = 2;
+				break;
+		}
+		
+		return t_code;
+	}
+		
+	// Error information class time format
 	private final static SimpleDateFormat fsm_errorInfoTimeFormat = new SimpleDateFormat("HH:mm:ss");
 
 	// error information class to manager error

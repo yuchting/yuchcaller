@@ -1,36 +1,18 @@
 package com.yuchs.yuchcaller;
 
-import net.rim.device.api.system.PersistentObject;
-import net.rim.device.api.system.PersistentStore;
-import net.rim.device.api.ui.Font;
-import net.rim.device.api.util.Persistable;
+import java.io.InputStream;
+import java.io.OutputStream;
 
-public class YuchCallerProp implements Persistable {
-	
-	//Hash
-	private static long PERSISTENCE_ID = 5762556588347221845L;
-	
-    //Persistent object wrapping the effective properties instance
-    private static PersistentObject sm_store;
-    
-    private static YuchCallerProp sm_thisProp;
-    
-    //Ensure that an effective properties set exists on startup.
-	static {
-		try{
-			sm_store = PersistentStore.getPersistentObject(PERSISTENCE_ID);
-		    synchronized (sm_store) {
-		        if ((sm_thisProp = (YuchCallerProp)sm_store.getContents()) == null) {
-		        	sm_thisProp = new YuchCallerProp();
-		        	sm_store.setContents(sm_thisProp);
-		        	sm_store.commit();
-		        }
-		    }
-		}catch(Exception e){
-			e.printStackTrace();
-		}
-	}
-		
+import javax.microedition.io.Connector;
+import javax.microedition.io.file.FileConnection;
+
+import net.rim.device.api.ui.Font;
+
+public class YuchCallerProp {
+	    
+    // directory of blackberry store 
+	public final static String 	fsm_rootPath_back		= "file:///store/home/user/";
+    		
 	//! receive phone vibration time
 	private int m_receivePhoneVibrationTime = 100;
 	
@@ -51,6 +33,13 @@ public class YuchCallerProp implements Persistable {
 	
 	//! default height
 	private int m_locationInfoHeight		= Font.getDefault().getHeight();
+	
+	final private YuchCaller	m_mainApp;
+	
+	public YuchCallerProp(YuchCaller _mainApp){
+		m_mainApp		= _mainApp;
+		writeReadIni(true);
+	}
 	
 	// static function to get the initialize y position of location information label
 	private static int getLocationInfoInitPos_y(){
@@ -98,16 +87,186 @@ public class YuchCallerProp implements Persistable {
 	public boolean showSystemMenu(){return m_showSystemMenu;}
 	public void setShowSystemMenu(boolean _show){m_showSystemMenu = _show;}
 	
-	//Retrieves a copy of the effective properties set from storage.
-    public static YuchCallerProp instance(){
-        return sm_thisProp;
-    }
-    
     //Retrieves a copy of the effective properties set from storage.
     public void save(){
-    	synchronized (sm_store){
-        	sm_store.setContents(this);
-        	sm_store.commit();	        
-	    }
+    	writeReadIni(false);
     }
+    
+	/**
+	 * pre process write or read a file
+	 * 
+	 * Write: change original name to back file name when write
+	 * 
+	 * Read: change back filename to original filename if back file is existed
+	 */
+	private void preWriteReadIni(boolean _read,
+			String _backPathFilename,String _orgPathFilename,
+			String _backFilename,String _orgFilename){
+		
+		try{
+
+			if(_read){
+							
+				FileConnection t_back = (FileConnection) Connector.open(_backPathFilename,Connector.READ_WRITE);
+				try{
+					if(t_back.exists()){
+						FileConnection t_ini	= (FileConnection) Connector.open(_orgPathFilename,Connector.READ_WRITE);
+						try{
+							if(t_ini.exists()){
+								t_ini.delete();
+							}	
+						}finally{
+							t_ini.close();
+							t_ini = null;
+						}
+						
+						t_back.rename(_orgFilename);
+					}
+				}finally{
+					t_back.close();
+					t_back = null;
+				}				
+				
+			}else{
+				
+				FileConnection t_ini	= (FileConnection) Connector.open(_orgPathFilename,Connector.READ_WRITE);
+				try{
+					if(t_ini.exists()){
+						t_ini.rename(_backFilename);
+					}
+				}finally{
+					t_ini.close();
+					t_ini = null;
+				}
+				
+				// needn't copy ,the normal WriteReadIni method will re-create the init.data file
+				//
+				//Copyfile(fsm_backInitFilename,fsm_initFilename);
+			}
+			
+		}catch(Exception e){
+			m_mainApp.SetErrorString("write/read PreWriteReadIni file from "+fsm_rootPath_back+" error :",e);
+		}
+	}
+	
+	/**
+	 * delete the back file ~xxx.xxx
+	 * @param _backfile
+	 */
+	private void postWriteReadIni(String _backfile){
+		
+		try{
+			// delete the back file ~xxx.data
+			//
+			FileConnection t_backFile = (FileConnection) Connector.open(_backfile,Connector.READ_WRITE);
+			try{
+				if(t_backFile.exists()){
+					t_backFile.delete();
+				}
+			}finally{
+				t_backFile.close();
+				t_backFile = null;
+			}
+		}catch(Exception e){
+			m_mainApp.SetErrorString("PWRI", e);
+		}
+	}
+	
+	final static int		fsm_clientVersion = 0;
+	
+	static final String fsm_initFilename_init_data = "Init.data";
+	static final String fsm_initFilename_back_init_data = "~Init.data";
+	
+	static final String fsm_directory			= fsm_rootPath_back + "YuchCaller/";
+	
+	static final String fsm_initFilename 		= fsm_directory + fsm_initFilename_init_data;
+	static final String fsm_backInitFilename	= fsm_directory + fsm_initFilename_back_init_data;
+	
+	private synchronized void writeReadIni(boolean _read){
+		
+		
+		// process the ~Init.data file to restore the destroy original file
+		// that writing when device is down  
+		//
+		// check the issue 85 
+		// http://code.google.com/p/yuchberry/issues/detail?id=85&colspec=ID%20Type%20Status%20Priority%20Stars%20Summary
+		//
+		preWriteReadIni(_read,fsm_backInitFilename,fsm_initFilename,
+				fsm_initFilename_back_init_data,fsm_initFilename_init_data);
+		
+		try{
+			
+			if(!_read){
+				// make sure the directory is exist
+				FileConnection t_dir = (FileConnection) Connector.open(fsm_directory,Connector.READ_WRITE);
+				try{
+					if(!t_dir.exists()){
+						t_dir.mkdir();
+					}
+				}finally{
+					t_dir.close();
+					t_dir = null;
+				}
+			}
+			
+			FileConnection fc = (FileConnection) Connector.open(fsm_initFilename,Connector.READ_WRITE);
+			try{
+				if(_read){
+					
+			    	if(fc.exists()){
+			    		InputStream in = fc.openInputStream();
+			    		try{
+			    			final int t_currVer = sendReceive.ReadInt(in);
+			    						    			
+				    		m_receivePhoneVibrationTime = sendReceive.ReadInt(in);
+				    		m_hangupPhoneVibrationTime	= sendReceive.ReadInt(in);
+				    		
+				    		m_locationInfoPosition_x	= sendReceive.ReadInt(in);
+				    		m_locationInfoPosition_y	= sendReceive.ReadInt(in);
+				    		
+				    		m_locationInfoColor			= sendReceive.ReadInt(in);
+				    		m_showSystemMenu			= sendReceive.ReadBoolean(in);
+				    		m_locationInfoHeight		= sendReceive.ReadInt(in);
+				    		
+			    		}finally{
+			    			in.close();
+			    			in = null;
+			    		}
+			    	}
+				}else{
+										
+					if(!fc.exists()){
+						fc.create();
+					}				
+					
+					OutputStream os = fc.openOutputStream();
+					try{
+						sendReceive.WriteInt(os,fsm_clientVersion);
+						
+						sendReceive.WriteInt(os,m_receivePhoneVibrationTime);
+						sendReceive.WriteInt(os,m_hangupPhoneVibrationTime);
+						
+						sendReceive.WriteInt(os,m_locationInfoPosition_x);
+						sendReceive.WriteInt(os,m_locationInfoPosition_y);
+						
+						sendReceive.WriteInt(os,m_locationInfoColor);
+						sendReceive.WriteBoolean(os,m_showSystemMenu);
+						sendReceive.WriteInt(os,m_locationInfoHeight);
+						
+					}finally{
+						os.close();
+						os = null;
+					}
+					
+					postWriteReadIni(fsm_backInitFilename);
+				}
+			}finally{
+				fc.close();
+				fc = null;
+			}
+						
+		}catch(Exception _e){
+			m_mainApp.SetErrorString("write/read config file error :",_e);
+		}		
+	}
 }

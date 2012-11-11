@@ -14,7 +14,7 @@ public class SpecialNumber extends BinSearchNumber implements Comparable<Special
 	
 	int 		m_number;
 	String		m_presents;
-	
+		
 	public void Read(InputStream in)throws Exception{
 		m_number	= sendReceive.ReadInt(in);
 		m_presents	= sendReceive.ReadString(in); 
@@ -75,7 +75,11 @@ public class SpecialNumber extends BinSearchNumber implements Comparable<Special
 				
 				int t_number;
 				try{
-					t_number = Integer.parseInt(t_param[1]);
+					if(t_param[1].length() == 10 && (t_param[1].startsWith("400") || t_param[1].startsWith("800"))){
+						t_number	= DbIndex.parse800or400Number(t_param[1]);
+					}else{
+						t_number		= Integer.parseInt(t_param[1]);
+					}
 				}catch(Exception e){
 					System.err.println(line + " number parse error:" + e.getMessage());
 					continue;
@@ -89,8 +93,8 @@ public class SpecialNumber extends BinSearchNumber implements Comparable<Special
 				}
 				
 				SpecialNumber t_sn = new SpecialNumber();
-				t_sn.m_number	= t_number;
 				t_sn.m_presents = t_param[0];
+				t_sn.m_number	= t_number;
 				
 				t_list.add(t_sn);
 			
@@ -104,7 +108,7 @@ public class SpecialNumber extends BinSearchNumber implements Comparable<Special
 		BufferedWriter os = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(t_outputFile)));
 		try{
 			for(SpecialNumber sn : t_list){
-				os.write(sn.m_presents + "\t" + sn.m_number);
+				os.write(sn.m_presents + "\t" + DbIndex.export800or400Number(sn.m_number));
 				os.write('\n');
 			}
 		}finally{

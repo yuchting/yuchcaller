@@ -44,7 +44,7 @@ public class DbGenerate {
 	
 	// main process
 	private void mainProcess(String _file){
-		
+	
 		m_log.EnabelSystemOut(true);
 
 		try{
@@ -123,7 +123,15 @@ public class DbGenerate {
 				}else if(t_param.length == 2){
 					SpecialNumber t_sn = new SpecialNumber();
 					t_sn.m_presents		= t_param[0];
-					t_sn.m_number		= Integer.parseInt(t_param[1]);
+					if(t_param[1].length() == 10 && (t_param[1].startsWith("400") || t_param[1].startsWith("800"))){
+						t_sn.m_number	= DbIndex.parse800or400Number(t_param[1]);
+						if(-2143372537 == t_sn.m_number || t_param[1].equals("4008111111")){
+							t_sn.m_number	= DbIndex.parse800or400Number(t_param[1]);
+							System.out.println("find");
+						}
+					}else{
+						t_sn.m_number	= Integer.parseInt(t_param[1]);
+					}
 					
 					m_specialNumber.add(t_sn);
 				}else{
