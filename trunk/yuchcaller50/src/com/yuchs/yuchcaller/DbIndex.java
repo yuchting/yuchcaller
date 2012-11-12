@@ -401,6 +401,20 @@ public class DbIndex {
 			SpecialNumber t_cmpSn = (SpecialNumber)_list.elementAt(i);
 			if(i < _startIdx){
 				if(t_cmpSn == _sn){
+					t_cmpSn.m_searchWeight -= _startIdx;
+					
+					for(int j = 0;j < i ;j++){
+						SpecialNumber t_cmp2 = (SpecialNumber)_list.elementAt(j);
+						if(t_cmp2.m_searchWeight > t_cmpSn.m_searchWeight){
+							
+							// find again, raise rank
+							_list.removeElementAt(i);
+							_list.insertElementAt(_sn, j);
+							
+							return;
+						}
+					}
+					
 					return;
 				}
 			}else{

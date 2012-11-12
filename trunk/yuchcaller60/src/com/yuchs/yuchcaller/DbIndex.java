@@ -401,6 +401,9 @@ public class DbIndex {
 			SpecialNumber t_cmpSn = (SpecialNumber)_list.elementAt(i);
 			if(i < _startIdx){
 				if(t_cmpSn == _sn){
+					// find again, raise rank
+					_list.removeElementAt(i);
+					_list.insertElementAt(_sn, 0);
 					return;
 				}
 			}else{

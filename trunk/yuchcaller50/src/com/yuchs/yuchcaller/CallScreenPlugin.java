@@ -61,7 +61,7 @@ public class CallScreenPlugin {
 				public void paint(Graphics g){
 					int t_color = g.getColor();
 					try{
-						g.setColor(YuchCallerProp.instance().getLocationColor());
+						g.setColor(m_mainApp.getProperties().getLocationColor());
 						g.setFont(t_textFont);
 						g.drawText(m_formerLocation, 0, 0);
 					}finally{

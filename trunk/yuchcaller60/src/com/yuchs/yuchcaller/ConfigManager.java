@@ -119,8 +119,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		t_label.setFont(m_mainLabelBoldFont);
 		add(t_label);
 		
-		m_intelSearchInput	= new InputEditField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_INTEL_SEARCH_PROMPT),
-												EditField.FILTER_NUMERIC);
+		m_intelSearchInput	= new InputEditField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_INTEL_SEARCH_PROMPT),0);
 		add(m_intelSearchInput);
 		m_intelSearchInput.setChangeListener(this);
 		
@@ -380,8 +379,12 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	private LabelField allocLabelField(SpecialNumber _sn){
 		ClickLabel t_label;
 		if(!m_allocList.isEmpty()){
-			t_label = (ClickLabel)m_allocList.elementAt(m_allocList.size() - 1);
+			int t_idx = m_allocList.size() - 1;
+			
+			t_label = (ClickLabel)m_allocList.elementAt(t_idx);
 			t_label.setText(_sn.toString());
+			
+			m_allocList.removeElementAt(t_idx);
 		}else{
 			t_label = new ClickLabel(_sn.toString());
 			t_label.setChangeListener(this);
