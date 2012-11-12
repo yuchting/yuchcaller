@@ -1,13 +1,19 @@
 package com.yuchs.yuchcaller;
 
+import java.util.Vector;
+
 import local.yuchcallerlocalResource;
+import net.rim.blackberry.api.invoke.Invoke;
+import net.rim.blackberry.api.invoke.PhoneArguments;
 import net.rim.device.api.system.Characters;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
+import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.CheckboxField;
+import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.EditField;
 import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.NullField;
@@ -37,6 +43,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		0xbc9543,
 		0xaba8a8,
 	};
+	
 		
 	//! font to show main label 
 	private Font		m_mainLabelBoldFont = getFont().derive(getFont().getStyle() | Font.BOLD , getFont().getHeight());
@@ -70,6 +77,18 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	//! is advance manager show
 	private boolean				m_advanceManagerShow= false;
 	
+	//! the search result list
+	private SearchResultListMgr		m_intelSearchListMgr = new SearchResultListMgr();
+	
+	//! intel search input edit field
+	private EditField				m_intelSearchInput = null;
+	
+	//! matched special number
+	private Vector					m_matchedList	= new Vector();
+	
+	//! matched special number display allocate poor
+	private Vector					m_allocList		= new Vector();
+	
 	private YuchCaller	m_mainApp = null;
 	
 	public ConfigManager(YuchCaller _mainApp){
@@ -77,16 +96,13 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		m_mainApp = _mainApp;
 				
 		// search the phone
-		LabelField t_label = new LabelField(_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SEARCH),Field.NON_FOCUSABLE);
+		LabelField t_label = new LabelField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SEARCH),Field.NON_FOCUSABLE);
 		t_label.setFont(m_mainLabelBoldFont);
 		add(t_label);
 		
 		// create the EditField to return dirty false
-		m_searchNumberInput		= new EditField("","",11,EditField.NO_NEWLINE | EditField.FILTER_NUMERIC ){
-			public boolean isDirty() {
-				return false;
-			}
-		};
+		m_searchNumberInput		= new InputEditField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SEARCH_PROMPT),
+														EditField.FILTER_NUMERIC);
 		
 		add(m_searchNumberInput);
 		m_searchNumberInput.setChangeListener(this);
@@ -99,22 +115,22 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		// add SeparatorField
 		add(new SeparatorField(Field.NON_FOCUSABLE));
 		
-		// add the switch
-		m_advanceSwitchLabel		= new LabelField(getAdvanceSwitchLabel(),Field.FOCUSABLE){
-			protected boolean keyChar( char character, int status, int time ){
-		        if( character == Characters.ENTER || character == Characters.SPACE) {
-		            fieldChangeNotify( 0 );
-		            return true;
-		        }
-		        return super.keyChar( character, status, time );
-		    }
-
-		    protected boolean navigationClick( int status, int time ){ 
-		        keyChar(Characters.ENTER, status, time );            
-		        return true;
-		    }
-		};
+		t_label	= new LabelField(_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_INTEL_SEARCH),Field.NON_FOCUSABLE);
+		t_label.setFont(m_mainLabelBoldFont);
+		add(t_label);
 		
+		m_intelSearchInput	= new InputEditField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_INTEL_SEARCH_PROMPT),
+												EditField.FILTER_NUMERIC);
+		add(m_intelSearchInput);
+		m_intelSearchInput.setChangeListener(this);
+		
+		add(m_intelSearchListMgr);
+		
+		// add SeparatorField
+		add(new SeparatorField(Field.NON_FOCUSABLE));
+		
+		// add the switch
+		m_advanceSwitchLabel		= new ClickLabel(getAdvanceSwitchLabelText());		
 		m_advanceSwitchLabel.setFont(m_mainLabelBoldFont);
 		m_advanceSwitchLabel.setChangeListener(this);
 		add(m_advanceSwitchLabel);
@@ -213,10 +229,10 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			replace(m_advanceManager, m_advanceManagerNull);
 		}
 		
-		m_advanceSwitchLabel.setText(getAdvanceSwitchLabel());
+		m_advanceSwitchLabel.setText(getAdvanceSwitchLabelText());
 	}
 	
-	private String getAdvanceSwitchLabel(){
+	private String getAdvanceSwitchLabelText(){
 		return m_advanceManagerShow?("(-)" + m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_ADVANCE)):
 						"(+)" + m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_ADVANCE);
 	}
@@ -255,8 +271,32 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			showAdvanceSetting(m_advanceManagerShow);
 		}else if(field == m_showDebugScreenBtn){
 			m_mainApp.popupDebugInfoScreen();			
+		}else if(field == m_intelSearchInput){
+			if(m_intelSearchInput.getTextLength() > 0){
+				// search the matched result
+				m_mainApp.getDbIndex().fillMatchResult(m_intelSearchInput.getText(), m_matchedList, 50);
+				refreshMatchedList();
+			}else{
+				clearMatchedList();
+			}
+		}else if(field instanceof ClickLabel){
+			// is intel-search result label
+			//
+			ClickLabel t_cl = (ClickLabel)field;
+			if(t_cl.m_speNumber != null){
+				if(Dialog.ask(Dialog.D_YES_NO, m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_ASK_DIAL_NUMBER) + "\n" + t_cl.toString(), 
+				Dialog.NO) == Dialog.YES){
+					try{
+						PhoneArguments call = new PhoneArguments(PhoneArguments.ARG_CALL, t_cl.m_speNumber.getDialNumber());
+						Invoke.invokeApplication(Invoke.APP_TYPE_PHONE, call);
+					}catch(Exception ex){
+						m_mainApp.DialogAlert("Dial Error:" + ex.getMessage());
+					}					
+				}
+			}
 		}
 	}	
+	
 	
 	// save the properties
 	public void saveProp(){
@@ -313,6 +353,45 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		}		
 	}
 	
+	//! refresh the Matched List 
+	private void refreshMatchedList(){
+		
+		clearMatchedList();
+		
+		// add the labeld
+		for(int i = 0;i < m_matchedList.size();i++){
+			SpecialNumber t_sn = (SpecialNumber)m_matchedList.elementAt(i);
+			m_intelSearchListMgr.add(allocLabelField(t_sn));
+		}
+	}
+	
+	//! clear the matched list
+	private void clearMatchedList(){
+		// release all field
+		int t_fieldCount = m_intelSearchListMgr.getFieldCount();
+		for(int i = 0;i < t_fieldCount;i++){
+			m_allocList.addElement(m_intelSearchListMgr.getField(i));
+		}
+		
+		m_intelSearchListMgr.deleteAll();
+	}
+	
+	//! allocate label field
+	private LabelField allocLabelField(SpecialNumber _sn){
+		ClickLabel t_label;
+		if(!m_allocList.isEmpty()){
+			t_label = (ClickLabel)m_allocList.elementAt(m_allocList.size() - 1);
+			t_label.setText(_sn.toString());
+		}else{
+			t_label = new ClickLabel(_sn.toString());
+			t_label.setChangeListener(this);
+		}
+		
+		t_label.m_speNumber = _sn;
+		return t_label;
+	}
+	
+	
 	/**
 	 * color sample field 
 	 * @author tzz
@@ -365,6 +444,80 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 				return m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_COLOR_DUMMY) + " #" + Integer.toHexString(m_color);
 			}
 		}
+	}
+	
+	/**
+	 * Input edit field with prompt text when unfocus and never dirty
+	 * @author tzz
+	 *
+	 */
+	final class InputEditField extends EditField{
+		final String m_unfocusPrompt;
+		
+		// unfocus
+		public InputEditField(String _prompt,long _style){
+			super("","",11,EditField.NO_NEWLINE | _style);
+			m_unfocusPrompt		= _prompt;
+		}
+		
+		// never dirty to prompt save
+		public boolean isDirty() {
+			return false;
+		}
+		
+		// paint the prompt text when unfocus
+		public void paint(Graphics _g){
+			
+			if(!isFocus() && getTextLength() == 0	// is not focus and text is zero 
+			&& m_unfocusPrompt != null && m_unfocusPrompt.length() > 0){	// unfocusPrompt is valuable
+				
+				int t_color = _g.getColor();
+				try{
+					_g.setColor(0xc0c2c0);
+					_g.drawText(m_unfocusPrompt, 3, 0);
+				}finally{
+					_g.setColor(t_color);
+				}
+			}
+			
+			super.paint(_g);
+		}
+	}
+	
+	//! the intelSearchListMgr
+	final class SearchResultListMgr extends VerticalFieldManager{
+		
+		public SearchResultListMgr(){
+			super(Manager.NO_HORIZONTAL_SCROLL);
+		}
+	}
+	
+	/**
+	 * ClickLabel for some label
+	 * 
+	 * @author tzz
+	 *
+	 */
+	final class ClickLabel extends LabelField{
+	
+		public SpecialNumber m_speNumber = null;
+		
+		public ClickLabel(String _label){
+			super(_label,Field.FOCUSABLE);
+		}		
+		
+		protected boolean keyChar( char character, int status, int time ){
+	        if( character == Characters.ENTER || character == Characters.SPACE) {
+	            fieldChangeNotify( 0 );
+	            return true;
+	        }
+	        return super.keyChar( character, status, time );
+	    }
+
+	    protected boolean navigationClick( int status, int time ){ 
+	        keyChar(Characters.ENTER, status, time );            
+	        return true;
+	    }		
 	}
 
 }

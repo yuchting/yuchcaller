@@ -46,12 +46,17 @@ public class DbIndex {
 	//! interface to debug infor output
 	private DbIndexDebugOut		m_debugOutput	= null;
 	
+	//! languange code to get the coutry information 
+	private int		m_localCode			= 0;
+	
 	/**
 	 * initailize the data base index with debugouput interface
 	 * @param _debugOutput
+	 * @param _localCode	0 means PR.China zh; 1 means others
 	 */
-	public DbIndex(DbIndexDebugOut _debugOutput){
+	public DbIndex(DbIndexDebugOut _debugOutput,int _localCode){
 		m_debugOutput		= _debugOutput;
+		m_localCode			= _localCode;
 	}
 	
 	//! output debug information
@@ -102,12 +107,26 @@ public class DbIndex {
 				if(_number.charAt(0) == '+'){
 					
 					// country code number
-					int t_countryCodeNum = _number.length() - 11;
-					t_countryCode = getCountry(_number.substring(0, t_countryCodeNum));
+					int t_countryCodeIdx = readCountryCodeIndex(_number);
+					if(t_countryCodeIdx == -1){
+						// unknow country
+						return ""; 
+					}
 					
-					_number = _number.substring(t_countryCodeNum);
+					if(t_countryCodeIdx != 0){ 
+						// NOT PR.China area
+						//
+						return m_localCode == 0 ? fsm_internalContry[t_countryCodeIdx] : fsm_internalContry_en[t_countryCodeIdx];
+					}
+					
+					_number = _number.substring(3);
+					if(_number.length() == 10){
+						// fixed phone to add 0
+						//
+						_number = "0" + _number;
+					}
 				}
-								
+				
 				if(_number.charAt(0) == '0'){
 					
 					// fixed phone
@@ -159,9 +178,38 @@ public class DbIndex {
 		return t_province + t_city + t_carrier;
 	}
 	
+	private int readCountryCodeIndex(String _number){
+		
+		if(_number.startsWith("+86")){
+			// PR.China
+			return 0;
+		}
+		
+		int t_returnIdx = -1;
+		int t_cmpLen	= 0;
+		
+		for(int i = 0;i < fsm_internalNumber.length;i++){
+			if(_number.startsWith(fsm_internalNumber[i])){
+				if(fsm_internalNumber[i].length() > t_cmpLen){
+					t_returnIdx 	= i;
+					t_cmpLen		= fsm_internalNumber[i].length();
+				}				
+			}
+		}
+		
+		return t_returnIdx;
+	}
+	
 	private String specialNumber(String _number){
 		try{
-			SpecialNumber t_sn = (SpecialNumber)binSearch(Integer.parseInt(_number), 2);
+			int t_searchNumber;
+			
+			if(_number.length() == 10 && (_number.startsWith("800") || _number.startsWith("400"))){
+				t_searchNumber = parse800or400Number(_number);
+			}else{
+				t_searchNumber = Integer.parseInt(_number);
+			}
+			SpecialNumber t_sn = (SpecialNumber)binSearch(t_searchNumber, 2);
 			if(t_sn != null){
 				return t_sn.m_presents;
 			}
@@ -205,8 +253,10 @@ public class DbIndex {
 	private CellPhoneData searchCellPhoneData(String _cellPhone){
 		try{
 			
-			int t_num7 = Integer.parseInt(_cellPhone.substring(0,7));
-			return (CellPhoneData)binSearch(t_num7,1);
+			if(_cellPhone.length() >= 7){
+				int t_num7 = Integer.parseInt(_cellPhone.substring(0,7));
+				return (CellPhoneData)binSearch(t_num7,1);
+			}
 			
 		}catch(Exception ex){
 			debugInfo("SCPD",ex);	
@@ -267,19 +317,7 @@ public class DbIndex {
 			return (BinSearchNumber)m_specialList.elementAt(_index);		// special number index
 		}
 	}
-	
-	/**
-	 * get the country name
-	 * @return
-	 */
-	private String getCountry(String _code){
-		if(_code == "+86"){
-			return "";
-		}else{
-			return "";
-		}
-	}
-	
+		
 	/**
 	 * read the idx file by InputStream
 	 * @param in
@@ -326,8 +364,870 @@ public class DbIndex {
 		m_cellPhoneDataSize = sendReceive.ReadInt(m_mainInputStream);
 	}
 	
+	//! fill match result by keyword 
+	public void fillMatchResult(String _keyword,Vector _list,int _maxNum){
+		
+		_list.removeAllElements();
+		
+		// start insert idx of matched list
+		int t_startInsert = 0;
+		
+		while(_keyword.length() > 0){
+
+			for(int i = 0;i < m_specialList.size();i++){
+				SpecialNumber t_sn = (SpecialNumber)m_specialList.elementAt(i);
+				int t_matchIdx;
+				if((t_matchIdx = t_sn.m_presents.indexOf(_keyword)) != -1){
+					t_sn.m_searchWeight = t_matchIdx;
+					
+					insertMathResult(_list,t_startInsert,t_sn);
+					
+					if(_list.size() >= _maxNum){
+						return;
+					}
+				}
+			}
+			
+			t_startInsert	= _list.size();
+			_keyword		= _keyword.substring(1);
+		}
+	}
+	
+	//! insert the special number into right position by matched index
+	private void insertMathResult(Vector _list,int _startIdx,SpecialNumber _sn){
+				
+		for(int i = 0;i < _list.size();i++){
+			
+			SpecialNumber t_cmpSn = (SpecialNumber)_list.elementAt(i);
+			if(i < _startIdx){
+				if(t_cmpSn == _sn){
+					return;
+				}
+			}else{
+
+				
+				if(t_cmpSn.m_searchWeight > _sn.m_searchWeight){
+					_list.insertElementAt(_sn, i);
+					return;
+				}
+			}
+		}
+		
+		_list.addElement(_sn);
+	}
+	
+	// prase the 800 or 400 number to int;
+	public static int parse800or400Number(String _number)throws IllegalArgumentException{
+		if(_number.length() != 10){
+			throw new IllegalArgumentException("number argument must be 800xxxxxxx or 400xxxxxxx");
+		}
+		
+		if(_number.startsWith("800")){
+			_number = _number.substring(3);
+			return 0x80000000 | Integer.parseInt(_number);
+		}else{
+			_number = _number.substring(3);
+			return 0xc0000000 | Integer.parseInt(_number);
+		}
+	}
+	
+	// export the number string by integer
+	public static String export800or400Number(int _number){
+		if((_number & 0x80000000) != 0){
+			if((_number & 0x40000000) != 0){
+				return "400" + Integer.toString((_number & 0x0fffffff));
+			}
+			
+			return "800" + Integer.toString((_number & 0x0fffffff));
+		}
+		
+		return Integer.toString(_number);
+	}
+	
+	private static final String[] fsm_internalNumber =
+	{
+		"+86",
+		"+1",
+		"+1264",
+		"+1268",
+		"+1242",
+		"+1246",
+		"+1441",
+		"+1284",
+		"+1345",
+		"+1767",
+		"+1809",
+		"+1473",
+		"+1876",
+		"+1664",
+		"+1787",
+		"+1939",
+		"+1869",
+		"+1758",
+		"+1784",
+		"+1868",
+		"+1649",
+		"+1340",
+		"+1671",
+		"+1670",
+		"+20",
+		"+210",
+		"+211",
+		"+212",
+		"+213",
+		"+216",
+		"+218",
+		"+220",
+		"+221",
+		"+222",
+		"+223",
+		"+224",
+		"+225",
+		"+226",
+		"+227",
+		"+228",
+		"+229",
+		"+230",
+		"+231",
+		"+232",
+		"+233",
+		"+234",
+		"+235",
+		"+236",
+		"+237",
+		"+238",
+		"+239",
+		"+240",
+		"+241",
+		"+242",
+		"+243",
+		"+244",
+		"+245",
+		"+246",
+		"+247",
+		"+248",
+		"+249",
+		"+250",
+		"+251",
+		"+252",
+		"+253",
+		"+254",
+		"+255",
+		"+256",
+		"+257",
+		"+258",
+		"+259",
+		"+260",
+		"+261",
+		"+262",
+		"+263",
+		"+264",
+		"+265",
+		"+266",
+		"+267",
+		"+268",
+		"+269",
+		"+27",
+		"+290",
+		"+291",
+		"+295",
+		"+297",
+		"+298",
+		"+299",
+		"+30",
+		"+31",
+		"+32",
+		"+33",
+		"+34",
+		"+350",
+		"+351",
+		"+352",
+		"+353",
+		"+354",
+		"+355",
+		"+356",
+		"+357",
+		"+358",
+		"+359",
+		"+36",
+		"+37",
+		"+370",
+		"+371",
+		"+372",
+		"+373",
+		"+374",
+		"+375",
+		"+376",
+		"+377",
+		"+378",
+		"+379",
+		"+38",
+		"+380",
+		"+381",
+		"+382",
+		"+384",
+		"+385",
+		"+386",
+		"+387",
+		"+388",
+		"+389",
+		"+39",
+		"+40",
+		"+41",
+		"+42",
+		"+420",
+		"+421",
+		"+423",
+		"+43",
+		"+44",
+		"+45",
+		"+46",
+		"+47",
+		"+48",
+		"+49",
+		"+500",
+		"+501",
+		"+502",
+		"+503",
+		"+504",
+		"+505",
+		"+506",
+		"+507",
+		"+508",
+		"+509",
+		"+51",
+		"+52",
+		"+53",
+		"+54",
+		"+55",
+		"+56",
+		"+57",
+		"+58",
+		"+590",
+		"+591",
+		"+592",
+		"+593",
+		"+594",
+		"+595",
+		"+596",
+		"+597",
+		"+598",
+		"+599",
+		"+60",
+		"+61",
+		"+62",
+		"+63",
+		"+64",
+		"+65",
+		"+66",
+		"+670",
+		"+671",
+		"+672",
+		"+673",
+		"+674",
+		"+675",
+		"+676",
+		"+677",
+		"+678",
+		"+679",
+		"+680",
+		"+681",
+		"+682",
+		"+683",
+		"+684",
+		"+685",
+		"+686",
+		"+687",
+		"+688",
+		"+689",
+		"+690",
+		"+691",
+		"+692",
+		"+7",
+		"+800",
+		"+808",
+		"+81",
+		"+82",
+		"+84",
+		"+850",
+		"+851",
+		"+852",
+		"+853",
+		"+854",
+		"+855",
+		"+856",
+		"+870",
+		"+875",
+		"+876",
+		"+877",
+		"+878",
+		"+879",
+		"+880",
+		"+881",
+		"+882",
+		"+886",
+		"+90",
+		"+91",
+		"+92",
+		"+93",
+		"+94",
+		"+95",
+		"+960",
+		"+961",
+		"+962",
+		"+963",
+		"+964",
+		"+965",
+		"+966",
+		"+967",
+		"+968",
+		"+969",
+		"+970",
+		"+971",
+		"+972",
+		"+973",
+		"+974",
+		"+975",
+		"+976",
+		"+977",
+		"+98",
+		"+992",
+		"+993",
+		"+994",
+		"+995",
+		"+996",
+		"+998",
+	};
+	
+	private static final String[] fsm_internalContry =
+	{		
+		"中华人民共和国",
+		"美国/加拿大",
+		"安圭拉岛",
+		"安提瓜和巴布达",
+		"巴哈马",
+		"巴巴多斯",
+		"百慕大",
+		"英属维京群岛",
+		"开曼群岛",
+		"多米尼克",
+		"多米尼加共和国",
+		"格林纳达",
+		"牙买加",
+		"蒙特塞拉特",
+		"波多黎各",
+		"波多黎各",
+		"圣基茨和尼维斯",
+		"圣卢西亚",
+		"圣文森特和格林纳丁斯",
+		"特立尼达和多巴哥",
+		"特克斯和凯科斯群岛",
+		"美属维京群岛",
+		"关岛",
+		"北马里亚纳群岛",
+		"埃及",
+		"拟分配西撒哈拉",
+		"南苏丹",
+		"摩洛哥",
+		"阿尔及利亚",
+		"突尼斯",
+		"利比亚",
+		"冈比亚",
+		"塞内加尔",
+		"毛里塔尼亚",
+		"马里",
+		"几内亚",
+		"科特迪瓦",
+		"布基纳法索",
+		"尼日尔",
+		"多哥",
+		"贝宁",
+		"毛里求斯",
+		"利比里亚",
+		"塞拉利昂",
+		"加纳",
+		"尼日利亚",
+		"乍得",
+		"中非共和国",
+		"喀麦隆",
+		"佛得角",
+		"圣多美和普林西比",
+		"赤道几内亚",
+		"加蓬",
+		"刚果共和国（布）",
+		"刚果民主共和国（金）（即前扎伊尔）",
+		"安哥拉",
+		"几内亚比绍",
+		"迪戈加西亚岛",
+		"阿森松岛",
+		"塞舌尔",
+		"苏丹",
+		"卢旺达",
+		"埃塞俄比亚",
+		"索马里",
+		"吉布提",
+		"肯尼亚",
+		"坦桑尼亚",
+		"乌干达",
+		"布隆迪",
+		"莫桑比克",
+		"从未使用――参见255坦桑尼亚",
+		"赞比亚",
+		"马达加斯加",
+		"留尼汪和马约特",
+		"津巴布韦",
+		"纳米比亚",
+		"马拉维",
+		"莱索托",
+		"博茨瓦纳",
+		"斯威士兰",
+		"科摩罗",
+		"南非",
+		"圣赫勒拿",
+		"厄立特里亚",
+		"中止（原先分配给圣马力诺，参见+378）",
+		"阿鲁巴",
+		"法罗群岛",
+		"格陵兰",
+		"希腊",
+		"荷兰",
+		"比利时",
+		"法国",
+		"西班牙",
+		"直布罗陀",
+		"葡萄牙",
+		"卢森堡",
+		"爱尔兰",
+		"冰岛",
+		"阿尔巴尼亚",
+		"马耳他",
+		"塞浦路斯",
+		"芬兰",
+		"保加利亚",
+		"匈牙利",
+		"曾经是德意志民主共和国（东德）的区号，合并后的德国区号为49",
+		"立陶宛",
+		"拉脱维亚",
+		"爱沙尼亚",
+		"摩尔多瓦",
+		"亚美尼亚",
+		"白俄罗斯",
+		"安道尔",
+		"摩纳哥",
+		"圣马力诺",
+		"保留给梵蒂冈",
+		"前南斯拉夫分裂前的区号",
+		"乌克兰",
+		"塞尔维亚",
+		"黑山 (黑山)",
+		"拟分配科索沃",
+		"克罗地亚",
+		"斯洛文尼亚",
+		"波黑",
+		"欧洲电话号码空间――环欧洲服务",
+		"马其顿（前南斯拉夫马其顿共和国, FYROM）",
+		"意大利",
+		"罗马尼亚",
+		"瑞士",
+		"曾经是捷克斯洛伐克的区号",
+		"捷克",
+		"斯洛伐克",
+		"列支敦士登",
+		"奥地利",
+		"英国",
+		"丹麦",
+		"瑞典",
+		"挪威",
+		"波兰",
+		"德国",
+		"福克兰群岛",
+		"伯利兹",
+		"危地马拉",
+		"萨尔瓦多",
+		"洪都拉斯",
+		"尼加拉瓜",
+		"哥斯达黎加",
+		"巴拿马",
+		"圣皮埃尔和密克隆群岛",
+		"海地",
+		"秘鲁",
+		"墨西哥",
+		"古巴（本应属于北美区，由于历史原因分在5区）",
+		"阿根廷",
+		"巴西",
+		"智利",
+		"哥伦比亚",
+		"委内瑞拉",
+		"瓜德罗普",
+		"玻利维亚",
+		"圭亚那",
+		"厄瓜多尔",
+		"法属圭亚那",
+		"巴拉圭",
+		"马提尼克",
+		"苏里南",
+		"乌拉圭",
+		"荷属安的列斯",
+		"马来西亚",
+		"澳大利亚",
+		"印度尼西亚",
+		"菲律宾",
+		"新西兰",
+		"新加坡",
+		"泰国",
+		"曾经是北马里亚纳群岛（现在是1）",
+		"曾经是关岛 (现在是1)",
+		"南极洲、圣诞岛、可可斯群岛、和诺福克岛",
+		"文莱",
+		"瑙鲁",
+		"巴布亚新几内亚",
+		"汤加",
+		"所罗门群岛",
+		"瓦努阿图",
+		"斐济",
+		"帕劳",
+		"瓦利斯和富图纳群岛",
+		"库克群岛",
+		"纽埃",
+		"美属萨摩亚",
+		"萨摩亚",
+		"基里巴斯，吉尔伯特群岛",
+		"新喀里多尼亚",
+		"图瓦卢，埃利斯群岛",
+		"法属波利尼西亚",
+		"托克劳群岛",
+		"密克罗尼西亚联邦",
+		"马绍尔群岛",
+		"俄罗斯、哈萨克斯坦",
+		"国际免费电话",
+		"International Shared Cost Service",
+		"日本",
+		"大韩民国",
+		"越南",
+		"朝鲜民主主义人民共和国",
+		"测试专用",
+		"香港",
+		"澳门",
+		"总经群岛共和国",
+		"柬埔寨",
+		"老挝",
+		"Inmersat \"SNAC\" 卫星电话",
+		"预留给海洋移动通讯服务",
+		"预留给海洋移动通讯服务",
+		"预留给海洋移动通讯服务",
+		"环球个人通讯服务",
+		"预留给国家移动/海洋使用",
+		"孟加拉人民共和国",
+		"移动卫星系统",
+		"国际网络",
+		"台湾",
+		"土耳其",
+		"印度",
+		"巴基斯坦",
+		"阿富汗",
+		"斯里兰卡",
+		"缅甸",
+		"马尔代夫",
+		"黎巴嫩",
+		"约旦",
+		"叙利亚",
+		"伊拉克",
+		"科威特",
+		"沙特阿拉伯",
+		"也门",
+		"阿曼",
+		"曾经是也门民主人民共和国（南也门）的区号，合并后的也门统一使用967区号",
+		"预留给巴勒斯坦",
+		"阿拉伯联合酋长国",
+		"以色列",
+		"巴林",
+		"卡塔尔",
+		"不丹",
+		"蒙古",
+		"尼泊尔",
+		"伊朗",
+		"塔吉克斯坦",
+		"土库曼斯坦",
+		"阿塞拜疆",
+		"格鲁吉亚",
+		"吉尔吉斯斯坦",
+		"乌兹别克斯坦",
+	};
+	
+	private static final String[]  fsm_internalContry_en =
+	{
+		"People's Republic of China",
+		"USA / Canada",
+		"Anguilla",
+		"Antigua and Barbuda",
+		"Bahamas",
+		"Barbados",
+		"Bermuda",
+		"British Virgin Islands",
+		"Cayman Islands",
+		"Dominique",
+		"Dominican Republic",
+		"Grenada",
+		"Jamaica",
+		"Montserrat",
+		"Puerto Rico",
+		"Puerto Rico",
+		"Saint Kitts and Nevis",
+		"St. Lucia",
+		"Saint Vincent and the Grenadines",
+		"Trinidad and Tobago",
+		"Turks and Caicos Islands",
+		"U.S. Virgin Islands",
+		"Guam",
+		"Northern Mariana Islands",
+		"Egypt",
+		"To be allocated for the Western Sahara",
+		"South Sudan",
+		"Morocco",
+		"Algeria",
+		"Tunisia",
+		"Libya",
+		"Gambia",
+		"Senegal",
+		"Mauritania",
+		"Mali",
+		"Guinea",
+		"Cote d'Ivoire",
+		"Burkina Faso",
+		"Niger",
+		"Togo",
+		"Benin",
+		"Mauritius",
+		"Liberia",
+		"Sierra Leone",
+		"Ghana",
+		"Nigeria",
+		"Chad",
+		"Central African Republic",
+		"Cameroon",
+		"Cape Verde",
+		"Sao Tome and Principe",
+		"Equatorial Guinea",
+		"Gabon",
+		"Republic of Congo (Brazzaville)",
+		"The Democratic Republic of Congo (DRC) (formerly Zaire)",
+		"Angola",
+		"Guinea-Bissau",
+		"The island of Diego Garcia",
+		"Ascension",
+		"Seychelles",
+		"Sudan",
+		"Rwanda",
+		"Ethiopia",
+		"Somalia",
+		"Djibouti",
+		"Kenya",
+		"Tanzania",
+		"Uganda",
+		"Burundi",
+		"Mozambique",
+		"Never used - see 255 Tanzania",
+		"Zambia",
+		"Madagascar",
+		"Reunion and Mayotte",
+		"Zimbabwe",
+		"Namibia",
+		"Malawi",
+		"Lesotho",
+		"Botswana",
+		"Swaziland",
+		"Comoros",
+		"South Africa",
+		"St. Helena",
+		"Eritrea",
+		"Abort (originally assigned to San Marino, see +378)",
+		"Aruba",
+		"Faroe Islands",
+		"Greenland",
+		"Greece",
+		"Netherlands",
+		"Belgium",
+		"France",
+		"Spain",
+		"Gibraltar",
+		"Portugal",
+		"Luxembourg",
+		"Ireland",
+		"Iceland",
+		"Albania",
+		"Malta",
+		"Cyprus",
+		"Finland",
+		"Bulgaria",
+		"Hungary",
+		"Once the German Democratic Republic (East Germany) area code, the Germany area code combined 49",
+		"Lithuania",
+		"Latvia",
+		"Estonia",
+		"Moldova",
+		"Armenia",
+		"Belarus",
+		"Andorra",
+		"Monaco",
+		"San Marino",
+		"Reserved to the Vatican",
+		"Former Yugoslavia collapsed in front of the area code",
+		"Ukraine",
+		"Serbia",
+		"Montenegro (Montenegro)",
+		"To be allocated to Kosovo.",
+		"Croatia",
+		"Slovenia",
+		"Bosnia and Herzegovina",
+		"European phone number space - ring European Service",
+		"Macedonia (the former Yugoslav Republic of Macedonia, FYROM)",
+		"Italy",
+		"Romania",
+		"Switzerland",
+		"Once the area code of Czechoslovakia",
+		"Czech Republic",
+		"Slovakia",
+		"Liechtenstein",
+		"Austria",
+		"United Kingdom",
+		"Denmark",
+		"Sweden",
+		"Norway",
+		"Poland",
+		"Made in Germany",
+		"Falkland Islands",
+		"Belize",
+		"Guatemala",
+		"El Salvador",
+		"Honduras",
+		"Nicaragua",
+		"Costa Rica",
+		"Panama",
+		"Saint Pierre and Miquelon",
+		"Haiti",
+		"Peru",
+		"Mexico",
+		"Cuba ",
+		"Argentina",
+		"Brazil",
+		"Chile",
+		"Columbia",
+		"Venezuela",
+		"Guadeloupe",
+		"Bolivia",
+		"Guyana",
+		"Ecuador",
+		"French Guiana",
+		"Paraguay",
+		"Martinique",
+		"Suriname",
+		"Uruguay",
+		"Netherlands Antilles",
+		"Malaysia",
+		"Australia",
+		"Indonesia",
+		"Philippines",
+		"New Zealand",
+		"Singapore",
+		"Thailand",
+		"Once the Northern Mariana Islands (now 1)",
+		"Once Guam (now 1)",
+		"Antarctica, Christmas Island, Cocos Islands, and Norfolk Island",
+		"Brunei",
+		"Nauru",
+		"Papua New Guinea",
+		"Tonga",
+		"Solomon Islands",
+		"Vanuatu",
+		"Fiji",
+		"Palau",
+		"Wallis and Futuna",
+		"Cook Islands",
+		"Niue",
+		"American Samoa",
+		"Samoa",
+		"Kiribati, Gilbert Islands",
+		"New Caledonia",
+		"Tuvalu, Ellice Islands",
+		"French Polynesia",
+		"Tokelau Islands",
+		"Federated States of Micronesia",
+		"Marshall Islands",
+		"Russia, Kazakhstan",
+		"International Toll Free",
+		"International Shared Cost Service",
+		"Japan",
+		"Republic of Korea",
+		"Vietnam",
+		"Democratic People's Republic of Korea",
+		"Test-specific",
+		"Hong Kong",
+		"Macao",
+		"General Islands Republic",
+		"Cambodia",
+		"Laos",
+		"Inmersat \"SNAC\" satellite phone",
+		"Reserved for marine mobile communications services",
+		"Reserved for marine mobile communications services",
+		"Reserved for marine mobile communications services",
+		"Universal Personal Communications Services",
+		"Reserved for national mobile / marine use",
+		"The People's Republic of Bangladesh",
+		"Mobile Satellite Systems",
+		"International Network",
+		"Taiwan",
+		"Turkey",
+		"India",
+		"Pakistan",
+		"Afghanistan",
+		"Sri Lanka",
+		"Burma",
+		"Maldives",
+		"Lebanon",
+		"Jordan",
+		"Syria",
+		"Iraq",
+		"Kuwait",
+		"Saudi Arabia",
+		"Yemen",
+		"Oman",
+		"Once the area code of the People's Democratic Republic of Yemen (South Yemen), combined Yemen unified the 967 area code",
+		"Reserved for Palestine",
+		"United Arab Emirates",
+		"Israel",
+		"Bahrain",
+		"Qatar",
+		"Bhutan",
+		"Mongolia",
+		"Nepal",
+		"Iran",
+		"Tajikistan",
+		"Turkmenistan",
+		"Azerbaijan",
+		"Georgia",
+		"Kyrgyzstan",
+		"Uzbekistan",
+	};
+	
 //	public static void main(String[] _args)throws Exception{
-//		DbIndex t_dbIdx = new DbIndex();
+//		
+//		assert fsm_internalContry.length == fsm_internalContry_en.length;
+//		assert fsm_internalContry_en.length == fsm_internalNumber.length;
+//		
+//		DbIndex t_dbIdx = new DbIndex(new DbIndexDebugOut() {
+//			
+//			@Override
+//			public void debug(String info) {
+//				System.err.println(info);
+//				
+//			}
+//			
+//			@Override
+//			public void debug(String tag, Exception e) {
+//				System.err.println("tag");
+//				e.printStackTrace();				
+//			}
+//		},0);
 //		
 //		FileInputStream t_file = new FileInputStream("yuchcaller.db");
 //		try{
@@ -337,7 +1237,16 @@ public class DbIndex {
 //			t_file.close();
 //		}
 //		
-//		System.out.println(t_dbIdx.findPhoneData("13260009715"));
+//		
+//		//System.out.println(t_dbIdx.findPhoneData("+1264217442960331"));
+//		
+//		Vector t_list = new Vector();
+//		t_dbIdx.fillMatchResult("警", t_list,10);
+//		
+//		for(int i = 0;i < t_list.size();i++){
+//			SpecialNumber t_sn = (SpecialNumber)t_list.elementAt(i);
+//			System.out.println(t_sn.toString());
+//		}
 //	}
 	
 }
