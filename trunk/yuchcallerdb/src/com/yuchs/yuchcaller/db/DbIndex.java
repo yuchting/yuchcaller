@@ -366,6 +366,58 @@ public class DbIndex {
 		m_cellPhoneDataSize = sendReceive.ReadInt(m_mainInputStream);
 	}
 	
+	//! fill match result by keyword 
+	public void fillMatchResult(String _keyword,Vector _list,int _maxNum){
+		
+		_list.removeAllElements();
+		
+		// start insert idx of matched list
+		int t_startInsert = 0;
+		
+		while(_keyword.length() > 0){
+
+			for(int i = 0;i < m_specialList.size();i++){
+				SpecialNumber t_sn = (SpecialNumber)m_specialList.elementAt(i);
+				int t_matchIdx;
+				if((t_matchIdx = t_sn.m_presents.indexOf(_keyword)) != -1){
+					t_sn.m_searchWeight = t_matchIdx;
+					
+					insertMathResult(_list,t_startInsert,t_sn);
+					
+					if(_list.size() >= _maxNum){
+						return;
+					}
+				}
+			}
+			
+			t_startInsert	= _list.size();
+			_keyword		= _keyword.substring(1);
+		}
+	}
+	
+	//! insert the special number into right position by matched index
+	private void insertMathResult(Vector _list,int _startIdx,SpecialNumber _sn){
+				
+		for(int i = 0;i < _list.size();i++){
+			
+			SpecialNumber t_cmpSn = (SpecialNumber)_list.elementAt(i);
+			if(i < _startIdx){
+				if(t_cmpSn == _sn){
+					return;
+				}
+			}else{
+
+				
+				if(t_cmpSn.m_searchWeight > _sn.m_searchWeight){
+					_list.insertElementAt(_sn, i);
+					return;
+				}
+			}
+		}
+		
+		_list.addElement(_sn);
+	}
+	
 	// prase the 800 or 400 number to int;
 	public static int parse800or400Number(String _number)throws IllegalArgumentException{
 		if(_number.length() != 10){
@@ -1188,7 +1240,15 @@ public class DbIndex {
 		}
 		
 		
-		System.out.println(t_dbIdx.findPhoneData("+8613260009715"));
+		//System.out.println(t_dbIdx.findPhoneData("+1264217442960331"));
+		
+		Vector t_list = new Vector();
+		t_dbIdx.fillMatchResult("中国", t_list,100);
+		
+		for(int i = 0;i < t_list.size();i++){
+			SpecialNumber t_sn = (SpecialNumber)t_list.elementAt(i);
+			System.out.println(t_sn.toString());
+		}
 	}
 	
 }

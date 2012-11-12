@@ -68,7 +68,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	public final ResourceBundle 	m_local = ResourceBundle.getBundle(yuchcallerlocalResource.BUNDLE_ID, yuchcallerlocalResource.BUNDLE_NAME);
 	
 	//! data base index manager class
-	private DbIndex	m_dbIndex	= new DbIndex(this,getLocaleCode());	
+	private DbIndex m_dbIndex	= new DbIndex(this,getLocaleCode());	
 	
 	//! user answer the call id to avoid vibrate
 	private int	m_userAnswerCall = -1;
@@ -306,6 +306,14 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		}catch(Exception e){
 			SetErrorString("IM:",e);
 		}
+	}
+	
+	/**
+	 * get the db index class
+	 * @return
+	 */
+	public DbIndex getDbIndex(){
+		return m_dbIndex;
 	}
 	
 	/**
