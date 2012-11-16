@@ -86,6 +86,13 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	//! matched special number
 	private Vector					m_matchedList	= new Vector();
 	
+	//! a page number to display matchedList
+	private final	int 			MatchedLabelPageNum	= 10;
+	
+	//! currrent matched special number index
+	private int					m_addMatchedSNIdx		= 0;
+	private ClickLabel				m_matchedNextPageLabel	= null;
+	
 	//! matched special number display allocate poor
 	private Vector					m_allocList		= new Vector();
 	
@@ -274,11 +281,20 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			if(m_intelSearchInput.getTextLength() > 0){
 				// search the matched result
 				m_mainApp.getDbIndex().fillMatchResult(m_intelSearchInput.getText(), m_matchedList, 50);
+				m_addMatchedSNIdx = 0;
+				
 				refreshMatchedList();
 			}else{
 				clearMatchedList();
 			}
+		}else if(m_matchedNextPageLabel == field){
+			
+			m_addMatchedSNIdx += MatchedLabelPageNum;
+			Field t_first = addIntelSearchList(m_addMatchedSNIdx);
+			t_first.setFocus();
+			
 		}else if(field instanceof ClickLabel){
+			
 			// is intel-search result label
 			//
 			ClickLabel t_cl = (ClickLabel)field;
@@ -357,26 +373,66 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		
 		clearMatchedList();
 		
-		// add the labeld
-		for(int i = 0;i < m_matchedList.size();i++){
-			SpecialNumber t_sn = (SpecialNumber)m_matchedList.elementAt(i);
-			m_intelSearchListMgr.add(allocLabelField(t_sn));
-		}
+		// add the label
+		addIntelSearchList(m_addMatchedSNIdx);
 	}
 	
+	//! add a part of list
+	private Field addIntelSearchList(int _begin){
+		
+		// delete former m_matchedNextPageLabel first
+		if(m_matchedNextPageLabel != null 
+		&& m_matchedNextPageLabel.getManager() != null){
+			m_intelSearchListMgr.delete(m_matchedNextPageLabel);
+		}	
+		
+		// get the min page size end number
+		int t_end = Math.min(_begin + MatchedLabelPageNum, m_matchedList.size());
+		Field t_first = null;
+		for(int i = _begin;i < t_end;i++){
+			SpecialNumber t_sn = (SpecialNumber)m_matchedList.elementAt(i);
+			
+			Field t_clickedField = allocLabelField(t_sn);
+			
+			if(t_first == null){
+				t_first = t_clickedField;
+			}
+			m_intelSearchListMgr.add(t_clickedField);
+		}
+		
+		if(t_end != m_matchedList.size()){
+			if(m_matchedNextPageLabel == null){
+				m_matchedNextPageLabel = new ClickLabel(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_INTEL_SEARCH_MORE));
+				m_matchedNextPageLabel.setChangeListener(this);
+			}
+			
+			m_intelSearchListMgr.add(m_matchedNextPageLabel);
+		}
+		
+		return t_first;
+	}
+		
 	//! clear the matched list
 	private void clearMatchedList(){
+		
 		// release all field
 		int t_fieldCount = m_intelSearchListMgr.getFieldCount();
 		for(int i = 0;i < t_fieldCount;i++){
-			m_allocList.addElement(m_intelSearchListMgr.getField(i));
+			
+			Field t_field = m_intelSearchListMgr.getField(i);
+			
+			if(t_field != m_matchedNextPageLabel){
+				// except matched next page label to restore
+				//
+				m_allocList.addElement(m_intelSearchListMgr.getField(i));
+			}
 		}
 		
 		m_intelSearchListMgr.deleteAll();
 	}
 	
 	//! allocate label field
-	private LabelField allocLabelField(SpecialNumber _sn){
+	private ClickLabel allocLabelField(SpecialNumber _sn){
 		ClickLabel t_label;
 		if(!m_allocList.isEmpty()){
 			int t_idx = m_allocList.size() - 1;

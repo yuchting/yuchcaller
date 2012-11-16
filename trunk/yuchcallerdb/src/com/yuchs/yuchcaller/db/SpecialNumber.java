@@ -16,7 +16,8 @@ public class SpecialNumber extends BinSearchNumber implements Comparable<Special
 	String		m_presents;
 	
 	//! client search using weight;
-	public int			m_searchWeight;
+	public byte	m_searchPriority;
+	public byte	m_matchTime;
 		
 	public void Read(InputStream in)throws Exception{
 		m_number	= sendReceive.ReadInt(in);

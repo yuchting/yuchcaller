@@ -60,7 +60,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		
 	// current Client version
 	public final String			ClientVersion			= ApplicationDescriptor.currentApplicationDescriptor().getVersion();
-	
+		
 	public Bitmap	m_backgroundBitmap		= null;
 	public Bitmap	m_answerBitmap			= null;
 	public Bitmap	m_ignoreBitmap			= null;
