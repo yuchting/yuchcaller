@@ -363,54 +363,96 @@ public class DbIndex {
 		
 		m_cellPhoneDataSize = sendReceive.ReadInt(m_mainInputStream);
 	}
-	
+		
 	//! fill match result by keyword 
 	public void fillMatchResult(String _keyword,Vector _list,int _maxNum){
 		
 		_list.removeAllElements();
 		
 		// start insert idx of matched list
-		int t_startInsert = 0;
 		
-		while(_keyword.length() > 0){
+		// full compare
+		int t_startInsert = 0;
+		int t_matchIdx;
+		for(int i = 0;i < m_specialList.size();i++){
+			SpecialNumber t_sn = (SpecialNumber)m_specialList.elementAt(i);
+			
+			// clear the weight and march time
+			t_sn.m_searchPriority = 0;
+			t_sn.m_matchTime	= 0;
 
-			for(int i = 0;i < m_specialList.size();i++){
-				SpecialNumber t_sn = (SpecialNumber)m_specialList.elementAt(i);
-				int t_matchIdx;
-				if((t_matchIdx = t_sn.m_presents.indexOf(_keyword)) != -1){
-					t_sn.m_searchWeight = t_matchIdx;
+			t_matchIdx = t_sn.m_presents.indexOf(_keyword);
+			if(t_matchIdx != -1){	
+				
+				t_sn.m_searchPriority += (byte)t_matchIdx;
+				insertMatchResult(_list,t_startInsert,t_sn);
+				
+				if(_list.size() >= _maxNum){
+					return;
+				}
+			}
+		}
+		
+		t_startInsert = _list.size();
+		
+		if(_keyword.length() > 1){
+			
+			// every char match
+			for(int i = 0;i < _keyword.length();i++){
+				
+				char c = _keyword.charAt(i);
+				
+				for(int j = 0;j < m_specialList.size();j++){
 					
-					insertMathResult(_list,t_startInsert,t_sn);
+					SpecialNumber t_sn = (SpecialNumber)m_specialList.elementAt(j);
+					t_matchIdx = t_sn.m_presents.indexOf(c);
 					
-					if(_list.size() >= _maxNum){
-						return;
+					if(t_matchIdx != -1){
+						
+						t_sn.m_searchPriority += (t_matchIdx);
+						t_sn.m_matchTime++;
+						
+						insertMatchResult(_list,t_startInsert,t_sn);
+						
+						if(_list.size() >= _maxNum){
+							return;
+						}
 					}
 				}
 			}
-			
-			t_startInsert	= _list.size();
-			_keyword		= _keyword.substring(1);
-		}
+		}	
 	}
 	
 	//! insert the special number into right position by matched index
-	private void insertMathResult(Vector _list,int _startIdx,SpecialNumber _sn){
+	private void insertMatchResult(Vector _list,int _startIdx,SpecialNumber _sn){
 				
-		for(int i = 0;i < _list.size();i++){
-			
+		for(int i = 0;i < _startIdx;i++){
 			SpecialNumber t_cmpSn = (SpecialNumber)_list.elementAt(i);
-			if(i < _startIdx){
-				if(t_cmpSn == _sn){
-					return;
-				}
-			}else{
-
-				
-				if(t_cmpSn.m_searchWeight > _sn.m_searchWeight){
-					_list.insertElementAt(_sn, i);
-					return;
-				}
+			if(t_cmpSn == _sn){
+				return;
+			}			
+		}
+		
+		int t_findIdx = _list.indexOf(_sn);
+		if(t_findIdx != -1){
+			// remove it if find same sn in list
+			//
+			_list.removeElementAt(t_findIdx);			
+		}
+		
+		for(int i = _startIdx;i < _list.size();i++){
+			SpecialNumber t_cmpSn = (SpecialNumber)_list.elementAt(i);
+						
+			if(t_cmpSn.m_matchTime < _sn.m_matchTime){
+				_list.insertElementAt(_sn, i);
+				return;
 			}
+			
+			if(t_cmpSn.m_matchTime == _sn.m_matchTime 
+			&& t_cmpSn.m_searchPriority > _sn.m_searchPriority){
+				_list.insertElementAt(_sn, i);
+				return;
+			}			
 		}
 		
 		_list.addElement(_sn);
@@ -1241,11 +1283,11 @@ public class DbIndex {
 //		//System.out.println(t_dbIdx.findPhoneData("+1264217442960331"));
 //		
 //		Vector t_list = new Vector();
-//		t_dbIdx.fillMatchResult("警", t_list,10);
+//		t_dbIdx.fillMatchResult("国行", t_list,200);
 //		
 //		for(int i = 0;i < t_list.size();i++){
 //			SpecialNumber t_sn = (SpecialNumber)t_list.elementAt(i);
-//			System.out.println(t_sn.toString());
+//			System.out.println(t_sn.m_searchPriority + " " + t_sn.m_matchTime +" " + t_sn.toString());
 //		}
 //	}
 	

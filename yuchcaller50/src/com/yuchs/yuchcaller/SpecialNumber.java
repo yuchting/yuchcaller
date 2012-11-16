@@ -8,8 +8,10 @@ public class SpecialNumber extends BinSearchNumber{
 	public int 		m_number;
 	public String		m_presents;
 	
-	//! client search using weight;
-	public int			m_searchWeight;
+	//! client search using Priority;
+	public byte			m_searchPriority;
+	public byte			m_matchTime;
+	
 	
 	public void Read(InputStream in)throws Exception{
 		m_number	= sendReceive.ReadInt(in);
