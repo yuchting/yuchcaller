@@ -11,6 +11,7 @@ import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Manager;
+import net.rim.device.api.ui.component.ActiveRichTextField;
 import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.Dialog;
@@ -74,8 +75,6 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	private VerticalFieldManager	m_advanceManager	= null;
 	private NullField				m_advanceManagerNull= new NullField(Field.NON_FOCUSABLE);
 	
-	//! is advance manager show
-	private boolean				m_advanceManagerShow= false;
 	
 	//! the search result list
 	private SearchResultListMgr		m_intelSearchListMgr = new SearchResultListMgr();
@@ -87,7 +86,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	private Vector					m_matchedList	= new Vector();
 	
 	//! a page number to display matchedList
-	private final	int 			MatchedLabelPageNum	= 10;
+	private final	int 			MatchedLabelPageNum	= 5;
 	
 	//! currrent matched special number index
 	private int					m_addMatchedSNIdx		= 0;
@@ -95,6 +94,14 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	
 	//! matched special number display allocate poor
 	private Vector					m_allocList		= new Vector();
+	
+	//! about switch label
+	private ClickLabel				m_aboutSwitchLabel	= null;
+	
+	//! the RichText field to show about text
+	private ActiveRichTextField		m_aboutTextField	= null;
+	private NullField				m_aboutTextFieldNull = new NullField(Field.NON_FOCUSABLE);
+	
 	
 	private YuchCaller	m_mainApp = null;
 	
@@ -140,10 +147,17 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		m_advanceSwitchLabel.setFont(m_mainLabelBoldFont);
 		m_advanceSwitchLabel.setChangeListener(this);
 		add(m_advanceSwitchLabel);
-		add(m_advanceManagerNull);		
+		add(m_advanceManagerNull);
+		
+		// add the about label
+		m_aboutSwitchLabel			= new ClickLabel(getAboutSwitchLabelText());
+		m_aboutSwitchLabel.setFont(m_mainLabelBoldFont);
+		m_aboutSwitchLabel.setChangeListener(this);
+		add(m_aboutSwitchLabel);
+		add(m_aboutTextFieldNull);
 	}
 	
-	private void showAdvanceSetting(boolean _show){
+	private void showOrHideAdvanceSetting(){
 		
 		if(m_advanceManager == null){
 			
@@ -229,7 +243,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			
 		}
 		
-		if(_show){
+		if(m_advanceManagerNull.getManager() != null){
 			replace(m_advanceManagerNull, m_advanceManager);
 		}else{
 			replace(m_advanceManager, m_advanceManagerNull);
@@ -239,8 +253,15 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	}
 	
 	private String getAdvanceSwitchLabelText(){
-		return m_advanceManagerShow?("(-)" + m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_ADVANCE)):
-						"(+)" + m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_ADVANCE);
+		return (m_advanceManagerNull.getManager() != null || m_advanceManager == null)?
+						("(+)" + m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_ADVANCE)):
+						"(-)" + m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_ADVANCE);
+	}
+	
+	private String getAboutSwitchLabelText(){
+		return (m_aboutTextFieldNull.getManager() != null || m_aboutTextField == null)?
+					("(+)" + m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_ABOUT)):
+					"(-)" + m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_ABOUT);
 	}
 	
 	//! field change event processing function
@@ -273,10 +294,13 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 				m_locationTextColorSample.setText(m_mainApp.searchLocation(t_number));
 			}			 
 		}else if(field == m_advanceSwitchLabel){
-			m_advanceManagerShow = !m_advanceManagerShow;
-			showAdvanceSetting(m_advanceManagerShow);
+			
+			showOrHideAdvanceSetting();
+			
 		}else if(field == m_showDebugScreenBtn){
-			m_mainApp.popupDebugInfoScreen();			
+			
+			m_mainApp.popupDebugInfoScreen();
+			
 		}else if(field == m_intelSearchInput){
 			if(m_intelSearchInput.getTextLength() > 0){
 				// search the matched result
@@ -292,6 +316,19 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			m_addMatchedSNIdx += MatchedLabelPageNum;
 			Field t_first = addIntelSearchList(m_addMatchedSNIdx);
 			t_first.setFocus();
+			
+		}else if(m_aboutSwitchLabel == field){
+			if(m_aboutTextField == null){
+				m_aboutTextField	= new ActiveRichTextField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_ABOUT_DETAIL),EditField.READONLY);
+			}
+			
+			if(m_aboutTextFieldNull.getManager() != null){
+				replace(m_aboutTextFieldNull, m_aboutTextField);
+			}else{
+				replace(m_aboutTextField, m_aboutTextFieldNull);
+			}
+			
+			m_aboutSwitchLabel.setText(getAboutSwitchLabelText());
 			
 		}else if(field instanceof ClickLabel){
 			
@@ -524,6 +561,16 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			return false;
 		}
 		
+		protected void onFocus(int direction){
+			super.onFocus(direction);
+			invalidate();
+		}
+		
+		protected void onUnfocus(){
+			super.onUnfocus();
+			invalidate();
+		}
+		
 		// paint the prompt text when unfocus
 		public void paint(Graphics _g){
 			
@@ -532,7 +579,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 				
 				int t_color = _g.getColor();
 				try{
-					_g.setColor(0xc0c2c0);
+					_g.setColor(0xb0b2b0);
 					_g.drawText(m_unfocusPrompt, 3, 0);
 				}finally{
 					_g.setColor(t_color);
@@ -563,9 +610,13 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		
 		public ClickLabel(String _label){
 			super(_label,Field.FOCUSABLE);
-		}		
+		}
 		
-		protected boolean keyChar( char character, int status, int time ){
+		public boolean isDirty(){
+			return false;
+		}
+		
+		protected boolean keyChar( char character, int status, int time){
 	        if( character == Characters.ENTER || character == Characters.SPACE) {
 	            fieldChangeNotify( 0 );
 	            return true;

@@ -226,7 +226,26 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 						public void run() {
 							FlurryAgent.onStartApp(m_flurryKey);							
 						}
-					});					
+					});
+					
+					// invoke a runnable for destory app every 6 hours for sending custom event
+					// check follow URL for detail
+					// http://supportforums.blackberry.com/t5/Java-Development/Create-Event-in-Flurry-Analytics/td-p/1951539
+					//
+					invokeLater(new Runnable() {
+						
+						public void run() {							
+							// emulate destory app
+							FlurryAgent.onDestroyApp();
+							
+							// restart again after 20 second
+							invokeLater(new Runnable() {		
+								public void run() {
+									FlurryAgent.onStartApp(m_flurryKey);
+								}
+							},20000,false);
+						}
+					},6 * 3600000,true);
 					
 				}finally{
 					os.close();
