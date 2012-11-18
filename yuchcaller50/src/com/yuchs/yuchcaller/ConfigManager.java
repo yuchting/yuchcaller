@@ -6,6 +6,7 @@ import local.yuchcallerlocalResource;
 import net.rim.blackberry.api.invoke.Invoke;
 import net.rim.blackberry.api.invoke.PhoneArguments;
 import net.rim.device.api.system.Characters;
+import net.rim.device.api.system.Clipboard;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Font;
@@ -155,6 +156,18 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		m_aboutSwitchLabel.setChangeListener(this);
 		add(m_aboutSwitchLabel);
 		add(m_aboutTextFieldNull);
+				
+		// check the clipboard text is phone number or not 
+		Object t_clipboard = Clipboard.getClipboard().get();
+		if(t_clipboard != null){
+			
+			String t_clipText = t_clipboard.toString();
+			
+			if(DbIndex.isPhoneNumber(t_clipText)){
+				m_searchNumberInput.setText(t_clipText);
+				fieldChanged(m_searchNumberInput, 0);
+			}		
+		}
 	}
 	
 	private void showOrHideAdvanceSetting(){
@@ -485,6 +498,39 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		
 		t_label.m_speNumber = _sn;
 		return t_label;
+	}
+	
+	/**
+	 * escape key press return or clear state
+	 * @return
+	 */
+	public boolean escapeKeyPress(){
+		
+		boolean t_escaped = true;
+		
+		if(m_intelSearchInput.isFocus() && m_intelSearchInput.getTextLength() > 0){
+			m_intelSearchInput.setText("");
+			clearMatchedList();
+			t_escaped = false;
+		}
+		
+		if(m_searchNumberInput.isFocus() && m_searchNumberInput.getTextLength() > 0){
+			m_searchNumberInput.setText("");
+			fieldChanged(m_searchNumberInput,0);
+			t_escaped = false;
+		}
+		
+		if(m_aboutTextFieldNull.getManager() == null){
+			fieldChanged(m_aboutSwitchLabel,0);
+			t_escaped = false;		
+		}
+		
+		if(m_advanceManagerNull.getManager() == null){
+			fieldChanged(m_advanceSwitchLabel, 0);
+			t_escaped = false;
+		}
+		
+		return t_escaped;
 	}
 	
 	

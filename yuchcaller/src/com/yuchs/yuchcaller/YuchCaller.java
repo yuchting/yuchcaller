@@ -733,10 +733,11 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		
 		try{
 
-			if(UiApplication.getUiApplication() != null){
+			UiApplication t_uiApp;
+			if((t_uiApp = UiApplication.getUiApplication()) != null){
 				
 				MainScreen t_mainScreen = CallScreenPlugin.getConfigMainScreen(this);				
-				UiApplication.getUiApplication().pushScreen(t_mainScreen);
+				t_uiApp.pushScreen(t_mainScreen);
 				
 				// check the version
 				checkVersion();

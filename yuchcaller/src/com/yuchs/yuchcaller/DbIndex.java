@@ -73,6 +73,23 @@ public class DbIndex {
 		}
 	}
 	
+	/**
+	 * whether parameter string is phone number
+	 * @param _string
+	 * @return
+	 */
+	public static boolean isPhoneNumber(String _string){
+		
+		for(int i = 0;i < _string.length();i++){
+			char c = _string.charAt(i);
+			if(!Character.isDigit(c) && c != '+'){
+				return false;
+			}
+		}
+		
+		return _string.length() <= 16;
+	}
+	
 	//! index the phone number
 	public synchronized String findPhoneData(String _number){
 		
