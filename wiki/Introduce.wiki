@@ -23,7 +23,4 @@
 || 黑莓 6.0系统 || 0.2.1 版本 ||
 
 == 赞助 ==
-  如果您仍然能够慷慨解囊赞助这个开源项目，我们会感谢您的无私，并[http://code.google.com/p/yuchberry/wiki/Thanks_sheet 铭记在心]，详情请访问[http://code.google.com/p/yuchberry/wiki/Sponsor_yuchberry 这里]。
-
-<g:plusone annotation="inline"></g:plusone>
-    
+  如果您仍然能够慷慨解囊赞助这个开源项目，我们会感谢您的无私，并[http://code.google.com/p/yuchberry/wiki/Thanks_sheet 铭记在心]，详情请访问[http://code.google.com/p/yuchberry/wiki/Sponsor_yuchberry 这里]。    
