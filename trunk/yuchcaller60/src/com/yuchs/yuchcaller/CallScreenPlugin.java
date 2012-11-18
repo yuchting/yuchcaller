@@ -153,6 +153,15 @@ public class CallScreenPlugin {
 				t_manager.saveProp();
 				return true;
 			}
+			
+			public boolean onClose(){
+				if(t_manager.escapeKeyPress()){
+					super.onClose();
+					return true;
+				}
+				
+				return false;
+			}
 		};
 		
 		Background bg = BackgroundFactory.createSolidBackground(0xdedfde);
