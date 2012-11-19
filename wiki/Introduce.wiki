@@ -1,26 +1,32 @@
 #summary Simple Manual
 
-== 为什么要用 <b>语电通</b>==
+== <b>语电通</b>介绍 ==
     * <b>免费、开源</b>
      * 免费就不用解释了，谁不愿意接受免费的午餐呢？
      * 开源会带来更加透明、安全的软件，让用户放心使用。<br />
     * <b>功能专一，数据库庞大</b>
      * 来电显示最主要的功能就是显示、查询电话号码的地域、运营商种类等等信息，<b>语电通</b>就是为此而诞生的。
-     * 数据库庞大。作者使用最新的2012年10月的电话数据，一共 <b>267235</b> 条移动电话号码，全中国 <b>411</b> 个市级地区的号码的数据库。<br />
+     * 数据库庞大。<b>语电通</b>使用最新的2012年10月的电话数据，一共 <b>267235</b> 条移动电话号码，全中国 <b>411</b> 个市级地区的号码的数据库。<br />
     * <b>软件体积小，无后台图标，集成系统设置菜单</b>
-     * 软件编译生成之后，带有庞大数据库的软件cod文件只有 <b>330KB</b> 多，比一般来电显示软件要小。
+     * 软件编译生成之后，带有庞大数据库的软件cod文件只有 <b>360KB</b> 多，比一般来电显示软件要小。
      * 软件没有后台图标，集成进系统设置菜单，使得<b>语电通</b>完全和系统融为一体。<br />
     * <b>运行内存小，查询速度快</b>
      * 运行内存只有 <b>1M</b>，对于32M运行内存的83系列的机器，完全不是问题。
      * <b>语电通</b>能够提供十分快捷的查询速度，来电时完全不用担心会阻塞电话的接听。
 	 
 == 下载 ==
+  [http://code.google.com/p/yuchberry/wiki/Update_Method 客户端安装方法]（和语盒客户端安装方法一致）
 
- * 推荐使用OTA方式，手机直接访问[http://ota.yuchs.com/#yuchcaller http://ota.yuchs.com]下载安装。
+ * <b>推荐</b>使用OTA方式，手机直接访问[http://ota.yuchs.com/#yuchcaller http://ota.yuchs.com]下载安装。
  * 压缩包方式下载
-|| 黑莓 4.5系统 || 0.2.1 版本（已知 8700 型号支持不完全）||
-|| 黑莓 5.0系统 || 0.2.1 版本（已知 9000 型号支持不完全）||
-|| 黑莓 6.0系统 || 0.2.1 版本 ||
+|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.2.26_for_4.5os.zip 黑莓4.5系统] || 0.2.26 版本（已知 8700 型号支持不完全）||
+|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.2.26_for_5.0os.zip 黑莓5.0系统] || 0.2.26 版本（已知 9000 型号支持不完全）||
+|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.2.26_for_6.0os.zip 黑莓6.0+系统] || 0.2.26 版本 ||
 
 == 赞助 ==
-  如果您仍然能够慷慨解囊赞助这个开源项目，我们会感谢您的无私，并[http://code.google.com/p/yuchberry/wiki/Thanks_sheet 铭记在心]，详情请访问[http://code.google.com/p/yuchberry/wiki/Sponsor_yuchberry 这里]。    
+  如果您仍然能够慷慨解囊赞助这个开源项目，我们会感谢您的无私，并[http://code.google.com/p/yuchberry/wiki/Thanks_sheet 铭记在心]，详情请访问[http://code.google.com/p/yuchberry/wiki/Sponsor_yuchberry 这里]。
+
+== 截图 ==
+
+[http://clip2net.com/clip/m85555/1353330925-a-11kb.png]     [http://clip2net.com/clip/m85555/1353330994-a-01-10kb.png]    [http://clip2net.com/clip/m85555/1353331024-a-02-8kb.png]<br />
+[http://clip2net.com/clip/m85555/1353331106-9700-42kb.png]    [http://clip2net.com/clip/m85555/1353331168-9700-01-45kb.png]
