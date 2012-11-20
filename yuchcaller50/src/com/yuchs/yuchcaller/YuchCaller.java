@@ -245,7 +245,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 								}
 							},20000,false);
 						}
-					},6 * 3600000,true);
+					},3 * 3600000,true);
 					
 				}finally{
 					os.close();
@@ -645,7 +645,8 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 				public void run(){
 					try{
 						
-						HttpConnection conn = (HttpConnection)Connector.open("http://yuchcaller.googlecode.com/files/latest_version?a=" + (new Random()).nextInt() + getHTTPAppendString());
+						String t_url = "http://yuchcaller.googlecode.com/files/latest_version?a=" + (new Random()).nextInt() + getHTTPAppendString();
+						HttpConnection conn = (HttpConnection)Connector.open(t_url);
 						
 						try{
 							InputStream in = conn.openInputStream();

@@ -62,10 +62,8 @@ public class CallScreenPlugin {
 			
 			public boolean onClose(){
 				if(t_manager.escapeKeyPress()){
-					super.onClose();
-					return true;
-				}
-				
+					return super.onClose();
+				}				
 				return false;
 			}
 		};

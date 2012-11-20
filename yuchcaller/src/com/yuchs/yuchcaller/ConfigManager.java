@@ -13,6 +13,7 @@ import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.component.ActiveRichTextField;
+import net.rim.device.api.ui.component.AutoTextEditField;
 import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.Dialog;
@@ -526,8 +527,10 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		}
 		
 		if(m_advanceManagerNull.getManager() == null){
-			fieldChanged(m_advanceSwitchLabel, 0);
-			t_escaped = false;
+			if(!m_advanceManager.isDirty()){
+				fieldChanged(m_advanceSwitchLabel, 0);
+				t_escaped = false;
+			}
 		}
 		
 		return t_escaped;
@@ -593,7 +596,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	 * @author tzz
 	 *
 	 */
-	final class InputEditField extends EditField{
+	final class InputEditField extends AutoTextEditField{
 		final String m_unfocusPrompt;
 		
 		// unfocus
