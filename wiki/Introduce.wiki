@@ -13,15 +13,16 @@
     * <b>运行内存小，查询速度快</b>
      * 运行内存只有 <b>1M</b>，对于32M运行内存的83系列的机器，完全不是问题。
      * <b>语电通</b>能够提供十分快捷的查询速度，来电时完全不用担心会阻塞电话的接听。
-	 
+    现今为止，语电通已经为 [http://ota.yuchs.com/yc_img.php?user=true&xxx.jpg] 位用户提供 [http://ota.yuchs.com/yc_img.php?xx.jpg] 次有效查询。_ (统计数据来自于NB的[http://www.flurry.com/ Flurry]) _
+
 == 下载 ==
-  [http://code.google.com/p/yuchberry/wiki/Update_Method 客户端安装方法]（和语盒客户端安装方法一致）
+   各个版本的 [https://code.google.com/p/yuchcaller/wiki/Promote_list 改进列表|更新内容]。黑莓新手请看[http://code.google.com/p/yuchberry/wiki/Update_Method 客户端安装方法]（和语盒客户端安装方法一致）。
 
  * <b>推荐</b>使用OTA方式，手机直接访问[http://ota.yuchs.com/#yuchcaller http://ota.yuchs.com]下载安装。
  * 压缩包方式下载
-|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.2.26_for_4.5os.zip 黑莓4.5系统] || 0.2.26 版本（已知 8700 型号支持不完全）||
-|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.2.26_for_5.0os.zip 黑莓5.0系统] || 0.2.26 版本（已知 9000 型号支持不完全）||
-|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.2.26_for_6.0os.zip 黑莓6.0+系统] || 0.2.26 版本 ||
+|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.2.28_for_4.5os.zip 黑莓4.5系统] || 0.2.28 版本（已知 8700 型号支持不完全）||
+|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.2.28_for_5.0os.zip 黑莓5.0系统] || 0.2.28 版本（已知 9000 型号支持不完全）||
+|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.2.28_for_6.0os.zip 黑莓6.0+系统] || 0.2.28 版本 ||
 
 == 赞助 ==
   如果您仍然能够慷慨解囊赞助这个开源项目，我们会感谢您的无私，并[http://code.google.com/p/yuchberry/wiki/Thanks_sheet 铭记在心]，详情请访问[http://code.google.com/p/yuchberry/wiki/Sponsor_yuchberry 这里]。
