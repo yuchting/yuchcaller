@@ -16,12 +16,11 @@
     现今为止，语电通已经为 [http://ota.yuchs.com/yc_img.php?user=true&xxx.jpg] 位用户提供 [http://ota.yuchs.com/yc_img.php?xx.jpg] 次有效查询。_ (统计数据来自于NB的[http://www.flurry.com/ Flurry]) _
 
 == 下载 ==
-   各个版本的 [https://code.google.com/p/yuchcaller/wiki/Promote_list 改进列表|更新内容]。黑莓新手请看[http://code.google.com/p/yuchberry/wiki/Update_Method 客户端安装方法]（和语盒客户端安装方法一致）。
-
- * <b>推荐</b>使用OTA方式，手机直接访问[http://ota.yuchs.com/#yuchcaller http://ota.yuchs.com]下载安装。
- * 压缩包方式下载
-|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.2.28_for_4.5os.zip 黑莓4.5系统] || 0.2.28 版本（已知 8700 型号支持不完全）||
-|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.2.28_for_5.0os.zip 黑莓5.0系统] || 0.2.28 版本（已知 9000 型号支持不完全）||
+   黑莓新手请看[http://code.google.com/p/yuchberry/wiki/Update_Method 客户端安装方法]（和语盒客户端安装方法一致）。各个版本的 [https://code.google.com/p/yuchcaller/wiki/Promote_list 改进列表|更新内容]，使用第三方主题时，可能会使用默认的来电、去电界面。
+    * <b>推荐</b>使用OTA方式，手机直接访问[http://ota.yuchs.com/#yuchcaller http://ota.yuchs.com]下载安装。
+    * 压缩包方式下载
+|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.2.28_for_4.5os.zip 黑莓4.5系统] || 0.2.28 版本||
+|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.2.28_for_5.0os.zip 黑莓5.0系统] || 0.2.28 版本（已知 9000 8900 8520 型号支持不完全）||
 || [http://yuchcaller.googlecode.com/files/yuchcaller_0.2.28_for_6.0os.zip 黑莓6.0+系统] || 0.2.28 版本 ||
 
 == 赞助 ==
@@ -29,5 +28,5 @@
 
 == 截图 ==
 
-[http://clip2net.com/clip/m85555/1353330925-a-11kb.png]     [http://clip2net.com/clip/m85555/1353330994-a-01-10kb.png]    [http://clip2net.com/clip/m85555/1353331024-a-02-8kb.png]<br />
+[http://clip2net.com/clip/m85555/1353330994-a-01-10kb.png]    [http://clip2net.com/clip/m85555/1353331024-a-02-8kb.png]<br />
 [http://clip2net.com/clip/m85555/1353331106-9700-42kb.png]    [http://clip2net.com/clip/m85555/1353331168-9700-01-45kb.png]
