@@ -49,14 +49,18 @@ public class DbIndex {
 	//! languange code to get the coutry information 
 	private int		m_localCode			= 0;
 	
+	//! current city string
+	private String		m_currentCityStr	= "";
+	
 	/**
 	 * initailize the data base index with debugouput interface
 	 * @param _debugOutput
 	 * @param _localCode	0 means PR.China zh; 1 means others
 	 */
-	public DbIndex(DbIndexDebugOut _debugOutput,int _localCode){
+	public DbIndex(DbIndexDebugOut _debugOutput,int _localCode,String _currentCityStr){
 		m_debugOutput		= _debugOutput;
 		m_localCode			= _localCode;
+		m_currentCityStr	= _currentCityStr;
 	}
 	
 	//! output debug information
@@ -112,6 +116,13 @@ public class DbIndex {
 						if(t_cpd != null){
 							t_special = composeLocationInfo(t_cpd);
 						}
+					}
+				}
+				
+				if(t_special.length() == 0){
+					if((_number.length() == 8 || _number.length() == 7) 
+					&& (!_number.startsWith("800") && !_number.startsWith("400"))){
+						t_special = m_currentCityStr;
 					}
 				}
 				

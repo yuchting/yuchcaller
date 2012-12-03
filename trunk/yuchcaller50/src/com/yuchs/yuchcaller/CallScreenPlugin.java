@@ -51,38 +51,8 @@ public class CallScreenPlugin {
 			m_formerLocation			= m_formerNumber.equals(t_number)?m_formerLocation:m_mainApp.searchLocation(t_number);
 			m_formerNumber				= t_number;
 
-			PhoneScreen ps = new PhoneScreen(callId, m_mainApp);
-			
-			final Font t_textFont = m_mainApp.generateLocationTextFont();
-			final int t_width		= t_textFont.getAdvance(m_formerLocation);
-			final int t_height	= t_textFont.getHeight();
-			
-			LabelField t_label = new LabelField(m_formerLocation,Field.NON_FOCUSABLE){
-				public void paint(Graphics g){
-					int t_color = g.getColor();
-					try{
-						g.setColor(m_mainApp.getProperties().getLocationColor());
-						g.setFont(t_textFont);
-						g.drawText(m_formerLocation, 0, 0);
-					}finally{
-						g.setColor(t_color);
-					}
-				}
-				
-				public int getPreferredWidth(){
-					return t_width;
-				}
-				
-				public int getPreferredHeight(){
-					return t_height;
-				}
-				
-				protected void layout(int _width,int _height){
-					setExtent(getPreferredWidth(), getPreferredHeight());
-				}
-			};
-			
-			ps.add(t_label);
+			PhoneScreen ps = new PhoneScreen(callId, m_mainApp);			
+			ps.add(m_mainApp.getInfoLabelField(m_formerLocation));
 			ps.sendDataToScreen();			
 			
 		}catch(Exception e){

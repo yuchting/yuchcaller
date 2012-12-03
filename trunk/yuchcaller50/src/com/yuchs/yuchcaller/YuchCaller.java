@@ -42,6 +42,7 @@ import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.Screen;
+import net.rim.device.api.ui.Ui;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.UiEngine;
 import net.rim.device.api.ui.component.Dialog;
@@ -68,7 +69,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	public final ResourceBundle 	m_local = ResourceBundle.getBundle(yuchcallerlocalResource.BUNDLE_ID, yuchcallerlocalResource.BUNDLE_NAME);
 	
 	//! data base index manager class
-	private DbIndex m_dbIndex	= new DbIndex(this,getLocaleCode());	
+	private DbIndex m_dbIndex	= null;
 	
 	//! user answer the call id to avoid vibrate
 	private int	m_userAnswerCall = -1;
@@ -160,7 +161,14 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		t_caller.init();
 		t_caller.enterEventDispatcher();
 	} 
-		
+	
+	/**
+	 * constructor
+	 */
+	public YuchCaller(){
+		m_dbIndex = new DbIndex(this,getLocaleCode(),m_local.getString(yuchcallerlocalResource.PHONE_LOCAL_PHONE));	
+	}
+	
 	/**
 	 * initialize the application state:
 	 * 
@@ -429,7 +437,9 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	
 	//! generate the location text font
 	public Font generateLocationTextFont(){
-		return Font.getDefault().derive(Font.getDefault().getStyle(),getProperties().getLocationHeight());
+		
+		return Font.getDefault().derive(Font.getDefault().getStyle() | (getProperties().isBoldFont()?Font.BOLD:0),
+				getProperties().getLocationHeight());
 	}
 	
 	//@{ OptionsProvider
@@ -561,7 +571,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		}
 		
 		PhoneCall t_phone = Phone.getCall(callId);
-		m_activePhoneCallManager.m_locationInfo = m_dbIndex.findPhoneData(parsePhoneNumber(t_phone.getDisplayPhoneNumber()));
+		m_activePhoneCallManager.m_locationInfo = searchLocation(parsePhoneNumber(t_phone.getDisplayPhoneNumber()));
 	}
 	
 
@@ -667,7 +677,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 							        result = new String(os.toByteArray(),"UTF-8");
 						    	}
 						    	
-						    	if(!result.equals(ClientVersion)){
+						    	if(isRightVersionString(result) && !result.equals(ClientVersion)){
 						    		// popup dialog to lead 
 						    		//
 						    		popupLatestVersionDlg(result);
@@ -694,6 +704,18 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 			
 			m_checkVersionThread.start();
 		}
+	}
+	
+	//! judge whether string is right version
+	private boolean isRightVersionString(String _version){
+		for(int i = 0;i < _version.length();i++){
+			char c = _version.charAt(i);
+			if(c != '.' && !Character.isDigit(c)){
+				return false;
+			}
+		}
+		
+		return true;
 	}
 	
 	
@@ -831,6 +853,50 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		return m_errorString;
 	}
 	
+	// generate the information label field
+	public Field getInfoLabelField(final String _location){
+		
+		final Font t_textFont	= generateLocationTextFont();
+		final int t_width		= t_textFont.getAdvance(_location);
+		final int t_height		= t_textFont.getHeight();
+		
+		Field t_manager = new Field(Field.NON_FOCUSABLE) {
+			
+			protected void layout(int width, int height) {
+				setExtent(this.getPreferredWidth(), this.getPreferredHeight());
+			}
+			
+			protected void paint(Graphics g){
+				int t_color = g.getColor();
+				try{
+					int t_pos_x = (getPreferredWidth() - t_width) / 2 + getProperties().getLocationPosition_x();
+					int t_pos_y = getProperties().getLocationPosition_y();
+					
+					if(t_pos_y + t_height > getPreferredHeight()){
+						t_pos_y = getPreferredHeight() - t_height;
+					}
+					
+					g.setColor(getProperties().getLocationColor());
+					g.setFont(t_textFont);
+					g.drawText(_location, t_pos_x, t_pos_y);
+					
+				}finally{
+					g.setColor(t_color);
+				}				
+			}
+						
+			public int getPreferredWidth(){
+				return fsm_display_width;
+			}
+			
+			public int getPreferredHeight(){
+				return t_height * 2;
+			}
+		};
+		
+		return t_manager;
+	}
+		
 	/**
 	 * get the local code 
 	 * @return

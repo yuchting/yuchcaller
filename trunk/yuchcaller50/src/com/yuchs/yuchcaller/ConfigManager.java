@@ -46,8 +46,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		0xbc9543,
 		0xaba8a8,
 	};
-	
-		
+			
 	//! font to show main label 
 	private Font		m_mainLabelBoldFont = getFont().derive(getFont().getStyle() | Font.BOLD , getFont().getHeight());
 	
@@ -61,7 +60,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	
 	private ObjectChoiceField m_locationInfoColor = null;	
 	private EditField m_locationInfoHeight			= null;
-	
+	private CheckboxField	m_locationBoldFont		= null;
 	private EditField m_searchNumberInput			= null;
 	
 	private CheckboxField	m_showSystemMenu		= null;
@@ -216,22 +215,32 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			t_label.setFont(m_mainLabelBoldFont);
 			m_advanceManager.add(t_label);
 			
-			if(YuchCaller.fsm_OS_version.startsWith("4.5")){
-				m_locationInfoPosition_x = new EditField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_POSITION_X),
-						Integer.toString(m_mainApp.getProperties().getLocationPosition_x()),
-						3,
-						EditField.NO_NEWLINE | EditField.FILTER_NUMERIC );
-
-				m_locationInfoPosition_y = new EditField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_POSITION_Y),
-									Integer.toString(m_mainApp.getProperties().getLocationPosition_y()),
-									3,
-									EditField.NO_NEWLINE | EditField.FILTER_NUMERIC );
-				
-				
-				
-				m_advanceManager.add(m_locationInfoPosition_x);
-				m_advanceManager.add(m_locationInfoPosition_y);
+			String t_pos_prompt_x;
+			String t_pos_prompt_y;
+			
+			if(YuchCaller.fsm_OS_version.startsWith("4.")){
+				t_pos_prompt_x = m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_POSITION_X);
+				t_pos_prompt_y = m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_POSITION_Y);
+			}else{
+				t_pos_prompt_x = m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_POSITION_OFFSET_X);
+				t_pos_prompt_y = m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_POSITION_OFFSET_Y);
 			}
+			
+			m_locationInfoPosition_x = new EditField(t_pos_prompt_x,
+													Integer.toString(m_mainApp.getProperties().getLocationPosition_x()),
+													4,
+													EditField.NO_NEWLINE | EditField.FILTER_INTEGER );
+
+			m_locationInfoPosition_y = new EditField(t_pos_prompt_y,
+													Integer.toString(m_mainApp.getProperties().getLocationPosition_y()),
+													4,
+													EditField.NO_NEWLINE | EditField.FILTER_INTEGER );
+			
+			
+			
+			m_advanceManager.add(m_locationInfoPosition_x);
+			m_advanceManager.add(m_locationInfoPosition_y);
+			
 			
 			m_locationInfoHeight = new EditField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_HEIGHT),
 					Integer.toString(m_mainApp.getProperties().getLocationHeight()),
@@ -239,13 +248,19 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 					EditField.NO_NEWLINE | EditField.FILTER_NUMERIC );
 
 			m_locationInfoHeight.setChangeListener(this);
-			m_advanceManager.add(m_locationInfoHeight);		
-			
+			m_advanceManager.add(m_locationInfoHeight);
+						
 			m_locationInfoColor	= new ObjectChoiceField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_COLOR),
 														t_choiceObj,t_choiceIdx);
 			
 			m_advanceManager.add(m_locationInfoColor);
 			m_locationInfoColor.setChangeListener(this);
+			
+			m_locationBoldFont = new CheckboxField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_BOLD_STYLE), 
+													m_mainApp.getProperties().isBoldFont());
+			
+			m_locationBoldFont.setChangeListener(this);
+			m_advanceManager.add(m_locationBoldFont);
 			
 			m_showSystemMenu	= new CheckboxField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SHOW_SYSTEM_MENU), m_mainApp.getProperties().showSystemMenu());
 			m_advanceManager.add(m_showSystemMenu);
@@ -291,17 +306,10 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			m_locationTextColorSample.setColor(fsm_locationCandColor[m_locationInfoColor.getSelectedIndex()]);
 			ConfigManager.this.invalidate();
 			
-		}else if(field == m_locationInfoHeight){
+		}else if(field == m_locationInfoHeight || field == m_locationBoldFont){
 			
-			// get the height of setting
-			int t_height = MathUtilities.clamp(20, getTextFieldNum(m_locationInfoHeight), 40);
+			replaceSampleText();
 			
-			// replace sample text
-			ColorSampleField t_newField = new ColorSampleField(m_locationTextColorSample.m_color);
-			t_newField.setFont(m_locationTextColorSample.getFont().derive(m_locationTextColorSample.getFont().getStyle(),t_height));
-			
-			replace(m_locationTextColorSample, t_newField);
-			m_locationTextColorSample = t_newField;
 		}else if(field == m_searchNumberInput){
 			if(m_searchNumberInput.getTextLength() > 0){
 				String t_number = m_searchNumberInput.getText();
@@ -361,7 +369,23 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 				}
 			}
 		}
-	}	
+	}
+	
+	// replace sample text
+	private void replaceSampleText(){
+		
+		// get the height of setting
+		int t_height = MathUtilities.clamp(20, getTextFieldNum(m_locationInfoHeight), YuchCallerProp.fsm_maxFontHeight);
+		
+		// replace sample text
+		ColorSampleField t_newField = new ColorSampleField(m_locationTextColorSample.m_color);
+		
+		t_newField.setFont(m_locationTextColorSample.getFont().derive(
+				m_locationTextColorSample.getFont().getStyle() | (m_locationBoldFont.getChecked()?Font.BOLD:0),t_height));
+		
+		replace(m_locationTextColorSample, t_newField);
+		m_locationTextColorSample = t_newField;
+	}
 	
 	
 	// save the properties
@@ -371,19 +395,19 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			m_mainApp.getProperties().setRecvPhoneVibrationTime(getTextFieldNum(m_recvVibrationTime));
 			m_mainApp.getProperties().setHangupPhoneVibrationTime(getTextFieldNum(m_hangupVibrationTime));
 			
-			if(m_locationInfoPosition_x != null){
-				m_mainApp.getProperties().setLocationPosition_x(getTextFieldNum(m_locationInfoPosition_x));
-				m_mainApp.getProperties().setLocationPosition_y(getTextFieldNum(m_locationInfoPosition_y));
-			}
+			m_mainApp.getProperties().setLocationPosition_x(getTextFieldNum(m_locationInfoPosition_x));
+			m_mainApp.getProperties().setLocationPosition_y(getTextFieldNum(m_locationInfoPosition_y));			
 			
 			m_mainApp.getProperties().setLocationColor(fsm_locationCandColor[m_locationInfoColor.getSelectedIndex()]);
-			m_mainApp.getProperties().setLocationHeight(MathUtilities.clamp(20, getTextFieldNum(m_locationInfoHeight), 40));
+			m_mainApp.getProperties().setLocationHeight(MathUtilities.clamp(20, getTextFieldNum(m_locationInfoHeight), YuchCallerProp.fsm_maxFontHeight));
+			
+			m_mainApp.getProperties().setBoldFont(m_locationBoldFont.getChecked());
 			
 			if(m_showSystemMenu.getChecked() != m_mainApp.getProperties().showSystemMenu()){
 				m_mainApp.getProperties().setShowSystemMenu(m_showSystemMenu.getChecked());
 				m_mainApp.initMenus(false);
 			}
-
+			
 			m_mainApp.getProperties().save();
 			
 			// notify the yuchcaller to change style of text font
