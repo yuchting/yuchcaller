@@ -6,10 +6,7 @@ import net.rim.blackberry.api.phone.phonegui.PhoneScreen;
 import net.rim.blackberry.api.phone.phonegui.ScreenModel;
 import net.rim.device.api.system.DeviceInfo;
 import net.rim.device.api.ui.Field;
-import net.rim.device.api.ui.Font;
-import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Screen;
-import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.container.MainScreen;
 import net.rim.device.api.ui.decor.Background;
 import net.rim.device.api.ui.decor.BackgroundFactory;
@@ -54,10 +51,9 @@ public class CallScreenPlugin {
 			m_formerNumber				= t_number;
 						
 			PhoneScreen ps = screenModel.getPhoneScreen(ScreenModel.getCurrentOrientation(), _screenType);
-			
-			ps.add(getInfoLabelField());	
-			screenModel.sendAllDataToScreen();			
-			
+			ps.add(m_mainApp.getInfoLabelField(m_formerLocation));
+			screenModel.sendAllDataToScreen();
+						
 		}catch(Exception e){
 			m_mainApp.SetErrorString("CSPA",e);
 		}
@@ -82,7 +78,7 @@ public class CallScreenPlugin {
 			m_formerNumber				= t_number;
 									
 			PhoneScreen ps = new PhoneScreen(callId, m_mainApp);
-			ps.add(getInfoLabelField());
+			ps.add(m_mainApp.getInfoLabelField(m_formerLocation));
 			ps.sendDataToScreen();			
 			
 		}catch(Exception e){
@@ -91,42 +87,7 @@ public class CallScreenPlugin {
 		
 		return true;
 	}
-	
-	// generate the information label feild
-	private LabelField getInfoLabelField(){
 		
-		final Font t_textFont	= m_mainApp.generateLocationTextFont();
-		final int t_width		= t_textFont.getAdvance(m_formerLocation);
-		final int t_height		= t_textFont.getHeight();
-		
-		LabelField t_label = new LabelField(m_formerLocation,Field.NON_FOCUSABLE){
-			public void paint(Graphics g){
-				int t_color = g.getColor();
-				try{
-					g.setColor(m_mainApp.getProperties().getLocationColor());
-					g.setFont(t_textFont);
-					g.drawText(m_formerLocation, 0, 0);
-				}finally{
-					g.setColor(t_color);
-				}
-			}
-			
-			public int getPreferredWidth(){
-				return t_width;
-			}
-			
-			public int getPreferredHeight(){
-				return t_height;
-			}
-			
-			protected void layout(int _width,int _height){
-				setExtent(getPreferredWidth(), getPreferredHeight());
-			}
-		};
-		
-		return t_label;
-	}
-	
 	/**
 	 * clear the buffered number 
 	 */

@@ -12,6 +12,9 @@ public class YuchCallerProp {
 	    
     // directory of blackberry store 
 	public final static String 	fsm_rootPath_back		= "file:///store/home/user/";
+	
+	//  the max font height
+	public final static int		fsm_maxFontHeight		= 50;
     		
 	//! receive phone vibration time
 	private int m_receivePhoneVibrationTime = 100;
@@ -23,10 +26,13 @@ public class YuchCallerProp {
 	private int m_locationInfoPosition_x	= 0;
 	
 	//! location information position 
-	private int m_locationInfoPosition_y	= getLocationInfoInitPos_y();
+	private int m_locationInfoPosition_y	= getLocationInfoInitPos_y(); 
 	
 	//! location information color
 	private int m_locationInfoColor		= YuchCaller.fsm_OS_version.startsWith("4.5")?0:0xffffff;
+	
+	//! location bold font
+	private boolean m_locationBoldFont		= true;
 	
 	//! show system menu or only show phone/contact screen
 	private boolean m_showSystemMenu		= true;
@@ -43,12 +49,11 @@ public class YuchCallerProp {
 	
 	// static function to get the initialize y position of location information label
 	private static int getLocationInfoInitPos_y(){
-		if(YuchCaller.fsm_OS_version.startsWith("4.5")){
+		if(YuchCaller.fsm_OS_version.startsWith("4.") 
+		|| !CallScreenPlugin.isPhoneScreenPluginSupported()){
 			return YuchCaller.fsm_display_height - YuchCaller.fsm_display_height / 3 + 12;
-		}else if(YuchCaller.fsm_display_height > YuchCaller.fsm_display_width){
-			return YuchCaller.fsm_display_height / 3;
 		}else{
-			return YuchCaller.fsm_display_height - YuchCaller.fsm_display_height / 3;
+			return 0;
 		}
 	}
 			
@@ -86,6 +91,9 @@ public class YuchCallerProp {
 	
 	public boolean showSystemMenu(){return m_showSystemMenu;}
 	public void setShowSystemMenu(boolean _show){m_showSystemMenu = _show;}
+	
+	public boolean isBoldFont(){return m_locationBoldFont;}
+	public void setBoldFont(boolean _bold){m_locationBoldFont = _bold;}
 	
     //Retrieves a copy of the effective properties set from storage.
     public void save(){
@@ -172,7 +180,7 @@ public class YuchCallerProp {
 		}
 	}
 	
-	final static int		fsm_clientVersion = 0;
+	final static int		fsm_clientVersion = 1;
 	
 	static final String fsm_initFilename_init_data = "Init.data";
 	static final String fsm_initFilename_back_init_data = "~Init.data";
@@ -227,8 +235,16 @@ public class YuchCallerProp {
 				    		m_locationInfoColor			= sendReceive.ReadInt(in);
 				    		m_showSystemMenu			= sendReceive.ReadBoolean(in);
 				    		m_locationInfoHeight		= sendReceive.ReadInt(in);
-				    		
+				    		m_locationBoldFont			= sendReceive.ReadBoolean(in);
+				    
+			    			if(t_currVer == 0 && !YuchCaller.fsm_OS_version.startsWith("4.")){
+				    			// some data variables function is changed
+				    			//
+				    			m_locationInfoPosition_y = 0;
+				    		}
+			    			
 			    		}finally{
+			    							    		
 			    			in.close();
 			    			in = null;
 			    		}
@@ -252,6 +268,7 @@ public class YuchCallerProp {
 						sendReceive.WriteInt(os,m_locationInfoColor);
 						sendReceive.WriteBoolean(os,m_showSystemMenu);
 						sendReceive.WriteInt(os,m_locationInfoHeight);
+						sendReceive.WriteBoolean(os, m_locationBoldFont);
 						
 					}finally{
 						os.close();
