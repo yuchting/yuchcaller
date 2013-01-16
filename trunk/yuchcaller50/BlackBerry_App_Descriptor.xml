@@ -2,7 +2,9 @@
   <General Title="YuchCaller" Version="0.2.28" Vendor="YuchTing" Description=""/>
   <Application Type="BlackBerry Application" MainMIDletName="" MainArgs="" HomeScreenPosition="0" StartupTier="7" IsSystemModule="true" IsAutostartup="true"/>
   <Resources hasTitleResource="true" TitleResourceBundleName="yuchcallerlocal" TitleResourceBundleRelativePath="src/local/yuchcallerlocal.rrh" TitleResourceBundleClassName="local.yuchcallerlocal" TitleResourceBundleKey="App_Title" DescriptionId="APPLICATION_DESC">
-    <Icons/>
+    <Icons>
+      <Icon CanonicalFileName="res/Main.png" IsFocus="false"/>
+    </Icons>
   </Resources>
   <Compile OutputCompilerMessages="false" ConvertImages="false" CreateWarningForNoExportedRoutine="true" CompressResources="true" AliasList="">
     <PreprocessorDefines/>

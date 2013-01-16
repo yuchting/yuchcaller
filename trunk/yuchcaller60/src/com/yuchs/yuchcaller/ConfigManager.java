@@ -3,8 +3,6 @@ package com.yuchs.yuchcaller;
 import java.util.Vector;
 
 import local.yuchcallerlocalResource;
-import net.rim.blackberry.api.invoke.Invoke;
-import net.rim.blackberry.api.invoke.PhoneArguments;
 import net.rim.device.api.system.Characters;
 import net.rim.device.api.system.Clipboard;
 import net.rim.device.api.ui.Field;
@@ -63,6 +61,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	private CheckboxField	m_locationBoldFont		= null;
 	private EditField m_searchNumberInput			= null;
 	
+	private EditField 		m_IPDialPrefix			= null;
 	private CheckboxField	m_showSystemMenu		= null;
 	
 	private ColorSampleField m_locationTextColorSample = null;
@@ -262,6 +261,17 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			m_locationBoldFont.setChangeListener(this);
 			m_advanceManager.add(m_locationBoldFont);
 			
+			m_advanceManager.add(new SeparatorField());
+			
+			t_label = new LabelField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_OTHER),Field.NON_FOCUSABLE);
+			t_label.setFont(m_mainLabelBoldFont);
+			m_advanceManager.add(t_label);
+			
+			m_IPDialPrefix = new EditField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_IP_DIAL),m_mainApp.getProperties().getIPDialNumber(),
+											10,EditField.NO_NEWLINE | EditField.FILTER_NUMERIC);
+			
+			m_advanceManager.add(m_IPDialPrefix);
+			
 			m_showSystemMenu	= new CheckboxField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SHOW_SYSTEM_MENU), m_mainApp.getProperties().showSystemMenu());
 			m_advanceManager.add(m_showSystemMenu);
 			
@@ -361,8 +371,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 				if(Dialog.ask(Dialog.D_YES_NO, m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_ASK_DIAL_NUMBER) + "\n" + t_cl.toString(), 
 				Dialog.NO) == Dialog.YES){
 					try{
-						PhoneArguments call = new PhoneArguments(PhoneArguments.ARG_CALL, t_cl.m_speNumber.getDialNumber());
-						Invoke.invokeApplication(Invoke.APP_TYPE_PHONE, call);
+						YuchCaller.CallPhoneNumber(t_cl.m_speNumber.getDialNumber());
 					}catch(Exception ex){
 						m_mainApp.DialogAlert("Dial Error:" + ex.getMessage());
 					}					
@@ -403,10 +412,21 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			
 			m_mainApp.getProperties().setBoldFont(m_locationBoldFont.getChecked());
 			
+			boolean t_initMenu = false;
+			
+			if(!m_IPDialPrefix.getText().equals(m_mainApp.getProperties().getIPDialNumber())){
+				m_mainApp.getProperties().setIPDialNumber(m_IPDialPrefix.getText());
+				t_initMenu = true;
+			}			
+			
 			if(m_showSystemMenu.getChecked() != m_mainApp.getProperties().showSystemMenu()){
 				m_mainApp.getProperties().setShowSystemMenu(m_showSystemMenu.getChecked());
-				m_mainApp.initMenus(false);
+				t_initMenu = true;
 			}
+			
+			if(t_initMenu){
+				m_mainApp.initMenus(false);
+			}			
 			
 			m_mainApp.getProperties().save();
 			
