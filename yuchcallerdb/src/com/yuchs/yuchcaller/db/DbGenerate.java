@@ -16,21 +16,11 @@ import java.util.zip.GZIPOutputStream;
  */
 public class DbGenerate {
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		if(args.length < 2){
-			System.out.println("please append a parse file...");
-			return ;
-		}
-		
-		(new DbGenerate()).mainProcess(args[1]);
-	}
+	
 	
 	public static final String fsm_outputFilename = "yuchcaller.db";
 	
-	public static final int	fsm_version = 267235;
+	public static final int	fsm_version = 274209;
 		
 	private Vector<String>			m_province	= new Vector<String>();
 	private Vector<String>			m_city		= new Vector<String>();
@@ -41,6 +31,14 @@ public class DbGenerate {
 	private Vector<SpecialNumber>	m_specialNumber = new Vector<SpecialNumber>();
 	
 	private Logger					m_log		= new Logger("");
+	
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+				
+		(new DbGenerate()).mainProcess(Integer.toString(fsm_version) + ".txt");
+	}
 	
 	// main process
 	private void mainProcess(String _file){

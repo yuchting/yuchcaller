@@ -13,6 +13,8 @@ import javax.microedition.pim.Contact;
 import local.yuchcallerlocalResource;
 import net.rim.blackberry.api.browser.Browser;
 import net.rim.blackberry.api.browser.BrowserSession;
+import net.rim.blackberry.api.invoke.Invoke;
+import net.rim.blackberry.api.invoke.PhoneArguments;
 import net.rim.blackberry.api.menuitem.ApplicationMenuItem;
 import net.rim.blackberry.api.menuitem.ApplicationMenuItemRepository;
 import net.rim.blackberry.api.options.OptionsManager;
@@ -38,16 +40,19 @@ import net.rim.device.api.system.EncodedImage;
 import net.rim.device.api.system.RadioInfo;
 import net.rim.device.api.system.WLANInfo;
 import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.Screen;
-import net.rim.device.api.ui.Ui;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.UiEngine;
+import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.DialogClosedListener;
+import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.container.MainScreen;
+import net.rim.device.api.ui.container.PopupScreen;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 
 import com.flurry.blackberry.FlurryAgent;
@@ -106,6 +111,9 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	
 	//! search menu
 	private SearchLocationMenu m_addrSearchMenu = new SearchLocationMenu();
+	
+	//! ip dial menu
+	private IPDialMenu m_ipDialMenu = new IPDialMenu();
 	
 	/**
 	 * replace vertical field manager for acvtive phone call screen's manager
@@ -328,6 +336,20 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_PHONE, m_addrSearchMenu);
 				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_PHONELOG_VIEW, m_addrSearchMenu);
 							
+			}
+			
+			if(getProperties().getIPDialNumber().length() != 0){
+				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSBOOK_LIST, m_ipDialMenu);
+				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSCARD_EDIT, m_ipDialMenu);
+				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSCARD_VIEW, m_ipDialMenu);
+				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_PHONELOG_VIEW, m_ipDialMenu);
+				t_repository.addMenuItem(ApplicationMenuItemRepository.MENUITEM_PHONE, m_ipDialMenu);
+			}else{
+				t_repository.removeMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSBOOK_LIST, m_ipDialMenu);
+				t_repository.removeMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSCARD_EDIT, m_ipDialMenu);
+				t_repository.removeMenuItem(ApplicationMenuItemRepository.MENUITEM_ADDRESSCARD_VIEW, m_ipDialMenu);
+				t_repository.removeMenuItem(ApplicationMenuItemRepository.MENUITEM_PHONELOG_VIEW, m_ipDialMenu);
+				t_repository.removeMenuItem(ApplicationMenuItemRepository.MENUITEM_PHONE, m_ipDialMenu);
 			}
 			
 		}catch(Exception e){
@@ -627,6 +649,15 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		}
 		
 		return t_append;
+	}
+	
+	/**
+	 * invoke the outgoing phone screen to call phone number 
+	 * @param _number
+	 */
+	public static void CallPhoneNumber(String _number){
+		PhoneArguments call = new PhoneArguments(PhoneArguments.ARG_CALL, _number);
+		Invoke.invokeApplication(Invoke.APP_TYPE_PHONE, call);
 	}
 	
 	//! start check new version thread
@@ -999,6 +1030,126 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 			}
 			
 			return t_sb.toString();
+		}
+	}
+	
+	/**
+	 * IP dial menu item
+	 * @author tzz
+	 *
+	 */
+	public class IPDialMenu extends ApplicationMenuItem{
+		
+		public IPDialMenu(){
+			super(0);
+		}
+		
+		public Object run(Object context) {
+			if(context != null){
+				if(context instanceof BlackBerryContact){
+					// MENUITEM_ADDRESSBOOK_LIST
+					// MENUITEM_ADDRESSCARD_EDIT
+					// MENUITEM_ADDRESSCARD_VIEW
+					Vector t_list = getNumberList((BlackBerryContact)context);
+					
+					if(t_list != null){
+						if(t_list.size() == 1){
+							IPDial(replaceAreaNumber(t_list.elementAt(0).toString()));
+						}else{
+							PopupIPDialDlg(t_list);
+						}
+					}
+					
+				}else if(context instanceof PhoneCallLog){
+					// MENUITEM_PHONELOG_VIEW
+					//
+					PhoneCallLog t_log = (PhoneCallLog)context;					
+					IPDial(replaceAreaNumber(t_log.getParticipant().getNumber()));
+				}
+			}else{
+				return popupConfigScreen();
+			}
+			return null;
+		}
+
+		public String toString() {
+			return m_local.getString(yuchcallerlocalResource.PHONE_CALL_IP_DIAL);
+		}
+				
+		private Vector getNumberList(BlackBerryContact bbContact){
+			
+			int t_valueNum = bbContact.countValues(Contact.TEL);
+			if(t_valueNum == 0){
+				return null;
+			}
+
+			Vector t_list = new Vector();			
+			for(int j = 0;j < t_valueNum;j++){
+				
+				String t_number = bbContact.getString(Contact.TEL, j);
+				
+				if(t_number != null){
+					t_list.addElement(t_number);						
+				}				
+			}
+			
+			return t_list;
+		}
+		
+		
+		/**
+		 * popup IP dial dialog to choose one of this list
+		 * @param _numberList
+		 */
+		private void PopupIPDialDlg(Vector _numberList){
+			final PopupScreen tDialog = new PopupScreen(new VerticalFieldManager(Manager.NO_VERTICAL_SCROLL)){				
+				public boolean onClose(){
+					close();			
+					return true;
+				}
+			};
+			
+			tDialog.add(new LabelField(m_local.getString(yuchcallerlocalResource.PHONE_CALL_IP_DIAL_PROMPT)));
+			
+			FieldChangeListener tListener = new FieldChangeListener() {
+				public void fieldChanged(Field field, int context) {
+					IPDial(((ButtonField)field).getLabel());
+					tDialog.onClose();
+				}
+			};
+			
+			for(int i = 0;i < _numberList.size();i++){
+				String number = (String)_numberList.elementAt(i);
+				
+				String text = getProperties().getIPDialNumber() + replaceAreaNumber(number);
+				
+				ButtonField btn = new ButtonField(text,ButtonField.CONSUME_CLICK | ButtonField.NEVER_DIRTY);
+				btn.setChangeListener(tListener);
+				
+				tDialog.add(btn);
+			}
+		}
+		
+		private String replaceAreaNumber(String _number){
+			
+			int idx = _number.indexOf("+86");
+			if(idx != -1){
+				_number = _number.substring(0,idx) + _number.substring(idx + 3);
+			}
+			
+			idx = _number.indexOf("+");
+			if(idx != -1){
+				_number = _number.substring(0,idx) + _number.substring(idx + 1);
+			}
+			
+			return _number;
+		}
+		
+		private void IPDial(String _number){
+			if(!_number.startsWith(getProperties().getIPDialNumber())){
+				_number = getProperties().getIPDialNumber() + _number;
+			}
+			YuchCaller.CallPhoneNumber(_number);
 		}
 	}
 }

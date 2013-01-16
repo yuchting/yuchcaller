@@ -34,6 +34,9 @@ public class YuchCallerProp {
 	//! location bold font
 	private boolean m_locationBoldFont		= true;
 	
+	//! IP number dial prefix
+	private String m_IPDialPrefix			= "";
+	
 	//! show system menu or only show phone/contact screen
 	private boolean m_showSystemMenu		= true;
 	
@@ -94,6 +97,10 @@ public class YuchCallerProp {
 	
 	public boolean isBoldFont(){return m_locationBoldFont;}
 	public void setBoldFont(boolean _bold){m_locationBoldFont = _bold;}
+	
+	public String getIPDialNumber(){return m_IPDialPrefix;}
+	public void setIPDialNumber(String _prefix){m_IPDialPrefix = _prefix;}
+	
 	
     //Retrieves a copy of the effective properties set from storage.
     public void save(){
@@ -180,7 +187,7 @@ public class YuchCallerProp {
 		}
 	}
 	
-	final static int		fsm_clientVersion = 1;
+	final static int		fsm_clientVersion = 2;
 	
 	static final String fsm_initFilename_init_data = "Init.data";
 	static final String fsm_initFilename_back_init_data = "~Init.data";
@@ -236,6 +243,10 @@ public class YuchCallerProp {
 				    		m_showSystemMenu			= sendReceive.ReadBoolean(in);
 				    		m_locationInfoHeight		= sendReceive.ReadInt(in);
 				    		m_locationBoldFont			= sendReceive.ReadBoolean(in);
+				    		
+				    		if(t_currVer >= 2){
+				    			m_IPDialPrefix			= sendReceive.ReadString(in);
+				    		}				    						
 				    
 			    			if(t_currVer == 0 && !YuchCaller.fsm_OS_version.startsWith("4.")){
 				    			// some data variables function is changed
@@ -269,6 +280,7 @@ public class YuchCallerProp {
 						sendReceive.WriteBoolean(os,m_showSystemMenu);
 						sendReceive.WriteInt(os,m_locationInfoHeight);
 						sendReceive.WriteBoolean(os, m_locationBoldFont);
+						sendReceive.WriteString(os, m_IPDialPrefix);
 						
 					}finally{
 						os.close();
