@@ -44,6 +44,24 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		0xbc9543,
 		0xaba8a8,
 	};
+	
+	private static final int[]		fsm_locationCandColorStr = 
+	{
+		0,
+		0,
+		yuchcallerlocalResource.PHONE_CONFIG_COLOR_1,
+		yuchcallerlocalResource.PHONE_CONFIG_COLOR_2,
+		yuchcallerlocalResource.PHONE_CONFIG_COLOR_3,
+		yuchcallerlocalResource.PHONE_CONFIG_COLOR_4,
+		yuchcallerlocalResource.PHONE_CONFIG_COLOR_5,
+		yuchcallerlocalResource.PHONE_CONFIG_COLOR_6,
+		yuchcallerlocalResource.PHONE_CONFIG_COLOR_7,
+		yuchcallerlocalResource.PHONE_CONFIG_COLOR_8,
+		yuchcallerlocalResource.PHONE_CONFIG_COLOR_9,
+		yuchcallerlocalResource.PHONE_CONFIG_COLOR_10,
+		yuchcallerlocalResource.PHONE_CONFIG_COLOR_11,
+		yuchcallerlocalResource.PHONE_CONFIG_COLOR_12,		
+	};
 			
 	//! font to show main label 
 	private Font		m_mainLabelBoldFont = getFont().derive(getFont().getStyle() | Font.BOLD , getFont().getHeight());
@@ -630,7 +648,13 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			case 0xffffff:
 				return m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_COLOR_WHITE);
 			default:
-				return m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_COLOR_DUMMY) + " #" + Integer.toHexString(m_color);
+				for(int i = 0;i < fsm_locationCandColor.length;i++){
+					if(fsm_locationCandColor[i] == m_color){
+						return m_mainApp.m_local.getString(fsm_locationCandColorStr[i]);
+					}
+				}
+				
+				return m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_COLOR_DUMMY) + " #" + Integer.toHexString(m_color);	
 			}
 		}
 	}
