@@ -114,7 +114,7 @@ public class YuchCallerProp {
 	 * 
 	 * Read: change back filename to original filename if back file is existed
 	 */
-	private void preWriteReadIni(boolean _read,
+	public static void preWriteReadIni(boolean _read,
 			String _backPathFilename,String _orgPathFilename,
 			String _backFilename,String _orgFilename){
 		
@@ -160,7 +160,7 @@ public class YuchCallerProp {
 			}
 			
 		}catch(Exception e){
-			m_mainApp.SetErrorString("write/read PreWriteReadIni file from "+fsm_rootPath_back+" error :",e);
+			
 		}
 	}
 	
@@ -168,29 +168,25 @@ public class YuchCallerProp {
 	 * delete the back file ~xxx.xxx
 	 * @param _backfile
 	 */
-	private void postWriteReadIni(String _backfile){
-		
+	public static void postWriteReadIni(String _backfile)throws Exception{
+				
+		// delete the back file ~xxx.data
+		//
+		FileConnection t_backFile = (FileConnection) Connector.open(_backfile,Connector.READ_WRITE);
 		try{
-			// delete the back file ~xxx.data
-			//
-			FileConnection t_backFile = (FileConnection) Connector.open(_backfile,Connector.READ_WRITE);
-			try{
-				if(t_backFile.exists()){
-					t_backFile.delete();
-				}
-			}finally{
-				t_backFile.close();
-				t_backFile = null;
+			if(t_backFile.exists()){
+				t_backFile.delete();
 			}
-		}catch(Exception e){
-			m_mainApp.SetErrorString("PWRI", e);
-		}
+		}finally{
+			t_backFile.close();
+			t_backFile = null;
+		}		
 	}
 	
 	final static int		fsm_clientVersion = 2;
 	
-	static final String fsm_initFilename_init_data = "Init.data";
-	static final String fsm_initFilename_back_init_data = "~Init.data";
+	static final String fsm_initFilename_init_data 		= "Init.data";
+	static final String fsm_initFilename_back_init_data 	= "~Init.data";
 	
 	static final String fsm_directory			= fsm_rootPath_back + "YuchCaller/";
 	
@@ -206,8 +202,14 @@ public class YuchCallerProp {
 		// check the issue 85 
 		// http://code.google.com/p/yuchberry/issues/detail?id=85&colspec=ID%20Type%20Status%20Priority%20Stars%20Summary
 		//
-		preWriteReadIni(_read,fsm_backInitFilename,fsm_initFilename,
-				fsm_initFilename_back_init_data,fsm_initFilename_init_data);
+		try{
+
+			preWriteReadIni(_read,fsm_backInitFilename,fsm_initFilename,
+							fsm_initFilename_back_init_data,fsm_initFilename_init_data);
+			
+		}catch(Exception e){
+			m_mainApp.SetErrorString("write/read PreWriteReadIni file from " + fsm_rootPath_back + " error :",e);
+		}
 		
 		try{
 			

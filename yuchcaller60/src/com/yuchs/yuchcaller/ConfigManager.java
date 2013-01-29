@@ -185,6 +185,23 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 				fieldChanged(m_searchNumberInput, 0);
 			}		
 		}
+		
+		//Test code
+		ButtonField t_but = new ButtonField("Test"){
+			public boolean isDirty(){
+				return false;
+			}
+		};
+		
+		t_but.setChangeListener(new FieldChangeListener() {
+			
+			public void fieldChanged(Field field, int context) {
+				if(FieldChangeListener.PROGRAMMATIC != context){
+					m_mainApp.m_syncMain.startSync(m_intelSearchInput.getTextLength() != 0);
+				}
+			}
+		});
+		add(t_but);
 	}
 	
 	private void showOrHideAdvanceSetting(){
