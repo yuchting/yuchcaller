@@ -56,6 +56,7 @@ import net.rim.device.api.ui.container.PopupScreen;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 
 import com.flurry.blackberry.FlurryAgent;
+import com.yuchs.yuchcaller.sync.SyncMain;
 
 public class YuchCaller extends Application implements OptionsProvider,PhoneListener,DbIndex.DbIndexDebugOut{
 
@@ -111,10 +112,13 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	
 	//! search menu
 	private SearchLocationMenu m_addrSearchMenu = new SearchLocationMenu();
-	
+
+	//! sync main
+	public SyncMain		m_syncMain			= new SyncMain(this);
+
 	//! ip dial menu
 	private IPDialMenu m_ipDialMenu = new IPDialMenu();
-	
+
 	/**
 	 * replace vertical field manager for acvtive phone call screen's manager
 	 * @author tzz
@@ -649,6 +653,16 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		}
 		
 		return t_append;
+	}
+	
+	public boolean UseWifiConnection(){
+		
+		if(WLANInfo.getAPInfo() != null){
+			SetErrorString("Using wifi to connect");
+			return true;
+		}
+		
+		return false;
 	}
 	
 	/**
