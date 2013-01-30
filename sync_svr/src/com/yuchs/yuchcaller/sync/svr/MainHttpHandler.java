@@ -1,3 +1,30 @@
+/**
+ *  Dear developer:
+ *  
+ *   If you want to modify this file of project and re-publish this please visit:
+ *  
+ *     http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *     
+ *   to check your responsibility and my humble proposal. Thanks!
+ *   
+ *  -- 
+ *  Yuchs' Developer    
+ *  
+ *  
+ *  
+ *  
+ *  尊敬的开发者：
+ *   
+ *    如果你想要修改这个项目中的文件，同时重新发布项目程序，请访问一下：
+ *    
+ *      http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *      
+ *    了解你的责任，还有我卑微的建议。 谢谢！
+ *   
+ *  -- 
+ *  语盒开发者
+ *  
+ */
 package com.yuchs.yuchcaller.sync.svr;
 
 import java.net.URLDecoder;
@@ -51,17 +78,27 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 		String tDecodeJson = URLDecoder.decode(request.getContent().toString(),"UTF-8");
 		JSONObject tJson = new JSONObject(tDecodeJson);
 		
-		String uri = request.getUri();
-		System.out.println("uri:" + uri);
+		if(!tJson.has("type")){
+			throw new Exception("Error no type");
+		}
+		
+		String tType = tJson.getString("type");
+		
+		GoogleAPISync tSync;
+		if(tType.equals("calender")){
+			tSync = new CalenderSync(tJson,mLogger);
+		}else{
+			throw new Exception("Error type");
+		}	
+		
+		ChannelBuffer buffer 	= new DynamicChannelBuffer(2048);
+		buffer.writeBytes(tSync.getResult().getBytes("UTF-8"));
 		
 		HttpResponse response	= new DefaultHttpResponse(HttpVersion.HTTP_1_1,HttpResponseStatus.OK);
-        ChannelBuffer buffer 	= new DynamicChannelBuffer(2048);       
-        
-		buffer.writeBytes("hello!! 你好".getBytes("UTF-8"));
-		
 		response.setContent(buffer);
 		response.setHeader("Content-Type", MIME_JSON_TYPE + "; charset=UTF-8");
 		response.setHeader("Content-Length", response.getContent().writerIndex());
+		
 		Channel ch = e.getChannel();
 		
 		// Write the initial line and the header.
@@ -76,19 +113,19 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 		Channel ch = e.getChannel();
 		Throwable cause = e.getCause();
 		if (cause instanceof TooLongFrameException) {
-			sendError(ctx, HttpResponseStatus.BAD_REQUEST);
+			sendError(ctx, HttpResponseStatus.BAD_REQUEST,e);
 			return;
 		}
 
 		cause.printStackTrace();
 		if (ch.isConnected()) {
-			sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+			sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR,e);
 		}else{
-			sendError(ctx, HttpResponseStatus.FORBIDDEN);
+			sendError(ctx, HttpResponseStatus.FORBIDDEN,e);
 		}		
 	}
 
-	private void sendError(ChannelHandlerContext ctx, HttpResponseStatus status) {
+	private void sendError(ChannelHandlerContext ctx, HttpResponseStatus status,ExceptionEvent e) {
 		HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
 		
 		response.setHeader(HTTP_CONTENT_TYPE, "text/plain; charset=UTF-8");		
