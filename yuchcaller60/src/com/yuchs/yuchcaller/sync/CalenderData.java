@@ -1,9 +1,8 @@
 package com.yuchs.yuchcaller.sync;
 
+import com.yuchs.yuchcaller.sendReceive;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import com.yuchs.yuchcaller.sendReceive;
 
 
 public class CalenderData {

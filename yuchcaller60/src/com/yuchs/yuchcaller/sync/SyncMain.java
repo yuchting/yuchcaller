@@ -27,8 +27,6 @@ public class SyncMain {
 		m_mainApp = _mainApp;
 	}
 	
-	
-	
 	/**
 	 * get the md5 string
 	 * @param _org
@@ -81,26 +79,36 @@ public class SyncMain {
                 halfbyte = data[i] & 0x0F;
             } while(two_halfs++ < 1);
         }
+        
         return buf.toString();
     }
 	
-	public void startSync(final boolean _test){
+	public void startSync(){
 		if(m_isSyncing){
 			return ;
 		}
 		
 		(new Thread(){
 			public void run(){
-				startSyncImpl(_test);
+				startSyncImpl();
 			}
 		}).start();
 	}
 	
-	private void startSyncImpl(final boolean _test){
-		
-		
-		
+	private void startSyncImpl(){
 		m_isSyncing = false;
+		
+		
+		
+	}
+	
+	private boolean readYuchAccount(){
+		try{
+			FileConnection fc = (FileConnection)Connector.open(YuchCallerProp.fsm_rootPath_back + "YuchCaller/" + )
+		}catch(){
+			
+		}
+		
 	}
 	
 	/**
