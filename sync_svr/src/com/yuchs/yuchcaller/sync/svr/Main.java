@@ -70,8 +70,8 @@ public class Main {
 		
 	    // The clientId and clientSecret are copied from the API Access tab on
 	    // the Google APIs Console
-	    String clientId = "77625343998-vsg8bhfei4se0rfle5atj7t1njldtrn1.apps.googleusercontent.com";
-	    String clientSecret = "lJgFprqd8JRDCLm8gzS3ZmVy";
+	    String clientId = GoogleAPISync.getGoogleAPIClientId();
+	    String clientSecret = GoogleAPISync.getGoogleAPIClientSecret();
 //	    
 //
 //	    // Or your redirect URL for web based applications.

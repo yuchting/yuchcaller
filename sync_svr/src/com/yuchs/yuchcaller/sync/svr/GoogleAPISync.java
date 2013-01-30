@@ -27,6 +27,8 @@
  */
 package com.yuchs.yuchcaller.sync.svr;
 
+import java.lang.reflect.Method;
+
 import org.json.JSONObject;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
@@ -36,8 +38,27 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 
 public abstract class GoogleAPISync {
 
-	public static final String fsm_googleAPIClientID		= PrivateConfig.getGoogleAPIClientId();
-	public static final String fsm_googleAPIClientSecret	= PrivateConfig.getGoogleAPIClientSecret();
+	public static String getGoogleAPIClientId(){
+		
+		try{
+			Class<?> clazz = Class.forName("com.yuchs.yuchcaller.sync.svr.PrivateConfig");
+			Method method = clazz.getMethod("getGoogleAPIClientId",new Class[0]);
+			return method.invoke(null, null).toString();
+		}catch(Exception e){
+			return "";
+		}
+	}
+	
+	public static String getGoogleAPIClientSecret(){
+		
+		try{
+			Class<?> clazz = Class.forName("com.yuchs.yuchcaller.sync.svr.PrivateConfig");
+			Method method = clazz.getMethod("getGoogleAPIClientSecret",new Class[0]);
+			return method.invoke(null, null).toString();
+		}catch(Exception e){
+			return "";
+		}
+	}
 	
 	/**
 	 * the google credential for some google service 
@@ -79,7 +100,7 @@ public abstract class GoogleAPISync {
 		mTimeZoneID				= _clientJson.getString("TimeZone");		
 		
 		mGoogleCredential = new GoogleCredential.Builder()
-							    .setClientSecrets(fsm_googleAPIClientID, fsm_googleAPIClientSecret)
+							    .setClientSecrets(getGoogleAPIClientId(), getGoogleAPIClientSecret())
 							    .setJsonFactory(mJsonFactory).setTransport(mHttpTransport).build()
 							    .setRefreshToken(tRefreshToken)
 							    .setAccessToken(tAccessToken);
