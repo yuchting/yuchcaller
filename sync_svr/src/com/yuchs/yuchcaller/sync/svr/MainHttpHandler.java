@@ -27,7 +27,11 @@
  */
 package com.yuchs.yuchcaller.sync.svr;
 
-import java.net.URLDecoder;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.zip.GZIPInputStream;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -65,30 +69,24 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)throws Exception {
 		HttpRequest request = (HttpRequest) e.getMessage();
-		
-		String tContentType = request.getHeader("Content-Type");
-		if(tContentType == null || !tContentType.startsWith(MIME_JSON_TYPE)){
-			throw new Exception("Error Request Content-Type");
-		}
-		
+				
 		if(request.getMethod() != HttpMethod.POST){
 			throw new Exception("Error POST");
 		}
 		
-		String tDecodeJson = URLDecoder.decode(request.getContent().toString(),"UTF-8");
-		JSONObject tJson = new JSONObject(tDecodeJson);
+		JSONObject tJson = new JSONObject(readPostBodyText(request));
 		
-		if(!tJson.has("type")){
-			throw new Exception("Error no type");
+		if(!tJson.has("Type")){
+			throw new Exception("Error no Type");
 		}
 		
-		String tType = tJson.getString("type");
+		String tType = tJson.getString("Type");
 		
 		GoogleAPISync tSync;
 		if(tType.equals("calender")){
 			tSync = new CalenderSync(tJson,mLogger);
 		}else{
-			throw new Exception("Error type");
+			throw new Exception("Error Type");
 		}	
 		
 		ChannelBuffer buffer 	= new DynamicChannelBuffer(2048);
@@ -105,6 +103,65 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 		ch.write(response);
 		ch.disconnect();
 		ch.close();
+	}
+	
+	/**
+	 * read the body string from the http request
+	 * @param _request
+	 * @return
+	 * @throws Exception
+	 */
+	private String readPostBodyText(HttpRequest _request)throws Exception{
+		
+		boolean tGzip = _request.getHeader("Accept-Encoding") != null;
+		
+		final ChannelBuffer tCb = _request.getContent();
+		
+		int length = 0;
+		int offset = 0;
+		
+		byte[] tContentBytes;
+		
+		if(tGzip){
+			InputStream in = new ByteArrayInputStream(tCb.toByteBuffer().array(),tCb.arrayOffset(),tCb.readableBytes());			
+			
+			try{
+				GZIPInputStream zin = new GZIPInputStream(in);
+				try{
+					ByteArrayOutputStream os = new ByteArrayOutputStream();
+					try{
+
+						int c;
+						while((c = zin.read()) != -1){
+							os.write(c);
+						}
+						
+						tContentBytes	= os.toByteArray();
+						length			= tContentBytes.length; 
+						
+					}finally{
+						os.close();
+					}
+					
+				}finally{
+					zin.close();
+				}
+			}finally{
+				in.close();
+				in = null;
+			}
+			
+		}else{
+			byte[] tHttpBytes = tCb.array();
+			
+			length = tCb.capacity() - tCb.arrayOffset();
+			offset = tCb.arrayOffset();
+			
+			tContentBytes = tHttpBytes;
+		}
+		
+		String result = new String(tContentBytes,offset,length,"UTF-8");
+		return result;
 	}
 
 	@Override

@@ -28,7 +28,11 @@ public class CalenderSyncData {
 	public void setGID(String _id){gID = _id;}
 	public String getGID(){	return gID;}
 	
-	public String getMD5(){return md5;}	
+	public String getMD5(){return md5;}
+	
+	public CalenderData getData(){
+		return m_calenderData;
+	}
 	
 	/**
 	 * import blackberry event

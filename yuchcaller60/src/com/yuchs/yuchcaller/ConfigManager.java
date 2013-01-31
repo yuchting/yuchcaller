@@ -197,7 +197,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			
 			public void fieldChanged(Field field, int context) {
 				if(FieldChangeListener.PROGRAMMATIC != context){
-					m_mainApp.m_syncMain.startSync(m_intelSearchInput.getTextLength() != 0);
+					m_mainApp.m_syncMain.startSync();
 				}
 			}
 		});

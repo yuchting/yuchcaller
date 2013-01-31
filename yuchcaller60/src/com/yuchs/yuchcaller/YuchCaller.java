@@ -625,11 +625,11 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		
 		String t_apn = null;
 		if(t_carrierName.equals("中国移动") || t_carrierName.toLowerCase().equals("china mobile")){
-			t_apn = "cmnet";
+			t_apn = "cmwap";
 		}else if(t_carrierName.equals("中国联通") || t_carrierName.toLowerCase().equals("china unicom")){
-			t_apn = "uninet";
+			t_apn = "uniwap";
 		}else if(t_carrierName.equals("中国电信") || t_carrierName.toLowerCase().equals("china telecom")){
-			t_apn = "ctnet";
+			t_apn = "ctwap";
 		}
 		
 		return t_apn;
@@ -648,7 +648,8 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 			
 			String apn = findNetworkAPN();
 			if(apn != null){
-				t_append += ";apn=" + apn;
+				
+				t_append += ";WapGatewayAPN=" + apn + ";WapGatewayIP=10.0.0.172";
 			}
 		}
 		
