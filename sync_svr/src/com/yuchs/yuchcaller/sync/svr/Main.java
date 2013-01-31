@@ -53,6 +53,8 @@ public class Main {
 	 */
 	public static void main(String[] args) throws Exception {		
 
+		(new Main()).startNetty(8888);
+		
 		//System.getProperties().put("socksProxySet","true");
 		//System.getProperties().put("socksProxyHost","127.0.0.1");
 		//System.getProperties().put("socksProxyPort","7070");
@@ -177,9 +179,8 @@ public class Main {
 //	    Event recurringEvent = service.events().insert("primary", event).execute();
 	    
 	    
-//	    System.out.println(recurringEvent.getHtmlLink());
-	    
-		(new Main()).startNetty(8888);
+//	    System.out.println(recurringEvent.getHtmlLink()); 
+		
 	}
 	
 	private void startNetty(int _port){
