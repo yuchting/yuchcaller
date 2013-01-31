@@ -47,26 +47,27 @@ public class CalenderSyncData {
 		// set the repeat information
 		RepeatRule repeat = _event.getRepeat();
 		if(repeat != null){
-			int re = repeat.getInt(RepeatRule.FREQUENCY);
-			switch(re){
-			case RepeatRule.DAILY:
-				re = CalenderData.REPEAT_DAILY;
-				break;
-			case RepeatRule.WEEKLY:
-				re = CalenderData.REPEAT_WEEKLY;
-				break;
-			case RepeatRule.MONTHLY:
-				re = CalenderData.REPEAT_MONTHLY;
-				break;
-			case RepeatRule.YEARLY:
-				re = CalenderData.REPEAT_YEARLY;
-				break;
-			default:
-				re = CalenderData.REPEAT_NO;
-				break;
-			}
 			
-			m_calenderData.repeat_type = re;
+//			int re = repeat.getInt(RepeatRule.FREQUENCY);
+//			switch(re){
+//			case RepeatRule.DAILY:
+//				re = CalenderData.REPEAT_DAILY;
+//				break;
+//			case RepeatRule.WEEKLY:
+//				re = CalenderData.REPEAT_WEEKLY;
+//				break;
+//			case RepeatRule.MONTHLY:
+//				re = CalenderData.REPEAT_MONTHLY;
+//				break;
+//			case RepeatRule.YEARLY:
+//				re = CalenderData.REPEAT_YEARLY;
+//				break;
+//			default:
+//				re = CalenderData.REPEAT_NO;
+//				break;
+//			}
+			
+			m_calenderData.repeat_type = repeat.toString();
 		}
 		
 		// set the fields information

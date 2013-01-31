@@ -27,9 +27,16 @@
  */
 package com.yuchs.yuchcaller.sync.svr;
 
+import java.util.Date;
+import java.util.List;
+import java.util.TimeZone;
+
 import org.json.JSONObject;
 
+import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
+import com.google.api.services.calendar.model.Events;
+import com.google.api.services.calendar.model.Event;
 
 public class CalenderSync extends GoogleAPISync{
 
@@ -42,6 +49,38 @@ public class CalenderSync extends GoogleAPISync{
 		super(clientJson,_logger);
 		
 		mService = new Calendar(mHttpTransport, mJsonFactory,mGoogleCredential);
+		
+		com.google.api.services.calendar.Calendar.Events.List tList = mService.events().list("primary");
+	    	    
+		tList.setTimeMin(new DateTime(new Date(System.currentTimeMillis() - 365 * 24 * 3600 * 1000L) , TimeZone.getTimeZone(mTimeZoneID)));
+
+	    Events events = tList.execute();
+	    
+	    while(true){
+	    	for(Event event : events.getItems()){
+	    		
+	    	}
+	    }
+	    while (true) {
+	      for (Event event : events.getItems()) {
+	    	  
+	        System.out.println(event.getId() + ":" + event.getSummary());
+	        List<String> t_recurrenceList = event.getRecurrence();
+	        if(t_recurrenceList != null){
+	        	for(String s : t_recurrenceList){
+	        		System.out.println("   r:"+s);
+	        	}
+	        }
+	        
+	        System.out.println("   "+event.getStart().getDateTime().getValue()+":" + event.getDescription());
+	      }
+	      
+	      String pageToken = events.getNextPageToken();
+	      if (pageToken != null && !pageToken.isEmpty()) {
+	        events = mService.events().list("primary").setPageToken(pageToken).execute();
+	      } else {
+	        break;
+	      }
 	}
 	
 	@Override

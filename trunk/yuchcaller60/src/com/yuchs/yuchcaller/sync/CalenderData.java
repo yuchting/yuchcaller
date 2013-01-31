@@ -22,16 +22,7 @@ public class CalenderData {
 	public static final int CLASS_CONFIDENTIAL 	= 0;
 	public static final int CLASS_PRIVATE 		= 1;
 	public static final int CLASS_PUBLIC 			= 2;
-	
-	/**
-	 * repeat type
-	 */
-	public static final int REPEAT_NO			= 0;
-	public static final int REPEAT_DAILY		= 1;
-	public static final int REPEAT_WEEKLY		= 2;
-	public static final int REPEAT_MONTHLY	= 3;
-	public static final int REPEAT_YEARLY		= 4;
-	
+		
 	/**
 	 * summary of the calender
 	 */
@@ -85,7 +76,7 @@ public class CalenderData {
 	/**
 	 * the repeat type
 	 */
-	public int repeat_type = REPEAT_NO;
+	public String repeat_type = "";
 	
 	/**
 	 * import the data from stream
@@ -113,7 +104,7 @@ public class CalenderData {
 		
 		free_busy	= _in.read();
 		event_class = _in.read();
-		repeat_type	= _in.read();
+		repeat_type	= sendReceive.ReadString(_in);
 	}
 	
 	/**
@@ -146,6 +137,7 @@ public class CalenderData {
 		
 		_os.write(free_busy);
 		_os.write(event_class);
-		_os.write(repeat_type);
+		
+		sendReceive.WriteString(_os, repeat_type);
 	}
 }

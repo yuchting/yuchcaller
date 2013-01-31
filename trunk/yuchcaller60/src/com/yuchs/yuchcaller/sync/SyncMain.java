@@ -453,15 +453,15 @@ public class SyncMain {
 			
 			conn.setRequestMethod(HttpConnection.POST);
 			conn.setRequestProperty(HttpProtocolConstants.HEADER_CONTENT_LENGTH,String.valueOf(tParamByte.length));
-			
-			conn.setRequestProperty("Content-Type","application/x-www-form-urlencoded");			
-			conn.setRequestProperty("User-Agent","Profile/MIDP-2.0 Configuration/CLDC-1.0");
-			conn.setRequestProperty("Keep-Alive","60000");
-			conn.setRequestProperty("Connection","keep-alive");
+//			
+//			conn.setRequestProperty("Content-Type","application/x-www-form-urlencoded");			
+//			conn.setRequestProperty("User-Agent","Profile/MIDP-2.0 Configuration/CLDC-1.0");
+//			conn.setRequestProperty("Keep-Alive","60000");
+//			conn.setRequestProperty("Connection","keep-alive");
 						
-			if(_gzip){
-				conn.setRequestProperty("Accept-Encoding","gzip,deflate");
-			}
+//			if(_gzip){
+//				conn.setRequestProperty("Accept-Encoding","gzip,deflate");
+//			}
 			
 			OutputStream out = conn.openOutputStream();
 			try{
