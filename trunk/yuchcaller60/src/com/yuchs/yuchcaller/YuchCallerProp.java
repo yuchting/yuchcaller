@@ -43,6 +43,18 @@ public class YuchCallerProp {
 	//! default height
 	private int m_locationInfoHeight		= Font.getDefault().getHeight();
 	
+	//! the yuch account
+	private String mYuchAcc					= "";
+	
+	//! the yuch password
+	private String mYuchPass				= "";
+	
+	//! the yuch account google api refresh token
+	private String	mRefreshToken			= "";
+	
+	//! the yuch account google api access token; 
+	private String mAccessToken				= "";
+	
 	final private YuchCaller	m_mainApp;
 	
 	public YuchCallerProp(YuchCaller _mainApp){
@@ -101,31 +113,48 @@ public class YuchCallerProp {
 	public String getIPDialNumber(){return m_IPDialPrefix;}
 	public void setIPDialNumber(String _prefix){m_IPDialPrefix = _prefix;}
 	
+	public String getYuchAccount(){return mYuchAcc;}
+	public synchronized void setYuchAccount(String _acc){mYuchAcc = _acc;}
+	
+	public String getYuchPass(){return mYuchPass;}
+	public synchronized void setYuchPass(String _pass){mYuchPass = _pass;}
+	
+	public String getYuchRefreshToken(){return mRefreshToken;}
+	public synchronized void setYuchRefreshToken(String _token){mRefreshToken = _token;}
+	
+	public String getYuchAccessToken(){return mAccessToken;}
+	public synchronized void setYuchAccessToken(String _token){mYuchAcc = _token;}	
 	
     //Retrieves a copy of the effective properties set from storage.
     public void save(){
     	writeReadIni(false);
     }
     
-	/**
+    /**
 	 * pre process write or read a file
 	 * 
 	 * Write: change original name to back file name when write
 	 * 
 	 * Read: change back filename to original filename if back file is existed
 	 */
-	public static void preWriteReadIni(boolean _read,
-			String _backPathFilename,String _orgPathFilename,
-			String _backFilename,String _orgFilename){
+	public void preWriteReadIni(boolean _read,String _pathFilename){
 		
 		try{
-
+			
+			int tSlashIdx = _pathFilename.lastIndexOf('/');
+			
+			String tParentPath	= _pathFilename.substring(0,tSlashIdx);
+			String tOrgFilename = _pathFilename.substring(tSlashIdx + 1);
+			
+			String tBackFilename		= "~" + tOrgFilename;
+			String tBackPathFilename	= tParentPath + tBackFilename;
+			
 			if(_read){
 							
-				FileConnection t_back = (FileConnection) Connector.open(_backPathFilename,Connector.READ_WRITE);
+				FileConnection t_back = (FileConnection) Connector.open(tBackPathFilename,Connector.READ_WRITE);
 				try{
 					if(t_back.exists()){
-						FileConnection t_ini	= (FileConnection) Connector.open(_orgPathFilename,Connector.READ_WRITE);
+						FileConnection t_ini	= (FileConnection) Connector.open(_pathFilename,Connector.READ_WRITE);
 						try{
 							if(t_ini.exists()){
 								t_ini.delete();
@@ -135,7 +164,7 @@ public class YuchCallerProp {
 							t_ini = null;
 						}
 						
-						t_back.rename(_orgFilename);
+						t_back.rename(tOrgFilename);
 					}
 				}finally{
 					t_back.close();
@@ -144,10 +173,10 @@ public class YuchCallerProp {
 				
 			}else{
 				
-				FileConnection t_ini	= (FileConnection) Connector.open(_orgPathFilename,Connector.READ_WRITE);
+				FileConnection t_ini	= (FileConnection) Connector.open(_pathFilename,Connector.READ_WRITE);
 				try{
 					if(t_ini.exists()){
-						t_ini.rename(_backFilename);
+						t_ini.rename(tBackFilename);
 					}
 				}finally{
 					t_ini.close();
@@ -160,7 +189,7 @@ public class YuchCallerProp {
 			}
 			
 		}catch(Exception e){
-			
+			m_mainApp.SetErrorString("write/read PreWriteReadIni file from SDCard error :" + e.getMessage() + e.getClass().getName());
 		}
 	}
 	
@@ -168,30 +197,37 @@ public class YuchCallerProp {
 	 * delete the back file ~xxx.xxx
 	 * @param _backfile
 	 */
-	public static void postWriteReadIni(String _backfile)throws Exception{
-				
-		// delete the back file ~xxx.data
-		//
-		FileConnection t_backFile = (FileConnection) Connector.open(_backfile,Connector.READ_WRITE);
+	public void postWriteReadIni(String _pathFilename){
+		
 		try{
-			if(t_backFile.exists()){
-				t_backFile.delete();
+			int tSlashIdx = _pathFilename.lastIndexOf('/');
+			
+			String tParentPath			= _pathFilename.substring(0,tSlashIdx);
+			String tOrgFilename 		= _pathFilename.substring(tSlashIdx + 1);
+			
+			String tBackFilename		= "~" + tOrgFilename;
+			String tBackPathFilename	= tParentPath + tBackFilename;
+			
+			// delete the back file ~xxx.data
+			//
+			FileConnection t_backFile = (FileConnection) Connector.open(tBackPathFilename,Connector.READ_WRITE);
+			try{
+				if(t_backFile.exists()){
+					t_backFile.delete();
+				}
+			}finally{
+				t_backFile.close();
+				t_backFile = null;
 			}
-		}finally{
-			t_backFile.close();
-			t_backFile = null;
-		}		
+		}catch(Exception e){
+			m_mainApp.SetErrorString("PWRI", e);
+		}
 	}
 	
-	final static int		fsm_clientVersion = 2;
-	
-	static final String fsm_initFilename_init_data 		= "Init.data";
-	static final String fsm_initFilename_back_init_data 	= "~Init.data";
-	
+	final static int		fsm_clientVersion = 3;
+		
 	static final String fsm_directory			= fsm_rootPath_back + "YuchCaller/";
-	
-	static final String fsm_initFilename 		= fsm_directory + fsm_initFilename_init_data;
-	static final String fsm_backInitFilename	= fsm_directory + fsm_initFilename_back_init_data;
+	static final String fsm_initFilename 		= fsm_directory + "Init.data";
 	
 	private synchronized void writeReadIni(boolean _read){
 		
@@ -202,14 +238,7 @@ public class YuchCallerProp {
 		// check the issue 85 
 		// http://code.google.com/p/yuchberry/issues/detail?id=85&colspec=ID%20Type%20Status%20Priority%20Stars%20Summary
 		//
-		try{
-
-			preWriteReadIni(_read,fsm_backInitFilename,fsm_initFilename,
-							fsm_initFilename_back_init_data,fsm_initFilename_init_data);
-			
-		}catch(Exception e){
-			m_mainApp.SetErrorString("write/read PreWriteReadIni file from " + fsm_rootPath_back + " error :",e);
-		}
+		preWriteReadIni(_read,fsm_initFilename);		
 		
 		try{
 			
@@ -248,7 +277,14 @@ public class YuchCallerProp {
 				    		
 				    		if(t_currVer >= 2){
 				    			m_IPDialPrefix			= sendReceive.ReadString(in);
-				    		}				    						
+				    		}
+				    		
+				    		if(t_currVer >= 3){
+				    			mYuchAcc		= sendReceive.ReadString(in);
+				    			mYuchPass		= sendReceive.ReadString(in);
+				    			mRefreshToken	= sendReceive.ReadString(in);
+				    			mAccessToken	= sendReceive.ReadString(in);	
+				    		}
 				    
 			    			if(t_currVer == 0 && !YuchCaller.fsm_OS_version.startsWith("4.")){
 				    			// some data variables function is changed
@@ -284,12 +320,17 @@ public class YuchCallerProp {
 						sendReceive.WriteBoolean(os, m_locationBoldFont);
 						sendReceive.WriteString(os, m_IPDialPrefix);
 						
+						sendReceive.WriteString(os, mYuchAcc);
+						sendReceive.WriteString(os, mYuchPass);
+						sendReceive.WriteString(os, mRefreshToken);
+						sendReceive.WriteString(os, mAccessToken);
+						
 					}finally{
 						os.close();
 						os = null;
 					}
 					
-					postWriteReadIni(fsm_backInitFilename);
+					
 				}
 			}finally{
 				fc.close();
@@ -298,6 +339,8 @@ public class YuchCallerProp {
 						
 		}catch(Exception _e){
 			m_mainApp.SetErrorString("write/read config file error :",_e);
-		}		
+		}
+		
+		postWriteReadIni(fsm_initFilename);
 	}
 }

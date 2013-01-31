@@ -28,28 +28,20 @@
 package com.yuchs.yuchcaller.sync.svr;
 
 import java.net.InetSocketAddress;
-import java.util.Date;
-import java.util.List;
-import java.util.TimeZone;
 import java.util.concurrent.Executors;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.TrustManager;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.jboss.netty.handler.codec.http.HttpContentCompressor;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
-
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.client.util.DateTime;
-import com.google.api.services.calendar.Calendar;
-import com.google.api.services.calendar.model.Event;
-import com.google.api.services.calendar.model.Events;
+import org.jboss.netty.handler.ssl.SslHandler;
 
 
 public class Main {
@@ -65,13 +57,13 @@ public class Main {
 		//System.getProperties().put("socksProxyHost","127.0.0.1");
 		//System.getProperties().put("socksProxyPort","7070");
 		
-		HttpTransport httpTransport = new NetHttpTransport();
-		JacksonFactory jsonFactory = new JacksonFactory();   
+//		HttpTransport httpTransport = new NetHttpTransport();
+//		JacksonFactory jsonFactory = new JacksonFactory();   
 		
 	    // The clientId and clientSecret are copied from the API Access tab on
 	    // the Google APIs Console
-	    String clientId = GoogleAPISync.getGoogleAPIClientId();
-	    String clientSecret = GoogleAPISync.getGoogleAPIClientSecret();
+//	    String clientId = GoogleAPISync.getGoogleAPIClientId();
+//	    String clientSecret = GoogleAPISync.getGoogleAPIClientSecret();
 //	    
 //
 //	    // Or your redirect URL for web based applications.
@@ -104,41 +96,41 @@ public class Main {
 	    // End of Step 2 <--
 	    
 		
-		GoogleCredential cd = new GoogleCredential.Builder()
-								    .setClientSecrets(clientId, clientSecret)
-								    .setJsonFactory(jsonFactory).setTransport(httpTransport).build()
-								    .setRefreshToken("1/5IYu1JNlGdBMoIMo5SrOEVFt1wIzk-GWw-EHbwFwGz8")
-								    .setAccessToken("ya29.AHES6ZSssslGQywppEfLsx9CW8u2cwbaNoqqdQKmuT4Eo9fwgtnvbw");
-		
-	    Calendar service = new Calendar(httpTransport, jsonFactory,cd);
-	    	    
-	    com.google.api.services.calendar.Calendar.Events.List cList = service.events().list("primary");
-	    
-	    //cList.setTimeZone("Asia/Shanghai");
-	    
-	    cList.setTimeMin(new DateTime(new Date(System.currentTimeMillis()), TimeZone.getTimeZone("Asia/Shanhai")));
-
-	    Events events = cList.execute();  
-	    while (true) {
-	      for (Event event : events.getItems()) {
-	    	  
-	        System.out.println(event.getId() + ":" + event.getSummary());
-	        List<String> t_recurrenceList = event.getRecurrence();
-	        if(t_recurrenceList != null){
-	        	for(String s : t_recurrenceList){
-	        		System.out.println("   r:"+s);
-	        	}
-	        }
-	        
-	        System.out.println("   "+event.getStart().getDateTime().getValue()+":" + event.getDescription());
-	      }
-	      String pageToken = events.getNextPageToken();
-	      if (pageToken != null && !pageToken.isEmpty()) {
-	        events = service.events().list("primary").setPageToken(pageToken).execute();
-	      } else {
-	        break;
-	      }
-	    }
+//		GoogleCredential cd = new GoogleCredential.Builder()
+//								    .setClientSecrets(clientId, clientSecret)
+//								    .setJsonFactory(jsonFactory).setTransport(httpTransport).build()
+//								    .setRefreshToken("1/5IYu1JNlGdBMoIMo5SrOEVFt1wIzk-GWw-EHbwFwGz8")
+//								    .setAccessToken("ya29.AHES6ZSssslGQywppEfLsx9CW8u2cwbaNoqqdQKmuT4Eo9fwgtnvbw");
+//		
+//	    Calendar service = new Calendar(httpTransport, jsonFactory,cd);
+//	    	    
+//	    com.google.api.services.calendar.Calendar.Events.List cList = service.events().list("primary");
+//	    
+//	    //cList.setTimeZone("Asia/Shanghai");
+//	    
+//	    cList.setTimeMin(new DateTime(new Date(System.currentTimeMillis()), TimeZone.getTimeZone("Asia/Shanhai")));
+//
+//	    Events events = cList.execute();  
+//	    while (true) {
+//	      for (Event event : events.getItems()) {
+//	    	  
+//	        System.out.println(event.getId() + ":" + event.getSummary());
+//	        List<String> t_recurrenceList = event.getRecurrence();
+//	        if(t_recurrenceList != null){
+//	        	for(String s : t_recurrenceList){
+//	        		System.out.println("   r:"+s);
+//	        	}
+//	        }
+//	        
+//	        System.out.println("   "+event.getStart().getDateTime().getValue()+":" + event.getDescription());
+//	      }
+//	      String pageToken = events.getNextPageToken();
+//	      if (pageToken != null && !pageToken.isEmpty()) {
+//	        events = service.events().list("primary").setPageToken(pageToken).execute();
+//	      } else {
+//	        break;
+//	      }
+//	    }
 	    
 	    
 	    //com.google.api.services.calendar.model.Calendar calendar = service.calendars().get("primary").execute();
@@ -187,6 +179,7 @@ public class Main {
 	    
 //	    System.out.println(recurringEvent.getHtmlLink());
 	    
+		(new Main()).startNetty(8888);
 	}
 	
 	private void startNetty(int _port){
@@ -196,22 +189,19 @@ public class Main {
 			
 			@Override
 			public ChannelPipeline getPipeline() throws Exception {
-				
+								 
 				// Create a default pipeline implementation.
 				ChannelPipeline pipeline = Channels.pipeline();
 				
 				pipeline.addLast("decoder", new HttpRequestDecoder());
 				pipeline.addLast("encoder", new HttpResponseEncoder());
-				
-				// Compress
-				pipeline.addLast("deflater", new HttpContentCompressor(6));
-				
-				pipeline.addLast("handler", new MainHttpHandler(mMainLogger));
+								
+				pipeline.addLast("handler", new MainHttpHandler(mMainLogger));			
 				return pipeline;
 			}
 		});
 		
 		bootstrap.bind(new InetSocketAddress(_port));
 		System.out.println("admin start on "+_port);
-	}		
+	}
 }
