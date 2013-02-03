@@ -27,9 +27,9 @@
  */
 package com.yuchs.yuchcaller.sync.svr;
 
+import java.io.InputStream;
 import java.lang.reflect.Method;
-
-import org.json.JSONObject;
+import java.security.MessageDigest;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.http.HttpTransport;
@@ -81,6 +81,22 @@ public abstract class GoogleAPISync {
 	protected String		mTimeZoneID;
 	
 	/**
+	 * all client sync data md5 
+	 */
+	protected String	mAllClientSyncDataMD5		= null;
+	
+	/**
+	 * all server sync data md5
+	 */
+	protected String mAllSvrSyncDataMD5		 	= null;
+	
+
+	/**
+	 * the result of sync 
+	 */
+	protected byte[] mResult						= null;
+	
+	/**
 	 * the http transport for google API
 	 */
 	protected HttpTransport mHttpTransport = new NetHttpTransport();
@@ -91,13 +107,15 @@ public abstract class GoogleAPISync {
 	protected JacksonFactory mJsonFactory = new JacksonFactory(); 
 	
 	
-	public GoogleAPISync(JSONObject _clientJson,Logger _logger)throws Exception{
+	public GoogleAPISync(InputStream in,Logger _logger)throws Exception{
 		
-		String tAccessToken		= _clientJson.getString("AccessToken");
-		String tRefreshToken	= _clientJson.getString("RefreshToken");
+		String tAccessToken		= sendReceive.ReadString(in);
+		String tRefreshToken	= sendReceive.ReadString(in);
 		
-		mYuchAcc				= _clientJson.getString("YuchAcc");
-		mTimeZoneID				= _clientJson.getString("TimeZone");		
+		mYuchAcc				= sendReceive.ReadString(in);
+		mTimeZoneID				= sendReceive.ReadString(in);
+		
+		mAllClientSyncDataMD5 = sendReceive.ReadString(in);
 		
 		mGoogleCredential = new GoogleCredential.Builder()
 							    .setClientSecrets(getGoogleAPIClientId(), getGoogleAPIClientSecret())
@@ -112,6 +130,32 @@ public abstract class GoogleAPISync {
 	 * get the result json string to process client request
 	 * @return
 	 */
-	public abstract String getResult();
+	public byte[] getResult(){
+		return mResult;
+	}
 	
+	/**
+	 * get the MD5
+	 * @param str
+	 * @return
+	 */
+	public static String getMD5(String str)throws Exception {  
+	
+        MessageDigest messageDigest = MessageDigest.getInstance("MD5");  
+        messageDigest.reset();
+        messageDigest.update(str.getBytes("UTF-8"));  
+    
+        byte[] byteArray = messageDigest.digest();  
+  
+        StringBuffer md5StrBuff = new StringBuffer();  
+  
+        for (int i = 0; i < byteArray.length; i++) {              
+            if (Integer.toHexString(0xFF & byteArray[i]).length() == 1)  
+                md5StrBuff.append("0").append(Integer.toHexString(0xFF & byteArray[i]));  
+            else  
+                md5StrBuff.append(Integer.toHexString(0xFF & byteArray[i]));  
+        }  
+  
+        return md5StrBuff.toString();
+    } 
 }

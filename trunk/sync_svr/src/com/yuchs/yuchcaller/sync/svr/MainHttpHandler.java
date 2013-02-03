@@ -29,9 +29,9 @@ package com.yuchs.yuchcaller.sync.svr;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -50,7 +50,6 @@ import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.jboss.netty.util.CharsetUtil;
-import org.json.JSONObject;
 
 
 public class MainHttpHandler extends SimpleChannelUpstreamHandler {
@@ -61,6 +60,9 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 	
 	// the logger
 	private final Logger	mLogger;
+	
+	//! client version code
+	private int	mClientVersionCode;
 	
 	public MainHttpHandler(Logger _logger){
 		mLogger = _logger;
@@ -74,28 +76,57 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 			throw new Exception("Error POST");
 		}
 		
-		JSONObject tJson = new JSONObject(readPostBodyText(request));
-		
-		if(!tJson.has("Type")){
-			throw new Exception("Error no Type");
-		}
-		
-		String tType = tJson.getString("Type");
-		
 		GoogleAPISync tSync;
-		if(tType.equals("calender")){
-			tSync = new CalenderSync(tJson,mLogger);
-		}else{
-			throw new Exception("Error Type");
-		}	
+		InputStream in = readPostBodyText(request);
+		try{
+			mClientVersionCode = sendReceive.ReadInt(in);			
+			String tType = sendReceive.ReadString(in);
+			
+			if(tType.equals("calendar")){
+				tSync = new CalendarSync(in,mLogger);
+			}else{
+				throw new Exception("Error Type");
+			}
 		
+		}finally{
+			in.close();
+		}
+
+		// attempt to zip the data
+		boolean zip = false;
+		
+		byte[] tResultBytes = tSync.getResult();
+		
+		if(tResultBytes.length != 0){
+			ByteArrayOutputStream os = new ByteArrayOutputStream();
+			try{
+				GZIPOutputStream zos = new GZIPOutputStream(os,6);
+				try{
+					zos.write(tResultBytes);				
+				}finally{
+					zos.close();
+				}
+				
+				byte[] zipBytes = os.toByteArray();
+				if(zipBytes.length < tResultBytes.length){
+					tResultBytes = zipBytes;
+					zip = true;
+				}
+			}finally{
+				os.close();
+			}
+		}		
+		
+		// write the response 
 		ChannelBuffer buffer 	= new DynamicChannelBuffer(2048);
-		buffer.writeBytes(tSync.getResult().getBytes("UTF-8"));
+		buffer.writeBytes(tResultBytes);
 		
 		HttpResponse response	= new DefaultHttpResponse(HttpVersion.HTTP_1_1,HttpResponseStatus.OK);
 		response.setContent(buffer);
-		response.setHeader("Content-Type", MIME_JSON_TYPE + "; charset=UTF-8");
 		response.setHeader("Content-Length", response.getContent().writerIndex());
+		if(zip){
+			response.setHeader("Content-Encoding", "gzip");
+		}
 		
 		Channel ch = e.getChannel();
 		
@@ -111,7 +142,7 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 	 * @return
 	 * @throws Exception
 	 */
-	private String readPostBodyText(HttpRequest _request)throws Exception{
+	private InputStream readPostBodyText(HttpRequest _request)throws Exception{
 		
 		boolean tGzip = _request.getHeader("Accept-Encoding") != null;
 		
@@ -160,8 +191,7 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 			tContentBytes = tHttpBytes;
 		}
 		
-		String result = new String(tContentBytes,offset,length,"UTF-8");
-		return result;
+		return new ByteArrayInputStream(tContentBytes,offset,length);		
 	}
 
 	@Override

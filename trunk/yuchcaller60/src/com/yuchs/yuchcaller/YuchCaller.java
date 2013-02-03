@@ -652,7 +652,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 				t_append += ";WapGatewayAPN=" + apn + ";WapGatewayIP=10.0.0.172";
 			}
 		}
-		
+				
 		return t_append;
 	}
 	
@@ -702,7 +702,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 					try{
 						
 						String t_url = "http://yuchcaller.googlecode.com/files/latest_version?a=" + (new Random()).nextInt() + getHTTPAppendString();
-						HttpConnection conn = (HttpConnection)Connector.open(t_url);
+						HttpConnection conn = (HttpConnection)ConnectorHelper.open(t_url,Connector.READ_WRITE,30000);
 						
 						try{
 							InputStream in = conn.openInputStream();
