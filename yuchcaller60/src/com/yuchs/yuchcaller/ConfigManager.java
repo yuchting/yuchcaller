@@ -5,7 +5,7 @@ import java.util.Vector;
 
 import javax.microedition.pim.PIM;
 
-import com.yuchs.yuchcaller.sync.CalenderSyncData;
+import com.yuchs.yuchcaller.sync.CalendarSyncData;
 
 import local.yuchcallerlocalResource;
 import net.rim.blackberry.api.pdap.BlackBerryEvent;
@@ -224,7 +224,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 						    	
 						    	BlackBerryEvent event = (BlackBerryEvent)t_eventList.elementAt(i);
 						    	
-						    	CalenderSyncData syncData = new CalenderSyncData();
+						    	CalendarSyncData syncData = new CalendarSyncData();
 						    	syncData.importData(event);
 						    	
 						    }

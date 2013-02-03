@@ -1,11 +1,9 @@
-package com.yuchs.yuchcaller.sync;
+package com.yuchs.yuchcaller.sync.svr;
 
-import com.yuchs.yuchcaller.sendReceive;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-
-public class CalenderData {
+public class CalendarData {
 
 	/**
 	 * value of free_busy field
@@ -22,9 +20,10 @@ public class CalenderData {
 	public static final int CLASS_CONFIDENTIAL 	= 0;
 	public static final int CLASS_PRIVATE 		= 1;
 	public static final int CLASS_PUBLIC 			= 2;
-		
+
+	
 	/**
-	 * summary of the calender
+	 * summary of the calendar
 	 */
 	public String summary = null;
 	
@@ -49,7 +48,7 @@ public class CalenderData {
 	public int		alarm	= 0;
 	
 	/**
-	 * note of this calender event
+	 * note of this calendar event
 	 */
 	public String note		= null;
 	
@@ -66,7 +65,7 @@ public class CalenderData {
 	/**
 	 * the free_busy status
 	 */
-	public int free_busy	= FB_FREE;
+	public int free_busy	= FB_BUSY;
 	
 	/**
 	 * the type of class
@@ -94,13 +93,11 @@ public class CalenderData {
 		
 		allDay	= sendReceive.ReadBoolean(_in);
 		
-		if(attendees != null){
-			attendees = new String[sendReceive.ReadInt(_in)];
+		attendees = new String[sendReceive.ReadInt(_in)];
 
-			for(int i = 0;i < attendees.length;i++){
-				attendees[i] = sendReceive.ReadString(_in);
-			}
-		}
+		for(int i = 0;i < attendees.length;i++){
+			attendees[i] = sendReceive.ReadString(_in);
+		}		
 		
 		free_busy	= _in.read();
 		event_class = _in.read();
@@ -137,7 +134,6 @@ public class CalenderData {
 		
 		_os.write(free_busy);
 		_os.write(event_class);
-		
 		sendReceive.WriteString(_os, repeat_type);
 	}
 }
