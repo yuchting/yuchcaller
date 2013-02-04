@@ -359,14 +359,6 @@ public class SyncMain {
 	
 	/**
 	 * sync request
-	 * workfollowing
-	 * 
-	 * client			server
-	 * 	|					|
-	 * 	mod md5--------------->md5 compare
-	 * 	|					|
-	 * 
-	 * 
 	 */
 	private void syncRequest(){
 		try{
