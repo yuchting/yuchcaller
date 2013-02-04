@@ -79,7 +79,7 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 		GoogleAPISync tSync;
 		InputStream in = readPostBodyText(request);
 		try{
-			mClientVersionCode = sendReceive.ReadInt(in);			
+			mClientVersionCode = sendReceive.ReadShort(in);			
 			String tType = sendReceive.ReadString(in);
 			
 			if(tType.equals("calendar")){
@@ -144,17 +144,25 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 	 */
 	private InputStream readPostBodyText(HttpRequest _request)throws Exception{
 		
-		boolean tGzip = _request.getHeader("Accept-Encoding") != null;
+		boolean tGzip = _request.getHeader("Content-Encoding") != null;
+		int tLength = Integer.parseInt(_request.getHeader("Content-Length"));
 		
-		final ChannelBuffer tCb = _request.getContent();
+		ChannelBuffer tCb = _request.getContent();
 		
-		int length = 0;
-		int offset = 0;
+		int tReadNum = 0;
+		
+		ByteArrayOutputStream content = new ByteArrayOutputStream();
+		while(tReadNum < tLength){
+			if(tCb.readable()){
+				content.write(tCb.readByte());
+				tReadNum++;
+			}
+		}
 		
 		byte[] tContentBytes;
 		
 		if(tGzip){
-			InputStream in = new ByteArrayInputStream(tCb.toByteBuffer().array(),tCb.arrayOffset(),tCb.readableBytes());			
+			InputStream in = new ByteArrayInputStream(content.toByteArray());			
 			
 			try{
 				GZIPInputStream zin = new GZIPInputStream(in);
@@ -168,8 +176,7 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 						}
 						
 						tContentBytes	= os.toByteArray();
-						length			= tContentBytes.length; 
-						
+												
 					}finally{
 						os.close();
 					}
@@ -182,16 +189,11 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 				in = null;
 			}
 			
-		}else{
-			byte[] tHttpBytes = tCb.array();
-			
-			length = tCb.capacity() - tCb.arrayOffset();
-			offset = tCb.arrayOffset();
-			
-			tContentBytes = tHttpBytes;
+		}else{			
+			tContentBytes = content.toByteArray();
 		}
 		
-		return new ByteArrayInputStream(tContentBytes,offset,length);		
+		return new ByteArrayInputStream(tContentBytes);		
 	}
 
 	@Override
