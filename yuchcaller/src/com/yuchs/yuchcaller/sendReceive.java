@@ -31,7 +31,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Vector;
 
-class sendReceive {
+public class sendReceive {
 	
 	// static function to input and output integer
 	//

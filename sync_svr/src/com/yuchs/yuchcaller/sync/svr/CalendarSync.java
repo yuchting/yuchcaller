@@ -30,6 +30,7 @@ package com.yuchs.yuchcaller.sync.svr;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.Date;
+import java.util.List;
 import java.util.TimeZone;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
@@ -196,24 +197,81 @@ public class CalendarSync extends GoogleAPISync{
 				
 			}else{
 				
-				// process the need list's client update 
-				//
-				while(mClientSyncDataList.isEmpty()){
+				ByteArrayOutputStream os = new ByteArrayOutputStream();
+				try{
+
+					sendReceive.WriteInt(os, mClientSyncDataList.size());
 					
-					CalendarSyncData client = mClientSyncDataList.get(0);
-					
-					for(Event svr : mSvrSyncDataList){
-						if(client.getGID().equals(svr.getId())){
-							
-							updateEvent(client);		
-							break;
+					// process the need list's client update 
+					//
+					for(int i = 0;i < mClientSyncDataList.size();i++){
+						
+						CalendarSyncData client = mClientSyncDataList.get(i);
+						
+						for(Event svr : mSvrSyncDataList){
+							if(client.getGID().equals(svr.getId())){
+								
+								Event e = updateEvent(client);
+								client.setLastMod(e.getUpdated().getValue());
+								
+								sendReceive.WriteString(os, client.getBBID());
+								sendReceive.WriteLong(os,client.getLastMod());
+								
+								break;
+							}
 						}
 					}
 					
-					mClientSyncDataList.remove(0);
+					mResult = os.toByteArray();
+					
+				}finally{
+					os.close();
+					os = null;
+				}
+				
+			}
+		}
+	}
+	
+	/**
+	 * is first sync same event ?
+	 * @param e
+	 * @param d
+	 * @return
+	 */
+	private boolean isFirstSameEvent(Event e,CalendarSyncData d){
+		
+		if(d.getGID().isEmpty()){
+			
+			if(d.getData().summary.equals(e.getSummary()) 
+			&& d.getData().note.equals(e.getDescription())){ // same text attribute
+				
+				if(e.getRecurrence() != null){
+					// recurrence event
+					//
+					List<String> recurList = e.getRecurrence();
+					StringBuffer sb = new StringBuffer();
+					for(String s : recurList){
+						sb.append(s).append("\n");
+					}
+					
+					return sb.toString().equalsIgnoreCase(d.getData().repeat_type);
+					
+				}else{
+					
+					if(e.getStart() != null
+					&& e.getStart().getDate() != null
+					&& Math.abs(d.getData().start - e.getStart().getDate().getValue()) <= 1000){
+						
+						// same date
+						//
+						return true;
+					}
 				}
 			}
 		}
+		
+		return false;
 	}
 	
 	private byte[] exportDiffList()throws Exception{
@@ -231,27 +289,16 @@ public class CalendarSync extends GoogleAPISync{
 			
 			for(CalendarSyncData d : mClientSyncDataList){
 				
-				if(d.getGID().isEmpty()){
-					// maybe first sync
-					// the GID is empty
-					//						
-					if(d.getData().summary.equals(e.getSummary()) 
-					&& d.getData().note.equals(e.getDescription())
-					// same date
-					//
-					&& e.getStart() != null
-					&& e.getStart().getDate() != null
-					&& Math.abs(d.getData().start - e.getStart().getDate().getValue()) <= 1000){
+				if(isFirstSameEvent(e,d)){
 						
-						if(tUploadList == null){
-							tUploadList = new Vector<CalendarSyncData>();
-						}
-						
-						d.setGID(e.getId());
-						tUploadList.add(d);							
-						
-						continue;  
+					if(tUploadList == null){
+						tUploadList = new Vector<CalendarSyncData>();
 					}
+					
+					d.setGID(e.getId());
+					tUploadList.add(d);						
+					
+					continue; 					
 					
 				}else{
 
@@ -394,13 +441,15 @@ public class CalendarSync extends GoogleAPISync{
 	 * @param data
 	 * @throws Exception
 	 */
-	private void uploadEvent(CalendarSyncData data)throws Exception{
+	private Event uploadEvent(CalendarSyncData data)throws Exception{
 		
 		Event tEvent = new Event();
 		data.exportEvent(tEvent,mTimeZoneID);
 		
 		Event createdEvent = mService.events().insert("primary", tEvent).execute();
 		data.setGID(createdEvent.getId());
+		
+		return createdEvent;
 	}
 	
 	/**
@@ -408,12 +457,12 @@ public class CalendarSync extends GoogleAPISync{
 	 * @param data
 	 * @throws Exception
 	 */
-	private void updateEvent(CalendarSyncData data)throws Exception{
+	private Event updateEvent(CalendarSyncData data)throws Exception{
 		
 		Event tEvent = new Event();
 		data.exportEvent(tEvent,mTimeZoneID);
 		
-		mService.events().update("primary", data.getGID(),tEvent).execute();
+		return mService.events().update("primary", data.getGID(),tEvent).execute();
 	}
 		
 	/**

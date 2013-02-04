@@ -56,6 +56,7 @@ import net.rim.device.api.ui.container.PopupScreen;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 
 import com.flurry.blackberry.FlurryAgent;
+import com.yuchs.yuchcaller.sync.SyncMain;
 
 public class YuchCaller extends Application implements OptionsProvider,PhoneListener,DbIndex.DbIndexDebugOut{
 
@@ -111,10 +112,13 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	
 	//! search menu
 	private SearchLocationMenu m_addrSearchMenu = new SearchLocationMenu();
-	
+
+	//! sync main
+	public SyncMain		m_syncMain			= new SyncMain(this);
+
 	//! ip dial menu
 	private IPDialMenu m_ipDialMenu = new IPDialMenu();
-	
+
 	/**
 	 * replace vertical field manager for acvtive phone call screen's manager
 	 * @author tzz
@@ -621,11 +625,11 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		
 		String t_apn = null;
 		if(t_carrierName.equals("中国移动") || t_carrierName.toLowerCase().equals("china mobile")){
-			t_apn = "cmnet";
+			t_apn = "cmwap";
 		}else if(t_carrierName.equals("中国联通") || t_carrierName.toLowerCase().equals("china unicom")){
-			t_apn = "uninet";
+			t_apn = "uniwap";
 		}else if(t_carrierName.equals("中国电信") || t_carrierName.toLowerCase().equals("china telecom")){
-			t_apn = "ctnet";
+			t_apn = "ctwap";
 		}
 		
 		return t_apn;
@@ -644,11 +648,22 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 			
 			String apn = findNetworkAPN();
 			if(apn != null){
-				t_append += ";apn=" + apn;
+				
+				t_append += ";WapGatewayAPN=" + apn + ";WapGatewayIP=10.0.0.172";
 			}
 		}
-		
+				
 		return t_append;
+	}
+	
+	public boolean UseWifiConnection(){
+		
+		if(WLANInfo.getAPInfo() != null){
+			SetErrorString("Using wifi to connect");
+			return true;
+		}
+		
+		return false;
 	}
 	
 	/**
@@ -687,7 +702,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 					try{
 						
 						String t_url = "http://yuchcaller.googlecode.com/files/latest_version?a=" + (new Random()).nextInt() + getHTTPAppendString();
-						HttpConnection conn = (HttpConnection)Connector.open(t_url);
+						HttpConnection conn = (HttpConnection)ConnectorHelper.open(t_url,Connector.READ_WRITE,30000);
 						
 						try{
 							InputStream in = conn.openInputStream();

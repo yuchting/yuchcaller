@@ -3,13 +3,12 @@ package com.yuchs.yuchcaller;
 import java.util.Enumeration;
 import java.util.Vector;
 
+import javax.microedition.pim.Event;
+import javax.microedition.pim.EventList;
 import javax.microedition.pim.PIM;
-
-import com.yuchs.yuchcaller.sync.CalendarSyncData;
 
 import local.yuchcallerlocalResource;
 import net.rim.blackberry.api.pdap.BlackBerryEvent;
-import net.rim.blackberry.api.pdap.BlackBerryEventList;
 import net.rim.device.api.system.Characters;
 import net.rim.device.api.system.Clipboard;
 import net.rim.device.api.ui.Field;
@@ -30,6 +29,8 @@ import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.component.TextField;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.util.MathUtilities;
+
+import com.yuchs.yuchcaller.sync.CalendarSyncData;
 
 public class ConfigManager extends VerticalFieldManager implements FieldChangeListener {
 	
@@ -205,30 +206,48 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			public void fieldChanged(Field field, int context) {
 				if(FieldChangeListener.PROGRAMMATIC != context){
 
+					Event delEvent = null;
+					
 					try{
-						BlackBerryEventList t_events = (BlackBerryEventList)PIM.getInstance().openPIMList(PIM.EVENT_LIST,PIM.READ_ONLY);
+						EventList t_events = (EventList)PIM.getInstance().openPIMList(PIM.EVENT_LIST,PIM.READ_WRITE);
 
-						Enumeration t_allEvents = t_events.items();
-						
-						Vector t_eventList = new Vector();
-					    if(t_allEvents != null){
-						    while(t_allEvents.hasMoreElements()) {
-						    	t_eventList.addElement(t_allEvents.nextElement());
+						try{
+
+							Enumeration t_allEvents = t_events.items();
+							
+							Vector t_eventList = new Vector();
+						    if(t_allEvents != null){
+							    while(t_allEvents.hasMoreElements()) {
+							    	t_eventList.addElement(t_allEvents.nextElement());
+							    }
 						    }
-					    }
-					    
-					    synchronized(this){
-						   
 						    
-						    for(int i = 0;i < t_eventList.size();i++){
-						    	
-						    	BlackBerryEvent event = (BlackBerryEvent)t_eventList.elementAt(i);
-						    	
-						    	CalendarSyncData syncData = new CalendarSyncData();
-						    	syncData.importData(event);
-						    	
+						    synchronized(this){
+							   							    
+							    for(int i = 0;i < t_eventList.size();i++){
+							    	
+							    	BlackBerryEvent event = (BlackBerryEvent)t_eventList.elementAt(i);
+							    	
+							    	CalendarSyncData syncData = new CalendarSyncData();
+							    	syncData.importData(event);
+							    
+							    	delEvent = event;
+							    }
 						    }
-					    }
+						}finally{
+							t_events.close();
+							t_events = null;
+						}
+						
+						
+						try{
+							t_events = (EventList)PIM.getInstance().openPIMList(PIM.EVENT_LIST,PIM.READ_WRITE);
+							if(delEvent != null){
+								t_events.removeEvent(delEvent);
+							}							
+						}finally{
+							t_events.close();
+						}
 					}catch(Exception e){
 						System.out.println(e.getClass().getName() + e.getMessage());
 					}
