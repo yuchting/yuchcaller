@@ -118,9 +118,9 @@ public class SyncMain {
 	private void startSyncImpl(){
 		
 		// read yuch account 
-		if(!readYuchAccount()){
-			return;
-		}
+//		if(!readYuchAccount()){
+//			return;
+//		}
 		
 		// read the calendar information in bb database
 		readBBCalendar();
@@ -134,12 +134,12 @@ public class SyncMain {
 	
 	//! report
 	private void reportError(String error){
-		
+		System.err.println("error: " + error);
 	}
 	
 	// report the information
 	private void reportInfo(String info){
-		
+		System.out.println("info: " + info);
 	}
 	
 	//! read yuch account and request the Refresh/Access token
@@ -157,7 +157,7 @@ public class SyncMain {
 			
 			// request the yuch server
 			
-			String url = "http://192.168.10.7:8888/f/login/";
+			String url = "http://192.168.10.4:8888/f/login/";
 			//String url = "http://www.yuchs.com/f/login/";
 			
 			url += YuchCaller.getHTTPAppendString();
@@ -284,7 +284,7 @@ public class SyncMain {
 			try{
 				if(_read){
 					if(!fc.exists()){
-						fc.create();					
+						return;
 					}
 					
 					InputStream in = fc.openInputStream();
@@ -304,6 +304,11 @@ public class SyncMain {
 					}
 					
 				}else{
+					
+					if(!fc.exists()){
+						fc.create();					
+					}
+					
 					OutputStream os = fc.openOutputStream();
 					os.write(SyncFileVersion);
 					
@@ -348,8 +353,11 @@ public class SyncMain {
 		sendReceive.WriteShort(os,(short)0);
 		sendReceive.WriteString(os, type);
 		
-		sendReceive.WriteString(os,tProp.getYuchRefreshToken());
-		sendReceive.WriteString(os,tProp.getYuchAccessToken());
+		//sendReceive.WriteString(os,tProp.getYuchRefreshToken());
+		//sendReceive.WriteString(os,tProp.getYuchAccessToken());
+		
+		sendReceive.WriteString(os,"1/VQPrbZhyWhXrYP6eVNnwkQwj2RQK3Gyc1q-3k08sKxE");
+		sendReceive.WriteString(os,"ya29.AHES6ZQr1KFYYlAqCoU0H6ag1q9EI7kwOcMNynpIYXsxtJlqUAe9");
 		
 		sendReceive.WriteString(os,tProp.getYuchAccount());
 		
@@ -359,13 +367,24 @@ public class SyncMain {
 	
 	/**
 	 * sync request
-	 * workfollowing
 	 * 
-	 * client			server
-	 * 	|					|
-	 * 	mod md5--------------->md5 compare
-	 * 	|					|
+	 * work following
 	 * 
+	 * 		client			server
+	 * 		|					|
+	 * 		Mod md5------------>md5 compare
+	 * 		|					|
+	 * 		succ(no change)<----nochange or diff 
+	 * 		|					|
+	 * 		|					|
+	 * 		|					|
+	 * 		diff list---------->diff list process ( diff type 0)
+	 * 		|					|
+	 * 		process<-----------add/updat/upload/delete/needlist
+	 * 		|					|
+	 * 		needList---------->updated google calendar  ( diff type 1)
+	 * 		|					|
+	 * 		succ<--------------mod time list
 	 * 
 	 */
 	private void syncRequest(){
@@ -376,48 +395,41 @@ public class SyncMain {
 			ByteArrayOutputStream os = new ByteArrayOutputStream();
 			try{
 				
-				writeAccountInfo(os,"calendar",getAllCalenderMD5());
+				String md5 = getAllCalenderMD5();
 				
-				String url = "http://localhost:8888" + YuchCaller.getHTTPAppendString();
+				writeAccountInfo(os,"calendar",md5);
+				
+				String url = "http://192.168.10.4:8888" + YuchCaller.getHTTPAppendString();
 				//String url = "http://sync.yuchs.com:6029" + YuchCaller.getHTTPAppendString();
 				
-				InputStream in = new ByteArrayInputStream(requestPOSTHTTP(url,os.toByteArray(),true));
-				try{
+				String tResultStr = new String(requestPOSTHTTP(url,os.toByteArray(),true),"UTF-8");
+										
+				if(tResultStr.equals("succ")){
 					
-					String tResultStr = sendReceive.ReadString(in);		
+					// successfully!
+					reportInfo("sync without any changed successfully!");
+					
+				}else if(tResultStr.equals("diff")){
+					
+					// write the diff sign
+					InputStream diffIn = new ByteArrayInputStream(requestPOSTHTTP(url, outputDiffList(md5) ,true));
+					try{
 						
-					if(tResultStr.equals("succ")){
+						Vector tNeedList = processDiffList(diffIn);
+						if(tNeedList != null){
+							// send the need list to update server's event
+							//
+							sendNeedList(tNeedList,url);
+						}
 						
-						// successfully!
-						reportInfo("sync without any changed successfully!");
+						reportInfo("sync succ!");
 						
-					}else if(tResultStr.equals("diff")){
-						
-						// write the diff sign
-						os.write(0);
-						
-						outputDiffList(os);
-						InputStream diffIn = new ByteArrayInputStream(requestPOSTHTTP(url,os.toByteArray(),true));
-						try{
-							
-							Vector tNeedList = processDiffList(diffIn);
-							if(tNeedList != null){
-								// send the need list to update server's event
-								//
-								sendNeedList(tNeedList,url);
-							}
-							
-							reportInfo("sync succ!");
-							
-						}finally{
-							diffIn.close();
-							diffIn = null;
-						}								
-					}					
-				}finally{
-					in.close();
-					in = null;
-				}
+					}finally{
+						diffIn.close();
+						diffIn = null;
+					}								
+				}					
+				
 				
 			}finally{
 				os.close();
@@ -433,17 +445,29 @@ public class SyncMain {
 	/**
 	 * get the different list 
 	 */
-	private void outputDiffList(OutputStream os)throws Exception{
+	private byte[] outputDiffList(String md5)throws Exception{
 
-		synchronized(mCalendarSyncList){
-			sendReceive.WriteInt(os, mCalendarSyncList.size());
+		ByteArrayOutputStream os = new ByteArrayOutputStream();
+		try{
+			writeAccountInfo(os,"calendar",md5);
+			os.write(0);
 			
-			Enumeration enum = mCalendarSyncList.elements();
-			while(enum.hasMoreElements()){
-				CalendarSyncData syncData = (CalendarSyncData)enum.nextElement();
-				syncData.output(os,false);
+			synchronized(mCalendarSyncList){
+				sendReceive.WriteInt(os, mCalendarSyncList.size());
+				
+				Enumeration enum = mCalendarSyncList.elements();
+				while(enum.hasMoreElements()){
+					CalendarSyncData syncData = (CalendarSyncData)enum.nextElement();
+					syncData.output(os,false);
+				}
 			}
+			
+			return os.toByteArray();
+		}finally{
+			os.close();
+			os = null;
 		}
+		
 	}
 	
 	/**

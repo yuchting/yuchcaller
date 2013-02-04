@@ -27,12 +27,11 @@
  */
 package com.yuchs.yuchcaller.sync.svr;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.concurrent.Executors;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.TrustManager;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.ChannelPipeline;
@@ -41,7 +40,15 @@ import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
-import org.jboss.netty.handler.ssl.SslHandler;
+
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeRequestUrl;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.jackson.JacksonFactory;
+import com.google.api.services.calendar.CalendarScopes;
+import com.google.api.services.tasks.TasksScopes;
 
 
 public class Main {
@@ -52,7 +59,7 @@ public class Main {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {		
-
+		
 		(new Main()).startNetty(8888);
 		
 		//System.getProperties().put("socksProxySet","true");
@@ -61,9 +68,9 @@ public class Main {
 		
 //		HttpTransport httpTransport = new NetHttpTransport();
 //		JacksonFactory jsonFactory = new JacksonFactory();   
-		
-	    // The clientId and clientSecret are copied from the API Access tab on
-	    // the Google APIs Console
+//		
+//	    // The clientId and clientSecret are copied from the API Access tab on
+//	    // the Google APIs Console
 //	    String clientId = GoogleAPISync.getGoogleAPIClientId();
 //	    String clientSecret = GoogleAPISync.getGoogleAPIClientSecret();
 //	    
@@ -94,8 +101,8 @@ public class Main {
 //	    System.out.println("Expire time:" + token.getExpiresInSeconds());
 //	    System.out.println("Token Type:" + token.getTokenType());
 //	    System.out.println("refresh_token:" + token.getRefreshToken());
-//	    System.out.println(token.getAccessToken());
-	    // End of Step 2 <--
+//	    System.out.println("access_token:" +token.getAccessToken());
+//	    // End of Step 2 <--
 	    
 		
 //		GoogleCredential cd = new GoogleCredential.Builder()
@@ -184,6 +191,9 @@ public class Main {
 	}
 	
 	private void startNetty(int _port){
+		
+		mMainLogger = new Logger("");
+		mMainLogger.EnabelSystemOut(true);
 		
 		ServerBootstrap bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
 		bootstrap.setPipelineFactory(new ChannelPipelineFactory(){

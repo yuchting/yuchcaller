@@ -100,7 +100,7 @@ public class CalendarSync extends GoogleAPISync{
 				throw new Exception("Error mDiffType type!");
 			}
 			
-			if(mClientSyncDataList != null){
+			if(mClientSyncDataList == null){
 				mClientSyncDataList = new Vector<CalendarSyncData>();
 			}
 			
@@ -130,6 +130,10 @@ public class CalendarSync extends GoogleAPISync{
 				
 				return;
 			}
+		}
+		
+		if(mSvrSyncDataList == null){
+			mSvrSyncDataList = new Vector<Event>();
 		}
 		
 		com.google.api.services.calendar.Calendar.Events.List tList = mService.events().list("primary");
@@ -171,6 +175,26 @@ public class CalendarSync extends GoogleAPISync{
 	
 	/**
 	 * compare the event
+	 * sync request
+	 * 
+	 * work following
+	 * 
+	 * 		client			server
+	 * 		|					|
+	 * 		Mod md5------------>md5 compare
+	 * 		|					|
+	 * 		succ(no change)<----nochange or diff 
+	 * 		|					|
+	 * 		|					|
+	 * 		|					|
+	 * 		diff list---------->diff list process ( diff type 0)
+	 * 		|					|
+	 * 		process<-----------add update upload delete needlist
+	 * 		|					|
+	 * 		needList---------->updated google calendar  ( diff type 1)
+	 * 		|					|
+	 * 		succ<--------------mod time list
+	 * 
 	 */
 	private void compareEvent()throws Exception{
 		

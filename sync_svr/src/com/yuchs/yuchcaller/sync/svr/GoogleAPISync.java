@@ -108,9 +108,11 @@ public abstract class GoogleAPISync {
 	
 	
 	public GoogleAPISync(InputStream in,Logger _logger)throws Exception{
+		mLogger = _logger;
 		
-		String tAccessToken		= sendReceive.ReadString(in);
 		String tRefreshToken	= sendReceive.ReadString(in);
+		String tAccessToken		= sendReceive.ReadString(in);
+		
 		
 		mYuchAcc				= sendReceive.ReadString(in);
 		mTimeZoneID				= sendReceive.ReadString(in);
