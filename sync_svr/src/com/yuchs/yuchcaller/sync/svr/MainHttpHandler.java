@@ -37,13 +37,14 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.buffer.DynamicChannelBuffer;
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.handler.codec.frame.TooLongFrameException;
+import org.jboss.netty.handler.codec.http.DefaultHttpChunk;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
+import org.jboss.netty.handler.codec.http.HttpChunk;
 import org.jboss.netty.handler.codec.http.HttpMethod;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
@@ -64,20 +65,105 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 	//! client version code
 	private int	mClientVersionCode;
 	
+	//! receive buffer for adapt the thunk http body
+	private ChannelBuffer mReceiveBuffer 	= new DynamicChannelBuffer(256);
+	
+	//! http content length
+	private int	mContentLength		= 0;
+	
+	//! whether the content has been encoded
+	private boolean mContentEncoded	= false;
+	
 	public MainHttpHandler(Logger _logger){
 		mLogger = _logger;
 	}
 	
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)throws Exception {
-		HttpRequest request = (HttpRequest) e.getMessage();
-				
-		if(request.getMethod() != HttpMethod.POST){
-			throw new Exception("Error POST");
+		
+		Object message = e.getMessage();
+		ChannelBuffer tCb;
+		
+		if(message instanceof HttpRequest){
+			
+			HttpRequest request = (HttpRequest) message;
+			
+			if(request.getMethod() != HttpMethod.POST){
+				throw new Exception("Error POST");
+			}
+			
+			mContentEncoded = request.getHeader("Content-Encoding") != null;
+			mContentLength	= Integer.parseInt(request.getHeader("Content-Length"));
+			
+			tCb = request.getContent();
+			
+		}else if(message instanceof DefaultHttpChunk ){
+			
+			HttpChunk request = (HttpChunk) message;
+			tCb = request.getContent();
+			
+		}else if(message instanceof HttpChunk){
+			/**
+		     * The 'end of content' marker in chunked encoding.
+		     */
+			e.getChannel().close();			
+			return;
+			
+		}else{
+			throw new Exception("Error Message Type: " + message.getClass().getName());
 		}
 		
+		while(tCb.readable()){
+			mReceiveBuffer.writeByte(tCb.readByte());	
+		}
+		
+		if(mReceiveBuffer.writerIndex() >= mContentLength){
+			
+			byte[] tContentBytes;
+			
+			if(mContentEncoded){
+				InputStream in = new ByteArrayInputStream(mReceiveBuffer.array());			
+				
+				try{
+					GZIPInputStream zin = new GZIPInputStream(in);
+					try{
+						ByteArrayOutputStream os = new ByteArrayOutputStream();
+						try{
+
+							int c;
+							while((c = zin.read()) != -1){
+								os.write(c);
+							}
+							
+							tContentBytes	= os.toByteArray();
+													
+						}finally{
+							os.close();
+						}
+						
+					}finally{
+						zin.close();
+					}
+				}finally{
+					in.close();
+					in = null;
+				}
+				
+			}else{			
+				tContentBytes = mReceiveBuffer.array();
+			}
+			
+			triggerProcess(tContentBytes,e);
+		}
+	}
+	
+	/**
+	 * trigger process
+	 */
+	private void triggerProcess(byte[] _bytes,MessageEvent e)throws Exception{
+		
 		GoogleAPISync tSync;
-		InputStream in = readPostBodyText(request);
+		InputStream in = new ByteArrayInputStream(_bytes);
 		try{
 			mClientVersionCode = sendReceive.ReadShort(in);			
 			String tType = sendReceive.ReadString(in);
@@ -135,66 +221,6 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 		ch.disconnect();
 		ch.close();
 	}
-	
-	/**
-	 * read the body string from the http request
-	 * @param _request
-	 * @return
-	 * @throws Exception
-	 */
-	private InputStream readPostBodyText(HttpRequest _request)throws Exception{
-		
-		boolean tGzip = _request.getHeader("Content-Encoding") != null;
-		int tLength = Integer.parseInt(_request.getHeader("Content-Length"));
-		
-		ChannelBuffer tCb = _request.getContent();
-		
-		int tReadNum = 0;
-		
-		ByteArrayOutputStream content = new ByteArrayOutputStream();
-		while(tReadNum < tLength){
-			if(tCb.readable()){
-				content.write(tCb.readByte());
-				tReadNum++;
-			}
-		}
-		
-		byte[] tContentBytes;
-		
-		if(tGzip){
-			InputStream in = new ByteArrayInputStream(content.toByteArray());			
-			
-			try{
-				GZIPInputStream zin = new GZIPInputStream(in);
-				try{
-					ByteArrayOutputStream os = new ByteArrayOutputStream();
-					try{
-
-						int c;
-						while((c = zin.read()) != -1){
-							os.write(c);
-						}
-						
-						tContentBytes	= os.toByteArray();
-												
-					}finally{
-						os.close();
-					}
-					
-				}finally{
-					zin.close();
-				}
-			}finally{
-				in.close();
-				in = null;
-			}
-			
-		}else{			
-			tContentBytes = content.toByteArray();
-		}
-		
-		return new ByteArrayInputStream(tContentBytes);		
-	}
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)throws Exception {
@@ -215,14 +241,17 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 	}
 
 	private void sendError(ChannelHandlerContext ctx, HttpResponseStatus status,ExceptionEvent e) {
+		
 		HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
 		
 		response.setHeader(HTTP_CONTENT_TYPE, "text/plain; charset=UTF-8");		
 		response.setContent(ChannelBuffers.copiedBuffer("Failure: " + status.toString() + "\r\n", CharsetUtil.UTF_8));
 
-		// Close the connection as soon as the error message is sent.
-		ctx.getChannel().write(response).addListener(ChannelFutureListener.CLOSE);
-		
-		//mLogger.LogOut()
+		Channel ch = ctx.getChannel();
+		if(ch.isWritable()){
+			// Close the connection as soon as the error message is sent.
+			ch.write(response);
+			ch.close();
+		}
 	}
 }

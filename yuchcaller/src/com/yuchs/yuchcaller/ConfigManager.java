@@ -205,53 +205,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			
 			public void fieldChanged(Field field, int context) {
 				if(FieldChangeListener.PROGRAMMATIC != context){
-
-					Event delEvent = null;
-					
-					try{
-						EventList t_events = (EventList)PIM.getInstance().openPIMList(PIM.EVENT_LIST,PIM.READ_WRITE);
-
-						try{
-
-							Enumeration t_allEvents = t_events.items();
-							
-							Vector t_eventList = new Vector();
-						    if(t_allEvents != null){
-							    while(t_allEvents.hasMoreElements()) {
-							    	t_eventList.addElement(t_allEvents.nextElement());
-							    }
-						    }
-						    
-						    synchronized(this){
-							   							    
-							    for(int i = 0;i < t_eventList.size();i++){
-							    	
-							    	BlackBerryEvent event = (BlackBerryEvent)t_eventList.elementAt(i);
-							    	
-							    	CalendarSyncData syncData = new CalendarSyncData();
-							    	syncData.importData(event);
-							    
-							    	delEvent = event;
-							    }
-						    }
-						}finally{
-							t_events.close();
-							t_events = null;
-						}
-						
-						
-						try{
-							t_events = (EventList)PIM.getInstance().openPIMList(PIM.EVENT_LIST,PIM.READ_WRITE);
-							if(delEvent != null){
-								t_events.removeEvent(delEvent);
-							}							
-						}finally{
-							t_events.close();
-						}
-					}catch(Exception e){
-						System.out.println(e.getClass().getName() + e.getMessage());
-					}
-					
+					m_mainApp.m_syncMain.startSync();					
 				}
 			}
 		});
