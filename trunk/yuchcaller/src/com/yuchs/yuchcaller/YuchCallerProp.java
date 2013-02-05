@@ -143,7 +143,7 @@ public class YuchCallerProp {
 			
 			int tSlashIdx = _pathFilename.lastIndexOf('/');
 			
-			String tParentPath	= _pathFilename.substring(0,tSlashIdx);
+			String tParentPath	= _pathFilename.substring(0,tSlashIdx + 1);
 			String tOrgFilename = _pathFilename.substring(tSlashIdx + 1);
 			
 			String tBackFilename		= "~" + tOrgFilename;
@@ -202,7 +202,7 @@ public class YuchCallerProp {
 		try{
 			int tSlashIdx = _pathFilename.lastIndexOf('/');
 			
-			String tParentPath			= _pathFilename.substring(0,tSlashIdx);
+			String tParentPath			= _pathFilename.substring(0,tSlashIdx + 1);
 			String tOrgFilename 		= _pathFilename.substring(tSlashIdx + 1);
 			
 			String tBackFilename		= "~" + tOrgFilename;

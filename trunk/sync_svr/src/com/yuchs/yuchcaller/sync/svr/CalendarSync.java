@@ -31,6 +31,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
 import java.util.TimeZone;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
@@ -93,12 +94,8 @@ public class CalendarSync extends GoogleAPISync{
 	 */
 	private void readClientSyncData(InputStream in)throws Exception{
 		
-		if(in.available() > 0){
-			
-			mDiffType = in.read();
-			if(mDiffType == -1){
-				throw new Exception("Error mDiffType type!");
-			}
+		mDiffType = in.read();
+		if(mDiffType != 0){
 			
 			if(mClientSyncDataList == null){
 				mClientSyncDataList = new Vector<CalendarSyncData>();
@@ -108,10 +105,10 @@ public class CalendarSync extends GoogleAPISync{
 			
 			for(int i = 0;i < num;i++){
 				CalendarSyncData data	= new CalendarSyncData();
-				data.input(in, mDiffType == 1);
+				data.input(in);
 				mClientSyncDataList.add(data);
 			}
-		}
+		}		
 	}
 
 	
@@ -208,18 +205,19 @@ public class CalendarSync extends GoogleAPISync{
 			
 			// different events
 			//				
-			if(mDiffType == -1){
+			if(mDiffType == 0){
 				mResult = (new String("diff")).getBytes("UTF-8");
 				return;
 			}
 			
-			if(mDiffType == 0){
+			if(mDiffType == 1){
+				
 				// export the 
 				// ADD DEL UPDATE NEED list
 				//
 				mResult = exportDiffList();
 				
-			}else{
+			}else if(mDiffType == 2){
 				
 				ByteArrayOutputStream os = new ByteArrayOutputStream();
 				try{
@@ -236,7 +234,7 @@ public class CalendarSync extends GoogleAPISync{
 							if(client.getGID().equals(svr.getId())){
 								
 								Event e = updateEvent(client);
-								client.setLastMod(e.getUpdated().getValue());
+								client.setLastMod(getEventLastMod(e));
 								
 								sendReceive.WriteString(os, client.getBBID());
 								sendReceive.WriteLong(os,client.getLastMod());
@@ -252,7 +250,8 @@ public class CalendarSync extends GoogleAPISync{
 					os.close();
 					os = null;
 				}
-				
+			}else{
+				throw new Exception("Error diff type:" + mDiffType);
 			}
 		}
 	}
@@ -263,12 +262,16 @@ public class CalendarSync extends GoogleAPISync{
 	 * @param d
 	 * @return
 	 */
-	private boolean isFirstSameEvent(Event e,CalendarSyncData d){
+	private boolean isFirstSyncSameEvent(Event e,CalendarSyncData d){
+		
+		if(d.getData().summary.startsWith("问") && e.getSummary().startsWith("问")){
+			System.out.println("find!");
+		}
 		
 		if(d.getGID().isEmpty()){
 			
-			if(d.getData().summary.equals(e.getSummary()) 
-			&& d.getData().note.equals(e.getDescription())){ // same text attribute
+			if((d.getData().summary.equals(e.getSummary()) || (d.getData().summary.length() == 0 && e.getSummary() == null))
+			&& (d.getData().note.equals(e.getDescription()) || (d.getData().note.length() == 0 && e.getDescription() == null) )){ // same text attribute
 				
 				if(e.getRecurrence() != null){
 					// recurrence event
@@ -276,20 +279,30 @@ public class CalendarSync extends GoogleAPISync{
 					List<String> recurList = e.getRecurrence();
 					StringBuffer sb = new StringBuffer();
 					for(String s : recurList){
-						sb.append(s).append("\n");
+						if(sb.length() > 0){
+							sb.append("\n");
+						}
+						sb.append(s);
 					}
 					
 					return sb.toString().equalsIgnoreCase(d.getData().repeat_type);
 					
 				}else{
 					
-					if(e.getStart() != null
-					&& e.getStart().getDate() != null
-					&& Math.abs(d.getData().start - e.getStart().getDate().getValue()) <= 1000){
-						
-						// same date
-						//
-						return true;
+					
+					if(e.getStart() != null){
+					
+						DateTime ed = e.getStart().getDate();
+						if(ed == null){
+							ed = e.getStart().getDateTime();
+						}
+					
+						if( ed != null && Math.abs(d.getData().start - ed.getValue()) <= 1000){
+							
+							// same date
+							//
+							return true;
+						}
 					}
 				}
 			}
@@ -303,26 +316,29 @@ public class CalendarSync extends GoogleAPISync{
 		// different list
 		//
 		Vector<CalendarSyncData> tAddList		= null;
-		Vector<String>			tDelList	 	= null;
+		Vector<CalendarSyncData> tDelList	 	= null;
 		Vector<CalendarSyncData> tUploadList	= null;
 		Vector<CalendarSyncData> tUpdateList	= null;
-		Vector<String> 			tNeedList		= null;
+		Vector<CalendarSyncData> tNeedList		= null;
 		
 		add_total:
 		for(Event e : mSvrSyncDataList){
 			
 			for(CalendarSyncData d : mClientSyncDataList){
 				
-				if(isFirstSameEvent(e,d)){
+				if(isFirstSyncSameEvent(e,d)){
 						
 					if(tUploadList == null){
 						tUploadList = new Vector<CalendarSyncData>();
 					}
 					
 					d.setGID(e.getId());
-					tUploadList.add(d);						
+					tUploadList.add(d);
 					
-					continue; 					
+					// remove this avoid next compare
+					mClientSyncDataList.remove(d);
+					
+					continue add_total; 					
 					
 				}else{
 
@@ -338,7 +354,7 @@ public class CalendarSync extends GoogleAPISync{
 			
 			CalendarSyncData data = new CalendarSyncData();
 			data.importEvent(e);
-			
+
 			tAddList.add(data);
 		}
 		
@@ -346,6 +362,7 @@ public class CalendarSync extends GoogleAPISync{
 		for(CalendarSyncData d : mClientSyncDataList){
 				
 			for(Event e : mSvrSyncDataList){
+				
 				if(d.getGID().equals(e.getId())){
 					
 					long tEventLastMod = getEventLastMod(e);
@@ -355,9 +372,9 @@ public class CalendarSync extends GoogleAPISync{
 						// need list
 						//
 						if(tNeedList == null){
-							tNeedList = new Vector<String>();
+							tNeedList = new Vector<CalendarSyncData>();
 						}
-						tNeedList.add(d.getBBID());
+						tNeedList.add(d);
 						
 					}else if(d.getLastMod() < tEventLastMod){
 						
@@ -376,13 +393,13 @@ public class CalendarSync extends GoogleAPISync{
 				}
 			}
 			
-			if(d.getGID().isEmpty()){
+			if(!d.getGID().isEmpty()){
 
 				// delete the client calender
 				if(tDelList == null){
-					tDelList = new Vector<String>();
+					tDelList = new Vector<CalendarSyncData>();
 				}
-				tDelList.add(d.getBBID());
+				tDelList.add(d);
 				
 			}else{
 				
@@ -391,7 +408,7 @@ public class CalendarSync extends GoogleAPISync{
 					tUploadList = new Vector<CalendarSyncData>();
 				}
 				
-				// upload event
+				// upload event to google calendar
 				uploadEvent(d);
 				
 				tUploadList.add(d);
@@ -405,6 +422,8 @@ public class CalendarSync extends GoogleAPISync{
 				sendReceive.WriteInt(os, tAddList.size());
 				for(CalendarSyncData d : tAddList){
 					d.output(os, true);
+					
+					mLogger.LogOut("AddList:" + d.getData().summary);
 				}
 			}else{
 				sendReceive.WriteInt(os, 0);
@@ -413,8 +432,10 @@ public class CalendarSync extends GoogleAPISync{
 			if(tDelList != null){
 				sendReceive.WriteInt(os, tDelList.size());
 				
-				for(String b : tDelList){
-					sendReceive.WriteString(os,b);
+				for(CalendarSyncData d : tDelList){
+					sendReceive.WriteString(os,d.getBBID());
+					
+					mLogger.LogOut("DelList:" + d.getData().summary);
 				}
 			}else{
 				sendReceive.WriteInt(os,0);
@@ -425,6 +446,8 @@ public class CalendarSync extends GoogleAPISync{
 				
 				for(CalendarSyncData d : tUpdateList){
 					d.output(os, true);
+					
+					mLogger.LogOut("UpdateList:" + d.getData().summary);
 				}
 			}else{
 				sendReceive.WriteInt(os,0);
@@ -436,6 +459,8 @@ public class CalendarSync extends GoogleAPISync{
 				for(CalendarSyncData d : tUploadList){
 					sendReceive.WriteString(os,d.getBBID());
 					sendReceive.WriteString(os,d.getGID());
+					
+					mLogger.LogOut("UploadList:" + d.getData().summary);
 				}
 				
 			}else{
@@ -444,8 +469,10 @@ public class CalendarSync extends GoogleAPISync{
 			
 			if(tNeedList != null){
 				sendReceive.WriteInt(os,tNeedList.size());
-				for(String b : tNeedList){
-					sendReceive.WriteString(os,b);
+				for(CalendarSyncData d : tNeedList){
+					sendReceive.WriteString(os,d.getBBID());
+					
+					mLogger.LogOut("NeedList:" + d.getData().summary);
 				}
 			}else{
 				sendReceive.WriteInt(os,0);
@@ -470,10 +497,17 @@ public class CalendarSync extends GoogleAPISync{
 		Event tEvent = new Event();
 		data.exportEvent(tEvent,mTimeZoneID);
 		
-		Event createdEvent = mService.events().insert("primary", tEvent).execute();
-		data.setGID(createdEvent.getId());
+		// TODO: delete follow code
+		tEvent.setId("" + new Random().nextInt());
+		tEvent.setUpdated(new DateTime(new Date()));
 		
-		return createdEvent;
+		//tEvent = mService.events().insert("primary", tEvent).execute();
+		data.setGID(tEvent.getId());
+		data.setLastMod(getEventLastMod(tEvent));
+		
+		mLogger.LogOut(mYuchAcc + " uploadEvent:" + tEvent.getSummary());
+		
+		return tEvent;
 	}
 	
 	/**
@@ -486,7 +520,17 @@ public class CalendarSync extends GoogleAPISync{
 		Event tEvent = new Event();
 		data.exportEvent(tEvent,mTimeZoneID);
 		
-		return mService.events().update("primary", data.getGID(),tEvent).execute();
+		// TODO: delete follow code
+		tEvent.setId("" + new Random().nextInt());
+		tEvent.setUpdated(new DateTime(new Date()));
+		
+		//tEvent = mService.events().update("primary", data.getGID(),tEvent).execute();
+		data.setGID(tEvent.getId());
+		data.setLastMod(getEventLastMod(tEvent));		
+		
+		mLogger.LogOut(mYuchAcc + " updateEvent:" + tEvent.getSummary());
+		
+		return tEvent;
 	}
 		
 	/**
@@ -494,7 +538,7 @@ public class CalendarSync extends GoogleAPISync{
 	 * @param event
 	 * @return
 	 */
-	private long getEventLastMod(Event event){
+	public static long getEventLastMod(Event event){
 		
 		long tLastMod;
 		if(event.getUpdated() != null){
@@ -503,7 +547,7 @@ public class CalendarSync extends GoogleAPISync{
 			tLastMod = event.getCreated().getValue();
 		}
 		
-		return tLastMod / 1000;
+		return tLastMod;
 	}
 		
 	/**

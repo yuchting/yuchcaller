@@ -48,7 +48,7 @@ public class CalendarSyncData {
 	 */
 	public void importEvent(Event _event)throws Exception{
 		setGID(_event.getId());
-		setLastMod(_event.getUpdated().getValue());
+		setLastMod(CalendarSync.getEventLastMod(_event));
 		
 		if(m_calendarData == null){
 			m_calendarData = new CalendarData();
@@ -66,11 +66,11 @@ public class CalendarSyncData {
 			}			
 		}
 		
-		m_calendarData.summary = _event.getSummary();
+		m_calendarData.summary	= _event.getSummary();
 		m_calendarData.note		= _event.getDescription();
 		
-		m_calendarData.start	= ge_eventDateTime(_event.getStart());
-		m_calendarData.end	= ge_eventDateTime(_event.getEnd());
+		m_calendarData.start	= getEventDateTime(_event.getStart());
+		m_calendarData.end		= getEventDateTime(_event.getEnd());
 		
 		m_calendarData.location	= _event.getLocation();
 		
@@ -113,14 +113,22 @@ public class CalendarSyncData {
 			}
 		}
 		
-		if(_event.getVisibility().equals("default")
-		|| _event.getVisibility().equals("private")){
-			m_calendarData.event_class = CalendarData.CLASS_PRIVATE; 
-		}else if(_event.getVisibility().equals("public")){
-			m_calendarData.event_class = CalendarData.CLASS_PUBLIC;
-		}else{
-			m_calendarData.event_class = CalendarData.CLASS_CONFIDENTIAL;
+		String visibility = _event.getVisibility();
+		
+		if(visibility != null){			
+			if(visibility.equalsIgnoreCase("default")
+			|| visibility.equalsIgnoreCase("private")){
+				
+				m_calendarData.event_class = CalendarData.CLASS_PRIVATE; 
+				
+			}else if(visibility.equalsIgnoreCase("public")){
+				
+				m_calendarData.event_class = CalendarData.CLASS_PUBLIC;
+			}else{
+				m_calendarData.event_class = CalendarData.CLASS_CONFIDENTIAL;
+			}
 		}
+		
 	}
 	
 	/**
@@ -219,40 +227,45 @@ public class CalendarSyncData {
 		}
 	}
 	
-	private long ge_eventDateTime(EventDateTime date){ 
-		if(date == null || date.getDate() == null){
+	private long getEventDateTime(EventDateTime date){
+		
+		DateTime ed = date.getDateTime();
+		if(ed == null){
+			ed = date.getDate();
+		}
+		
+		if(date == null || ed == null){
 			return 0;
 		}
 		
-		if(date.getDate().toStringRfc3339().length() <= 11){
+		if(ed.toStringRfc3339().length() <= 11){
 			// yyyy-mm-dd 
 			//
 			m_calendarData.allDay = true;
 		}
 		
-		return date.getDate().getValue();
+		return ed.getValue();
 	}
-	
-	
-	
+		
 	/**
 	 * input the data from the byte stream
 	 * @param in
 	 * @throws Exception
 	 */
-	public void input(InputStream in,boolean _inputData)throws Exception{
+	public void input(InputStream in)throws Exception{
 		setBBID(sendReceive.ReadString(in));
 		setGID(sendReceive.ReadString(in));
 		setLastMod(sendReceive.ReadLong(in));
 		
-		if(_inputData){
+		boolean tHasData = sendReceive.ReadBoolean(in);
+		if(tHasData){
 
 			if(m_calendarData == null){
 				m_calendarData = new CalendarData();
 			}
 			
 			m_calendarData.inputData(in);
-		}
+		}		
 	}
 	
 	/**
@@ -266,7 +279,10 @@ public class CalendarSyncData {
 		sendReceive.WriteLong(os,getLastMod());
 		
 		if(m_calendarData != null && _outputData){
+			sendReceive.WriteBoolean(os, true);
 			m_calendarData.outputData(os);
+		}else{
+			sendReceive.WriteBoolean(os, false);
 		}
 	}
 }
