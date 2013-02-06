@@ -135,18 +135,27 @@ public class CalendarSync extends GoogleAPISync{
 		
 		com.google.api.services.calendar.Calendar.Events.List tList = mService.events().list("primary");
 	    	    
-		tList.setTimeMin(new DateTime(new Date(System.currentTimeMillis() - 365 * 24 * 3600 * 1000L) , TimeZone.getTimeZone(mTimeZoneID)));
+		tList.setTimeMin(new DateTime(new Date(mMinTimeToSync) , TimeZone.getTimeZone(mTimeZoneID)));
 
 	    Events events = tList.execute();
 	   
 	    StringBuffer sb = new StringBuffer();
+	    StringBuffer debug = new StringBuffer();
 	    
 	    while (true) {
 	    	for (Event event : events.getItems()) {
+	    		
+	    		for(int i = 0;i < ){
+	    			
+	    		}
 	    		mSvrSyncDataList.add(event);
-	    		sb.append(getEventLastMod(event));
+	    		
+	    		long tLastMod = getEventLastMod(event);
+	    		sb.append(tLastMod);
+	    		
+	    		//debug.append(tLastMod).append(":").append(syncData.getBBID()).append(event.getSummary()).append("\n");
 	        }
-	        
+	    	
 	        String pageToken = events.getNextPageToken();
 	        if (pageToken != null && !pageToken.isEmpty()) {
 	        	events = mService.events().list("primary").setPageToken(pageToken).execute();
@@ -167,6 +176,8 @@ public class CalendarSync extends GoogleAPISync{
 	    tFormerEvent.mRefreshTime	= System.currentTimeMillis();
 	    
 	    smEventHashMap.put(mYuchAcc,tFormerEvent);
+	    
+	    System.out.println(debug.toString());
 	}
 	
 	
@@ -194,66 +205,62 @@ public class CalendarSync extends GoogleAPISync{
 	 * 
 	 */
 	private void compareEvent()throws Exception{
-		
-		if(mAllClientSyncDataMD5.equals(mAllSvrSyncDataMD5)){
-			
-			// same events
-			//
-			mResult = (new String("succ")).getBytes("UTF-8");
-			
-		}else{
-			
-			// different events
-			//				
-			if(mDiffType == 0){
-				mResult = (new String("diff")).getBytes("UTF-8");
-				return;
-			}
-			
-			if(mDiffType == 1){
-				
-				// export the 
-				// ADD DEL UPDATE NEED list
-				//
-				mResult = exportDiffList();
-				
-			}else if(mDiffType == 2){
-				
-				ByteArrayOutputStream os = new ByteArrayOutputStream();
-				try{
-
-					sendReceive.WriteInt(os, mClientSyncDataList.size());
 					
-					// process the need list's client update 
-					//
-					for(int i = 0;i < mClientSyncDataList.size();i++){
-						
-						CalendarSyncData client = mClientSyncDataList.get(i);
-						
-						for(Event svr : mSvrSyncDataList){
-							if(client.getGID().equals(svr.getId())){
-								
-								Event e = updateEvent(client);
-								client.setLastMod(getEventLastMod(e));
-								
-								sendReceive.WriteString(os, client.getBBID());
-								sendReceive.WriteLong(os,client.getLastMod());
-								
-								break;
-							}
+		if(mDiffType == 0){
+
+			String tResultStr;
+			if(mAllClientSyncDataMD5.equals(mAllSvrSyncDataMD5)){
+				// same events
+				//
+				tResultStr = "succ";
+			}else{
+				tResultStr = "diff";				
+			}			
+			
+			mResult = tResultStr.getBytes("UTF-8");	
+			
+		}else if(mDiffType == 1){
+			
+			// export the 
+			// ADD DEL UPDATE NEED list
+			//
+			mResult = exportDiffList();
+			
+		}else if(mDiffType == 2){
+			
+			ByteArrayOutputStream os = new ByteArrayOutputStream();
+			try{
+				sendReceive.WriteInt(os, mClientSyncDataList.size());
+				
+				// process the need list's client update 
+				//
+				for(int i = 0;i < mClientSyncDataList.size();i++){
+					
+					CalendarSyncData client = mClientSyncDataList.get(i);
+					
+					for(Event svr : mSvrSyncDataList){
+						if(client.getGID().equals(svr.getId())){
+							
+							Event e = updateEvent(client);
+							client.setLastMod(getEventLastMod(e));
+							
+							sendReceive.WriteString(os, client.getBBID());
+							sendReceive.WriteLong(os,client.getLastMod());
+							
+							break;
 						}
 					}
-					
-					mResult = os.toByteArray();
-					
-				}finally{
-					os.close();
-					os = null;
 				}
-			}else{
-				throw new Exception("Error diff type:" + mDiffType);
+				
+				mResult = os.toByteArray();
+				
+			}finally{
+				os.close();
+				os = null;
 			}
-		}
+		}else{
+			throw new Exception("Error diff type:" + mDiffType);
+		}		
 	}
 	
 	/**
@@ -263,12 +270,8 @@ public class CalendarSync extends GoogleAPISync{
 	 * @return
 	 */
 	private boolean isFirstSyncSameEvent(Event e,CalendarSyncData d){
-		
-		if(d.getData().summary.startsWith("问") && e.getSummary().startsWith("问")){
-			System.out.println("find!");
-		}
-		
-		if(d.getGID().isEmpty()){
+				
+		if(d.getGID().isEmpty() && d.getData() != null){
 			
 			if((d.getData().summary.equals(e.getSummary()) || (d.getData().summary.length() == 0 && e.getSummary() == null))
 			&& (d.getData().note.equals(e.getDescription()) || (d.getData().note.length() == 0 && e.getDescription() == null) )){ // same text attribute
@@ -333,12 +336,14 @@ public class CalendarSync extends GoogleAPISync{
 					}
 					
 					d.setGID(e.getId());
+					d.setLastMod(getEventLastMod(e));
+					
 					tUploadList.add(d);
 					
 					// remove this avoid next compare
 					mClientSyncDataList.remove(d);
 					
-					continue add_total; 					
+					continue add_total;
 					
 				}else{
 
@@ -459,6 +464,7 @@ public class CalendarSync extends GoogleAPISync{
 				for(CalendarSyncData d : tUploadList){
 					sendReceive.WriteString(os,d.getBBID());
 					sendReceive.WriteString(os,d.getGID());
+					sendReceive.WriteLong(os,d.getLastMod());
 					
 					mLogger.LogOut("UploadList:" + d.getData().summary);
 				}
