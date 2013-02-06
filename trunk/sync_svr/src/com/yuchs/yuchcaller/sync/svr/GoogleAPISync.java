@@ -90,12 +90,16 @@ public abstract class GoogleAPISync {
 	 */
 	protected String mAllSvrSyncDataMD5		 	= null;
 	
+	/**
+	 * min time want to sync
+	 */
+	protected long		mMinTimeToSync				= 0;
 
 	/**
 	 * the result of sync 
 	 */
 	protected byte[] mResult						= null;
-	
+		
 	/**
 	 * the http transport for google API
 	 */
@@ -110,14 +114,16 @@ public abstract class GoogleAPISync {
 	public GoogleAPISync(InputStream in,Logger _logger)throws Exception{
 		mLogger = _logger;
 		
+		mMinTimeToSync			= sendReceive.ReadLong(in);
+		
 		String tRefreshToken	= sendReceive.ReadString(in);
 		String tAccessToken		= sendReceive.ReadString(in);
-		
-		
+				
 		mYuchAcc				= sendReceive.ReadString(in);
 		mTimeZoneID				= sendReceive.ReadString(in);
 		
 		mAllClientSyncDataMD5 = sendReceive.ReadString(in);
+
 		
 		mGoogleCredential = new GoogleCredential.Builder()
 							    .setClientSecrets(getGoogleAPIClientId(), getGoogleAPIClientSecret())

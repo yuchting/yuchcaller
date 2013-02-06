@@ -55,6 +55,9 @@ public class YuchCallerProp {
 	//! the yuch account google api access token; 
 	private String mAccessToken				= "";
 	
+	//! the sync former days
+	private int mSyncFormerDays		 	= 60;
+	
 	final private YuchCaller	m_mainApp;
 	
 	public YuchCallerProp(YuchCaller _mainApp){
@@ -123,7 +126,10 @@ public class YuchCallerProp {
 	public synchronized void setYuchRefreshToken(String _token){mRefreshToken = _token;}
 	
 	public String getYuchAccessToken(){return mAccessToken;}
-	public synchronized void setYuchAccessToken(String _token){mYuchAcc = _token;}	
+	public synchronized void setYuchAccessToken(String _token){mYuchAcc = _token;}
+	
+	public int getSyncFormerDays(){return mSyncFormerDays;}
+	public void setSyncFormerDays(int _days){mSyncFormerDays = _days;}
 	
     //Retrieves a copy of the effective properties set from storage.
     public void save(){
@@ -283,7 +289,8 @@ public class YuchCallerProp {
 				    			mYuchAcc		= sendReceive.ReadString(in);
 				    			mYuchPass		= sendReceive.ReadString(in);
 				    			mRefreshToken	= sendReceive.ReadString(in);
-				    			mAccessToken	= sendReceive.ReadString(in);	
+				    			mAccessToken	= sendReceive.ReadString(in);
+				    			mSyncFormerDays	= sendReceive.ReadInt(in);
 				    		}
 				    
 			    			if(t_currVer == 0 && !YuchCaller.fsm_OS_version.startsWith("4.")){
@@ -324,6 +331,7 @@ public class YuchCallerProp {
 						sendReceive.WriteString(os, mYuchPass);
 						sendReceive.WriteString(os, mRefreshToken);
 						sendReceive.WriteString(os, mAccessToken);
+						sendReceive.WriteInt(os,mSyncFormerDays);
 						
 					}finally{
 						os.close();
