@@ -32,12 +32,46 @@ public class SyncMain {
 	public YuchCaller	m_mainApp;
 	
 	private boolean	m_isSyncing = false;
-		
-	// calendar sync list
-	private Hashtable	mCalendarSyncList = new Hashtable();
 	
 	// mark whether read the calendar list
 	private boolean	mReadCalendarList = false;
+		
+	// calendar sync list
+	private Vector	mCalendarSyncList = new Vector();
+	
+	/**
+	 * find the calendar sync data in list
+	 * @param _bbID		bid of event
+	 * @return
+	 */
+	private CalendarSyncData getCalendarSyncData(String _bbid){
+		
+		for(int i = 0;i < mCalendarSyncList.size();i++){
+			CalendarSyncData d = (CalendarSyncData)mCalendarSyncList.elementAt(i); 
+			if(d.getBBID().equals(_bbid)){
+				return d;
+			}
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * remove the calendar sync data in main list
+	 * @param _bbid
+	 */
+	private void removeCalendarSyncData(String _bbid){
+		
+		for(int i = 0;i < mCalendarSyncList.size();i++){
+			CalendarSyncData d = (CalendarSyncData)mCalendarSyncList.elementAt(i); 
+			if(d.getBBID().equals(_bbid)){
+				mCalendarSyncList.removeElementAt(i);
+				break;
+			}
+		}
+	}
+	
+	
 		
 	public SyncMain(YuchCaller _mainApp){
 		m_mainApp = _mainApp;
@@ -135,14 +169,20 @@ public class SyncMain {
 		
 		// read sync file (gID for bID)
 		readWriteSyncFile(true);
-		
+				
 		// sync
 		syncRequest();
 	}
 	
-	//! report
+	//! report error
 	private void reportError(String error){
-		System.err.println("error: " + error);
+		System.err.println("Error: " + error);
+	}
+	
+	//! report error
+	private void reportError(String errorLabel,Exception e){
+		System.err.println(errorLabel + ": " + e.getClass().getName() + " " + e.getMessage());
+		m_mainApp.SetErrorString(errorLabel, e);
 	}
 	
 	// report the information
@@ -205,7 +245,7 @@ public class SyncMain {
 				
 			}catch(Exception e){
 				// network problem
-				
+				reportError("Can not get the YuchAccount",e);
 			}			
 		}
 		
@@ -237,7 +277,7 @@ public class SyncMain {
 				    }
 			    }
 			    			    
-			    mCalendarSyncList.clear();
+			    mCalendarSyncList.removeAllElements();
 			    for(int i = 0;i < t_eventList.size();i++){
 			    	
 			    	Event event = (Event)t_eventList.elementAt(i);
@@ -245,7 +285,7 @@ public class SyncMain {
 			    	CalendarSyncData syncData = new CalendarSyncData();
 			    	syncData.importData(event,t_events);
 			    					    	
-			    	mCalendarSyncList.put(syncData.getBBID(), syncData);
+			    	mCalendarSyncList.addElement(syncData);
 			    }			    
 			    
 			    mReadCalendarList = true;
@@ -256,7 +296,7 @@ public class SyncMain {
 			}
 		    
 		}catch(Exception e){
-			m_mainApp.SetErrorString("RBBC", e);
+			reportError("Can not read calendar event list",e);
 		}
 	}
 
@@ -296,7 +336,7 @@ public class SyncMain {
 							String	gid = sendReceive.ReadString(in);
 							long	mod = sendReceive.ReadLong(in);
 													
-							CalendarSyncData syncData = (CalendarSyncData)mCalendarSyncList.get(bid);
+							CalendarSyncData syncData = getCalendarSyncData(bid);
 							if(syncData != null){
 								syncData.setGID(gid);
 								syncData.setLastMod(mod);
@@ -319,9 +359,9 @@ public class SyncMain {
 						os.write(SyncFileVersion);
 						sendReceive.WriteInt(os, mCalendarSyncList.size());
 						
-						Enumeration enum = mCalendarSyncList.elements();
-						while(enum.hasMoreElements()){
-							CalendarSyncData syncData = (CalendarSyncData)enum.nextElement();
+						for(int idx = 0;idx < mCalendarSyncList.size();idx++){
+
+							CalendarSyncData syncData = (CalendarSyncData)mCalendarSyncList.elementAt(idx);
 							
 							sendReceive.WriteString(os, syncData.getBBID());
 							sendReceive.WriteString(os, syncData.getGID());
@@ -339,7 +379,7 @@ public class SyncMain {
 				fc = null;
 			}
 		}catch(Exception e){
-			m_mainApp.SetErrorString("RWSF",e);
+			reportError("Can not read " + fsm_calendarFilename,e);
 		}
 		
 		m_mainApp.getProperties().postWriteReadIni(fsm_calendarFilename);
@@ -415,8 +455,8 @@ public class SyncMain {
 				
 				writeAccountInfo(os,"calendar",md5,tSyncMinTime,0);
 				
-				//String url = "http://192.168.10.4:8888" + YuchCaller.getHTTPAppendString();
-				String url = "http://192.168.100.116:8888" + YuchCaller.getHTTPAppendString();
+				String url = "http://192.168.10.7:8888" + YuchCaller.getHTTPAppendString();
+				//String url = "http://192.168.100.116:8888" + YuchCaller.getHTTPAppendString();
 				//String url = "http://sync.yuchs.com:6029" + YuchCaller.getHTTPAppendString();
 				
 				String tResultStr = new String(requestPOSTHTTP(url,os.toByteArray(),true),"UTF-8");
@@ -455,7 +495,7 @@ public class SyncMain {
 			
 		}catch(Exception e){
 			// sync request failed
-			reportError("Sync Error:" + e.getClass().getName() + " " + e.getMessage());
+			reportError("Sync Error",e);
 		}
 	}
 	
@@ -470,9 +510,9 @@ public class SyncMain {
 			writeAccountInfo(os,"calendar",md5,minSyncTime,1);
 			sendReceive.WriteInt(os, mCalendarSyncList.size());
 			
-			Enumeration enum = mCalendarSyncList.elements();
-			while(enum.hasMoreElements()){
-				CalendarSyncData syncData = (CalendarSyncData)enum.nextElement();
+			for(int idx = 0;idx < mCalendarSyncList.size();idx++){
+
+				CalendarSyncData syncData = (CalendarSyncData)mCalendarSyncList.elementAt(idx);
 				syncData.output(os,syncData.getGID() == null || syncData.getGID().length()  == 0);
 			}			
 			
@@ -481,7 +521,6 @@ public class SyncMain {
 			os.close();
 			os = null;
 		}
-		
 	}
 	
 	/**
@@ -501,7 +540,7 @@ public class SyncMain {
 			sendReceive.WriteInt(os,needList.size());
 			
 			for(int i = 0;i < needList.size();i++){
-				CalendarSyncData d = (CalendarSyncData)mCalendarSyncList.get(needList.elementAt(i).toString());
+				CalendarSyncData d = getCalendarSyncData(needList.elementAt(i).toString());
 				d.output(os, true);				
 			}
 			
@@ -513,7 +552,7 @@ public class SyncMain {
 					String bid		= sendReceive.ReadString(in);
 					long modTime	= sendReceive.ReadLong(in);
 					
-					CalendarSyncData d = (CalendarSyncData)mCalendarSyncList.get(bid);
+					CalendarSyncData d = getCalendarSyncData(bid);
 					d.setLastMod(modTime);
 				}
 				
@@ -637,7 +676,7 @@ public class SyncMain {
 					d.setBBID(e.getString(Event.UID, 0));
 					
 					// added to main list
-					mCalendarSyncList.put(d.getBBID(),d);
+					mCalendarSyncList.addElement(d);
 				}
 			}
 			
@@ -651,7 +690,7 @@ public class SyncMain {
 				for(int i = 0;i < tDelList.size();i++){
 					String bid = (String)tDelList.elementAt(i);
 					
-					CalendarSyncData d = (CalendarSyncData)mCalendarSyncList.get(bid);
+					CalendarSyncData d = getCalendarSyncData(bid);
 					if(d != null){
 						
 						for(int idx = 0;idx < t_eventList.size();idx++){
@@ -665,7 +704,7 @@ public class SyncMain {
 							}
 						}
 						
-						mCalendarSyncList.remove(d.getBBID());
+						removeCalendarSyncData(d.getBBID());
 					}
 				}
 			}
@@ -676,7 +715,7 @@ public class SyncMain {
 				for(int i = 0;i < tUploadList.size();i++){
 					CalendarSyncData uploaded = (CalendarSyncData)tUploadList.elementAt(i);
 					
-					CalendarSyncData d = (CalendarSyncData)mCalendarSyncList.get(uploaded.getBBID());
+					CalendarSyncData d = getCalendarSyncData(uploaded.getBBID());
 					if(d != null){
 						d.setGID(uploaded.getGID());
 						d.setLastMod(uploaded.getLastMod());
@@ -693,7 +732,7 @@ public class SyncMain {
 				
 				for(int i = 0;i < tUpdateList.size();i++){
 					CalendarSyncData update = (CalendarSyncData)tUpdateList.elementAt(i);				
-					mCalendarSyncList.put(update.getBBID(),update);
+					mCalendarSyncList.addElement(update);
 					
 					for(int idx = 0;idx < t_eventList.size();idx++){
 						Event e = (Event)t_eventList.elementAt(idx);
@@ -729,14 +768,11 @@ public class SyncMain {
 	private String prepareCalenderMD5(long _minTime){
 				
 		Vector tRemoveList = null;
+		Vector tSortList = new Vector();
 		
-		StringBuffer sb = new StringBuffer();
-		
-		StringBuffer debug = new StringBuffer();
-		
-		Enumeration enum = mCalendarSyncList.elements();
-		while(enum.hasMoreElements()){
-			CalendarSyncData syncData = (CalendarSyncData)enum.nextElement();
+		for(int idx = 0;idx < mCalendarSyncList.size();idx++){
+
+			CalendarSyncData syncData = (CalendarSyncData)mCalendarSyncList.elementAt(idx);
 			
 			if(syncData.getData().start < _minTime 
 	    	&& syncData.getData().repeat_type.length() == 0){
@@ -749,16 +785,39 @@ public class SyncMain {
 	    		continue;
 	    	}
 			
-			debug.append(syncData.getLastMod() + ":" + syncData.getBBID()).append("\n");
-			sb.append(syncData.getLastMod());				
+			// sort insert the calendar by the start time
+			for(int i = 0;i < tSortList.size();i++){
+				CalendarSyncData d = (CalendarSyncData)tSortList.elementAt(i);
+				if(syncData.getLastMod() > d.getLastMod()){
+					tSortList.insertElementAt(syncData, i);
+					
+					syncData = null;
+					break;
+				}
+			}
+			
+			if(syncData != null){
+				tSortList.addElement(syncData);				
+			}
 		}
 				
 		// remove the former time event
 		if(tRemoveList != null){
 			for(int i = 0;i < tRemoveList.size();i++){
 				CalendarSyncData syncData = (CalendarSyncData)tRemoveList.elementAt(i);
-				mCalendarSyncList.remove(syncData.getBBID());
+				removeCalendarSyncData(syncData.getBBID());
 			}			
+		}
+		
+		StringBuffer sb = new StringBuffer();
+		StringBuffer debug = new StringBuffer();
+		
+		// calculate the md5
+		for(int i = 0;i < tSortList.size();i++){
+			CalendarSyncData d = (CalendarSyncData)tSortList.elementAt(i);
+			sb.append(d.getLastMod());
+			
+			debug.append(d.getLastMod()).append(":").append(d.getGID()).append("-").append(d.getData().summary).append("\n");
 		}
 		
 		System.out.println(debug.toString());

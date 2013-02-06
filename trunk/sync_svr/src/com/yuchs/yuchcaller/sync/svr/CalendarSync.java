@@ -139,21 +139,27 @@ public class CalendarSync extends GoogleAPISync{
 
 	    Events events = tList.execute();
 	   
-	    StringBuffer sb = new StringBuffer();
-	    StringBuffer debug = new StringBuffer();
+	   
 	    
 	    while (true) {
+	    	
+	    	// insert and sort the event list by the last modification time
 	    	for (Event event : events.getItems()) {
 	    		
-	    		for(int i = 0;i < ){
-	    			
+	    		for(int i = 0;i < mSvrSyncDataList.size();i++){
+	    			Event e = (Event)mSvrSyncDataList.get(i);
+	    			if(getEventLastMod(event) > getEventLastMod(e)){
+	    					    				
+	    				mSvrSyncDataList.insertElementAt(event, i);
+	    				
+	    				event = null;
+	    				break;
+	    			}
 	    		}
-	    		mSvrSyncDataList.add(event);
 	    		
-	    		long tLastMod = getEventLastMod(event);
-	    		sb.append(tLastMod);
-	    		
-	    		//debug.append(tLastMod).append(":").append(syncData.getBBID()).append(event.getSummary()).append("\n");
+	    		if(event != null){
+	    			mSvrSyncDataList.add(event);
+	    		}
 	        }
 	    	
 	        String pageToken = events.getNextPageToken();
@@ -164,6 +170,17 @@ public class CalendarSync extends GoogleAPISync{
 	        }
 	    }
 	    
+	    StringBuffer sb = new StringBuffer();
+	    StringBuffer debug = new StringBuffer();
+	    
+	    for(Event e : mSvrSyncDataList){
+	    	
+	    	long tLastMod = getEventLastMod(e);
+			sb.append(tLastMod);
+			
+			debug.append(tLastMod).append(":").append(e.getId()).append("-").append(e.getSummary()).append("\n");
+	    }
+	    	    
 	    mAllSvrSyncDataMD5 = getMD5(sb.toString());
 	    
 	    // buffered the former event;
@@ -214,8 +231,8 @@ public class CalendarSync extends GoogleAPISync{
 				//
 				tResultStr = "succ";
 			}else{
-				tResultStr = "diff";				
-			}			
+				tResultStr = "diff";
+			}
 			
 			mResult = tResultStr.getBytes("UTF-8");	
 			

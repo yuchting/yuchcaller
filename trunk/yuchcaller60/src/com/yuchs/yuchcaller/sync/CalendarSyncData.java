@@ -66,8 +66,9 @@ public class CalendarSyncData {
 	/**
 	 * import blackberry event
 	 * @param event
+	 * @param list		EventList 
 	 */
-	public void importData(Event _event)throws Exception{
+	public void importData(Event _event,EventList _list)throws Exception{
 				
 		if(m_calendarData == null){
 			m_calendarData = new CalendarData();
@@ -91,6 +92,10 @@ public class CalendarSyncData {
 			}
 			
 			try{
+				tRecurring += ";INTERVAL=" + repeat.getInt(RepeatRule.INTERVAL);
+			}catch(Exception e){}
+			
+			try{
 				tRecurring += ";BYDAY=" + repeat.getInt(RepeatRule.DAY_IN_MONTH);
 			}catch(Exception e){}
 			
@@ -105,11 +110,7 @@ public class CalendarSyncData {
 			try{
 				tRecurring += ";BYMONTH=" + repeat.getInt(RepeatRule.MONTH_IN_YEAR);
 			}catch(Exception e){}
-			
-			try{
-				tRecurring += ";INTERVAL=" + repeat.getInt(RepeatRule.INTERVAL);
-			}catch(Exception e){}
-			
+						
 			try{
 				tRecurring += ";UNTIL=" + getR2445FormatDate(repeat.getDate(RepeatRule.END));
 			}catch(Exception e){}
@@ -199,7 +200,7 @@ public class CalendarSyncData {
 				m_calendarData.allDay = getBooleanField(_event, id);
 				break;
 			case BlackBerryEvent.ATTENDEES:
-				m_calendarData.attendees = getStringArrayField(_event, id);
+				m_calendarData.attendees = getStringArrayField(_list,_event,id);
 				break;
 			case BlackBerryEvent.FREE_BUSY:
 				m_calendarData.free_busy = getIntField(_event, id);
@@ -459,24 +460,26 @@ public class CalendarSyncData {
 	}
 
 	
+	
 	/**
 	 * input the data from the byte stream
 	 * @param in
 	 * @throws Exception
 	 */
-	public void input(InputStream in,boolean _inputData)throws Exception{
+	public void input(InputStream in)throws Exception{
 		setBBID(sendReceive.ReadString(in));
 		setGID(sendReceive.ReadString(in));
 		setLastMod(sendReceive.ReadLong(in));
 		
-		if(_inputData){
+		boolean tHasData = sendReceive.ReadBoolean(in);
+		if(tHasData){
 
 			if(m_calendarData == null){
 				m_calendarData = new CalendarData();
 			}
 			
 			m_calendarData.inputData(in);
-		}
+		}		
 	}
 	
 	/**
@@ -490,7 +493,10 @@ public class CalendarSyncData {
 		sendReceive.WriteLong(os,getLastMod());
 		
 		if(m_calendarData != null && _outputData){
+			sendReceive.WriteBoolean(os, true);
 			m_calendarData.outputData(os);
+		}else{
+			sendReceive.WriteBoolean(os, false);
 		}
 	}
 	
@@ -691,20 +697,25 @@ public class CalendarSyncData {
 	 * @param _value
 	 */
 	public static void setStringField(EventList _list,Event _event,int _id,String _value){
-		if(_list.isSupportedField(_id)){
-			
-			if(_event.countValues(_id) > 0){
-				if(_value != null && _value.length() > 0){
-					_event.setString(_id,0,Event.ATTR_NONE,_value);
+		try{
+			if(_list.isSupportedField(_id)){
+				
+				if(_event.countValues(_id) > 0){
+					if(_value != null && _value.length() > 0){
+						_event.setString(_id,0,Event.ATTR_NONE,_value);
+					}else{
+						_event.removeValue(_id,0);
+					}
 				}else{
-					_event.removeValue(_id,0);
+					if(_value != null && _value.length() > 0){
+						_event.addString(_id,Event.ATTR_NONE,_value);
+					}				
 				}
-			}else{
-				if(_value != null && _value.length() > 0){
-					_event.addString(_id,Event.ATTR_NONE,_value);
-				}				
 			}
+		}catch(Exception e){
+			System.out.println("Fuck!");
 		}
+		
 	}
 	
 	/**
@@ -730,7 +741,7 @@ public class CalendarSyncData {
 	 * @param _value
 	 */
 	public static void setDateField(EventList _list,Event _event,int _id,long _value){
-		
+		try{
 		if(_list.isSupportedField(_id)){
 			if(_event.countValues(_id) > 0){
 				_event.setDate(_id,0,Event.ATTR_NONE,_value);
@@ -739,6 +750,11 @@ public class CalendarSyncData {
 			}
 			
 		}
+		
+	}catch(Exception e){
+		System.out.println("Fuck!");
+	}
+	
 	}
 	
 	/**
@@ -780,7 +796,7 @@ public class CalendarSyncData {
 	 * @param _value
 	 */
 	public static void setIntField(EventList _list,Event _event,int _id,int _value){
-		
+		try{
 		if(_list.isSupportedField(_id)){
 			if(_event.countValues(_id) > 0){
 				_event.setInt(_id,0,Event.ATTR_NONE,_value);
@@ -788,6 +804,10 @@ public class CalendarSyncData {
 				_event.addInt(_id,Event.ATTR_NONE,_value);
 			}
 		}
+	}catch(Exception e){
+		System.out.println("Fuck!");
+	}
+	
 	}
 	
 	/**
@@ -828,6 +848,7 @@ public class CalendarSyncData {
 	 * @param _value
 	 */
 	public static void setBooleanField(EventList _list,Event _event,int _id,boolean _value){
+		try{
 		if(_list.isSupportedField(_id)){
 			if(_event.countValues(_id) > 0){
 				_event.setBoolean(_id, 0, Event.ATTR_NONE, _value);
@@ -835,6 +856,10 @@ public class CalendarSyncData {
 				_event.addBoolean(_id, Event.ATTR_NONE, _value);
 			}
 		}
+	}catch(Exception e){
+		System.out.println("Fuck!");
+	}
+	
 	}
 	
 	/**
@@ -843,15 +868,22 @@ public class CalendarSyncData {
 	 * @param _id
 	 * @return
 	 */
-	public static String[] getStringArrayField(Event _event,int _id){
+	public static String[] getStringArrayField(EventList _list,Event _event,int _id){
 		int tCount = _event.countValues(_id);
 		if(tCount > 0){
-			String[] tResult = new String[tCount];
-			for(int i = 0 ;i < tCount;i++){
-				tResult[i] = _event.getString(_id, i);
+			if(_list.getFieldDataType(_id) == Event.STRING_ARRAY){
+				
+				return _event.getStringArray(_id, 0);
+				
+			}else if(_list.getFieldDataType(_id) == Event.STRING){
+
+				String[] tResult = new String[tCount];
+				for(int i = 0 ;i < tCount;i++){
+					tResult[i] = _event.getString(_id, i);
+				}
+				
+				return tResult;
 			}
-			
-			return tResult;
 		}
 		
 		return null;
@@ -865,18 +897,43 @@ public class CalendarSyncData {
 	 * @param _value
 	 */
 	public static void setStringArrayField(EventList _list,Event _event,int _id,String[] _value){
+		try{
 		if(_list.isSupportedField(_id)){
-			if(_event.countValues(_id) > 0){
-				if(_value != null && _value.length > 0){
-					_event.setStringArray(_id, 0, Event.ATTR_NONE, _value);
+			
+			int count = _event.countValues(_id);
+			
+			if(_list.getFieldDataType(_id) == Event.STRING_ARRAY){
+
+				if(count > 0){
+					if(_value != null && _value.length > 0){
+						_event.setStringArray(_id, 0, Event.STRING_ARRAY, _value);
+					}else{
+						_event.removeValue(_id,0);
+					}				
 				}else{
-					_event.removeValue(_id,0);
-				}				
-			}else{
+					if(_value != null && _value.length > 0){
+						_event.addStringArray(_id, Event.STRING_ARRAY, _value);
+					}				
+				}
+				
+			}else if(_list.getFieldDataType(_id) == Event.STRING){
+				
+				if(count > 0){
+					for(int i = 0;i < count;i++){
+						_event.removeValue(_id,0);
+					}
+				}
+				
 				if(_value != null && _value.length > 0){
-					_event.addStringArray(_id, Event.ATTR_NONE, _value);
-				}				
+					for(int i = 0 ;i < _value.length;i++){
+						_event.addString(_id, Event.ATTR_NONE, _value[i]);
+					}
+				}
 			}
 		}
+	}catch(Exception e){
+		System.out.println("Fuck!");
+	}
+	
 	}
 }

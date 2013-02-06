@@ -65,15 +65,11 @@ public class Main {
 		//System.getProperties().put("socksProxySet","true");
 		//System.getProperties().put("socksProxyHost","127.0.0.1");
 		//System.getProperties().put("socksProxyPort","7070");
-		
-//		HttpTransport httpTransport = new NetHttpTransport();
-//		JacksonFactory jsonFactory = new JacksonFactory();   
-//		
-//	    // The clientId and clientSecret are copied from the API Access tab on
-//	    // the Google APIs Console
+				
+	    // The clientId and clientSecret are copied from the API Access tab on
+	    // the Google APIs Console
 //	    String clientId = GoogleAPISync.getGoogleAPIClientId();
 //	    String clientSecret = GoogleAPISync.getGoogleAPIClientSecret();
-//	    
 //
 //	    // Or your redirect URL for web based applications.
 //	    String redirectUrl = "urn:ietf:wg:oauth:2.0:oob";
@@ -95,6 +91,8 @@ public class Main {
 //	    // End of Step 1 <--
 //		
 //	    // Step 2: Exchange -->
+//	    HttpTransport httpTransport = new NetHttpTransport();
+//		JacksonFactory jsonFactory = new JacksonFactory();
 //	    GoogleAuthorizationCodeTokenRequest request = new GoogleAuthorizationCodeTokenRequest(httpTransport, jsonFactory,clientId, clientSecret, code, redirectUrl);
 //	    GoogleTokenResponse token = request.execute();
 //	    //token.setExpiresInSeconds(3600l*24l*365l*100L);
