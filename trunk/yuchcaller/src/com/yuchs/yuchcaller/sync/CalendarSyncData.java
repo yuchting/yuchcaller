@@ -15,6 +15,7 @@ import javax.microedition.pim.RepeatRule;
 
 import net.rim.blackberry.api.pdap.BlackBerryEvent;
 
+import com.yuchs.yuchcaller.YuchCaller;
 import com.yuchs.yuchcaller.sendReceive;
 
 public class CalendarSyncData {
@@ -335,7 +336,7 @@ public class CalendarSyncData {
 					
 				}else if(key.equalsIgnoreCase("BYDAY")){
 					
-					Vector days = splitStr(value,',');
+					Vector days = SyncMain.splitStr(value,',');
 					
 					if(!days.isEmpty()){
 						
@@ -401,7 +402,7 @@ public class CalendarSyncData {
 			ruleStr = ruleStr.substring(7);
 			
 			try{
-				Vector date = splitStr(ruleStr, ',');
+				Vector date = SyncMain.splitStr(ruleStr, ',');
 				for(int i = 0;i < date.size();i++){
 					rule.addExceptDate(parseR2445FormatData(date.elementAt(i).toString()));
 				}
@@ -539,40 +540,6 @@ public class CalendarSyncData {
 		}
 		
 		return table;
-	}
-	
-	/**
-	 * spliter string
-	 * @param s
-	 * @param split
-	 * @return
-	 */
-	public static Vector splitStr(String s,char split){
-		
-		Vector tResult = new Vector();
-		
-		StringBuffer sb = new StringBuffer();
-		
-		for(int i = 0;i < s.length();i++){
-			char c = s.charAt(i);		
-			if(c == split){
-				if(sb.length() == 0){
-					continue;
-				}
-				
-				tResult.addElement(sb.toString());
-				
-				sb = new StringBuffer();
-			}else{
-				sb.append(c);
-			}
-		}
-		
-		if(sb.length() > 0){
-			tResult.addElement(sb.toString());
-		}
-		
-		return tResult;
 	}
 	
 	static Calendar sm_calendar = Calendar.getInstance();

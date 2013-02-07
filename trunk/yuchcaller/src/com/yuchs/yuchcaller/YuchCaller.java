@@ -833,7 +833,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		
 		return t_radioNotAvail && (WLANInfo.getAPInfo() == null);
 	}
-	
+		
 	//! get the prefix of tele attribute
 	public String getPrefixByTelAttr(int _attr){
 		switch(_attr){

@@ -27,10 +27,7 @@
  */
 package com.yuchs.yuchcaller.sync.svr;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -40,15 +37,6 @@ import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
-
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeRequestUrl;
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
-import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.jackson.JacksonFactory;
-import com.google.api.services.calendar.CalendarScopes;
-import com.google.api.services.tasks.TasksScopes;
 
 
 public class Main {
@@ -60,7 +48,7 @@ public class Main {
 	 */
 	public static void main(String[] args) throws Exception {		
 		
-		(new Main()).startNetty(8888);
+		(new Main()).startNetty(6029);
 		
 		//System.getProperties().put("socksProxySet","true");
 		//System.getProperties().put("socksProxyHost","127.0.0.1");
