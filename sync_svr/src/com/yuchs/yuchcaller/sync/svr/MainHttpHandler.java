@@ -52,12 +52,21 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.jboss.netty.util.CharsetUtil;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.jackson2.JacksonFactory;
+
 
 public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 	
 	public static final String		HTTP_CONTENT_TYPE = "Content-type";
+	public static final String		HTTP_CONTENT_LENGTH = "Content-Length";
+	public static final String		HTTP_CONTENT_ENCODING = "Content-Encoding";
 	
-	public static final String		MIME_JSON_TYPE	= "application/json";
+	
+	
 	
 	// the logger
 	private final Logger	mLogger;
@@ -67,6 +76,11 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 	
 	//! receive buffer for adapt the thunk http body
 	private ChannelBuffer mReceiveBuffer 	= new DynamicChannelBuffer(256);
+	
+	/**
+	 * auth code from the www.yuchs.com for check the google auth code 
+	 */
+	private String			mAuthCode		= null;
 	
 	//! http content length
 	private int	mContentLength		= 0;
@@ -89,11 +103,13 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 			HttpRequest request = (HttpRequest) message;
 			
 			if(request.getMethod() != HttpMethod.POST){
-				throw new Exception("Error POST");
+				throw new Exception("Error GET/POST");
 			}
 			
-			mContentEncoded = request.getHeader("Content-Encoding") != null;
-			mContentLength	= Integer.parseInt(request.getHeader("Content-Length"));
+			mContentEncoded = request.getHeader(HTTP_CONTENT_ENCODING) != null;
+			mContentLength	= Integer.parseInt(request.getHeader(HTTP_CONTENT_LENGTH));
+			
+			mAuthCode		= request.getHeader("Auth-Code");
 			
 			tCb = request.getContent();
 			
@@ -106,7 +122,7 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 			/**
 		     * The 'end of content' marker in chunked encoding.
 		     */
-			e.getChannel().close();			
+			e.getChannel().close();
 			return;
 			
 		}else{
@@ -162,46 +178,66 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 	 */
 	private void triggerProcess(byte[] _bytes,MessageEvent e)throws Exception{
 		
-		GoogleAPISync tSync;
-		InputStream in = new ByteArrayInputStream(_bytes);
-		try{
-			mClientVersionCode = sendReceive.ReadShort(in);			
-			String tType = sendReceive.ReadString(in);
-			
-			if(tType.equals("calendar")){
-				tSync = new CalendarSync(in,mLogger);
-			}else{
-				throw new Exception("Error Type");
-			}
-		
-		}finally{
-			in.close();
-		}
-
 		// attempt to zip the data
 		boolean zip = false;
+		byte[] tResultBytes;
 		
-		byte[] tResultBytes = tSync.getResult();
-		
-		if(tResultBytes.length != 0){
-			ByteArrayOutputStream os = new ByteArrayOutputStream();
+		if(mAuthCode != null){
+			
+			// service for the www.yuchs.com appengine request
+			// check com.yuchting.yuchberry.yuchsign.server.servlet.YuchcallerSyncAuth for detail
+			//
+			HttpTransport httpTransport = new NetHttpTransport();
+			JacksonFactory jsonFactory = new JacksonFactory();
+			
+		    GoogleAuthorizationCodeTokenRequest request = new GoogleAuthorizationCodeTokenRequest(httpTransport, jsonFactory,
+																	GoogleAPISync.getGoogleAPIClientId(), GoogleAPISync.getGoogleAPIClientSecret(), 
+																	mAuthCode, "urn:ietf:wg:oauth:2.0:oob");
+		    
+		    GoogleTokenResponse token = request.execute();
+		    
+		    tResultBytes = (token.getRefreshToken() + "&" + token.getAccessToken()).getBytes("UTF-8");
+		    
+		}else{
+
+			GoogleAPISync tSync;
+			InputStream in = new ByteArrayInputStream(_bytes);
 			try{
-				GZIPOutputStream zos = new GZIPOutputStream(os,6);
-				try{
-					zos.write(tResultBytes);				
-				}finally{
-					zos.close();
-				}
+				mClientVersionCode = sendReceive.ReadShort(in);			
+				String tType = sendReceive.ReadString(in);
 				
-				byte[] zipBytes = os.toByteArray();
-				if(zipBytes.length < tResultBytes.length){
-					tResultBytes = zipBytes;
-					zip = true;
+				if(tType.equals("calendar")){
+					tSync = new CalendarSync(in,mLogger);
+				}else{
+					throw new Exception("Error Type");
 				}
+			
 			}finally{
-				os.close();
+				in.close();
 			}
-		}		
+			
+			tResultBytes = tSync.getResult();
+			
+			if(tResultBytes.length != 0){
+				ByteArrayOutputStream os = new ByteArrayOutputStream();
+				try{
+					GZIPOutputStream zos = new GZIPOutputStream(os,6);
+					try{
+						zos.write(tResultBytes);				
+					}finally{
+						zos.close();
+					}
+					
+					byte[] zipBytes = os.toByteArray();
+					if(zipBytes.length < tResultBytes.length){
+						tResultBytes = zipBytes;
+						zip = true;
+					}
+				}finally{
+					os.close();
+				}
+			}
+		}
 		
 		// write the response 
 		ChannelBuffer buffer 	= new DynamicChannelBuffer(2048);
@@ -209,9 +245,9 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 		
 		HttpResponse response	= new DefaultHttpResponse(HttpVersion.HTTP_1_1,HttpResponseStatus.OK);
 		response.setContent(buffer);
-		response.setHeader("Content-Length", response.getContent().writerIndex());
+		response.setHeader(HTTP_CONTENT_LENGTH, response.getContent().writerIndex());
 		if(zip){
-			response.setHeader("Content-Encoding", "gzip");
+			response.setHeader(HTTP_CONTENT_ENCODING, "gzip");
 		}
 		
 		Channel ch = e.getChannel();
