@@ -37,6 +37,9 @@ import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
 import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
+import org.jboss.netty.handler.timeout.ReadTimeoutHandler;
+import org.jboss.netty.util.HashedWheelTimer;
+import org.jboss.netty.util.Timer;
 
 
 public class Main {
@@ -176,11 +179,14 @@ public class Main {
 		
 	}
 	
+	// timer of read data for channel 
+	private Timer mReadTimeOutTimer = new HashedWheelTimer();
+	
 	private void startNetty(int _port){
 		
 		mMainLogger = new Logger("");
 		mMainLogger.EnabelSystemOut(true);
-		
+				
 		ServerBootstrap bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
 		bootstrap.setPipelineFactory(new ChannelPipelineFactory(){
 			
@@ -188,7 +194,7 @@ public class Main {
 			public ChannelPipeline getPipeline() throws Exception {
 								 
 				// Create a default pipeline implementation.
-				ChannelPipeline pipeline = Channels.pipeline();
+				ChannelPipeline pipeline = Channels.pipeline(new ReadTimeoutHandler(mReadTimeOutTimer, 20));
 				
 				pipeline.addLast("decoder", new HttpRequestDecoder());
 				pipeline.addLast("encoder", new HttpResponseEncoder());
@@ -198,7 +204,11 @@ public class Main {
 			}
 		});
 		
+		bootstrap.setOption("child.tcpNoDelay", true);
+		bootstrap.setOption("child.connectTimeoutMillis", 5000);
+		
 		bootstrap.bind(new InetSocketAddress(_port));
-		System.out.println("admin start on "+_port);
+		
+		mMainLogger.LogOut("Server start on " + _port);
 	}
 }
