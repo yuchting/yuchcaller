@@ -250,9 +250,9 @@ public class CalendarSync {
 				
 				mSyncMain.writeAccountInfo(os,"calendar",md5,tSyncMinTime,0);
 				
-				String url = "http://192.168.10.7:8888" + YuchCaller.getHTTPAppendString();
+				//String url = "http://192.168.10.7:8888" + YuchCaller.getHTTPAppendString();
 				//String url = "http://192.168.100.116:8888" + YuchCaller.getHTTPAppendString();
-				//String url = "http://sync.yuchs.com:6029" + YuchCaller.getHTTPAppendString();
+				String url = "http://sync.yuchs.com:6029" + YuchCaller.getHTTPAppendString();
 				
 				String tResultStr = new String(SyncMain.requestPOSTHTTP(url,os.toByteArray(),true),"UTF-8");
 										

@@ -216,69 +216,7 @@ public class SyncMain {
 		m_mainApp.SetErrorString(info);
 	}
 	
-	//! read yuch account and request the Refresh/Access token
-	private boolean readYuchAccount(){
-		
-		YuchCallerProp tProp = m_mainApp.getProperties();
-		
-		if(tProp.getYuchAccount().length() == 0 || tProp.getYuchPass().length() == 0){
-			return false;
-		}
-		
-		reportInfo("Reading Yuch Account...");
-		
-		if(tProp.getYuchAccessToken().length() == 0 || tProp.getYuchRefreshToken().length() == 0){
-			
-			// request the yuch server
-			
-			String url = "http://192.168.10.4:8888/f/login/";
-			//String url = "http://www.yuchs.com/f/login/";
-			
-			url += YuchCaller.getHTTPAppendString();
-			
-			String[] tParamName = {
-				"acc",	"pass",	"type",
-			};
-			
-			String[] tParamValue = {
-				tProp.getYuchAccount(),
-				tProp.getYuchPass(),				
-				"yuchcaller",
-			};
-		
-			try{
-				String tResult = requestPOSTHTTP(url,tParamName,tParamValue);
-				
-				if(tResult.startsWith("<Error>")){
-					reportError(tResult.substring(7));
-				}else{
-										
-					Vector data = splitStr(tResult, '|');
-					
-					if(data.size() >= 5){						
-						
-						tProp.setYuchRefreshToken(data.elementAt(0).toString());
-						tProp.setYuchAccessToken(data.elementAt(1).toString());
-						
-						tProp.save();
-						
-						reportInfo("Read Yuch done!");
-						
-						return true;
-						
-					}else{
-						reportError("Unkown:" + tResult);
-					}					
-				}
-				
-			}catch(Exception e){
-				// network problem
-				reportError("Can not get the YuchAccount",e);
-			}			
-		}
-		
-		return false;
-	}
+	
 	
 	/**
 	 * request the url via POST
@@ -289,7 +227,7 @@ public class SyncMain {
 	 * @return
 	 * @throws Exception
 	 */
-	private static String requestPOSTHTTP(String _url,String[] _paramsName,String[] _paramsValue)throws Exception{
+	public static String requestPOSTHTTP(String _url,String[] _paramsName,String[] _paramsValue)throws Exception{
 		
 		if(_paramsName == null || _paramsValue == null || _paramsName.length != _paramsValue.length){
 			throw new IllegalArgumentException("_paramsName == null || _paramsValue == null || _paramsName.length != _paramsValue.length");

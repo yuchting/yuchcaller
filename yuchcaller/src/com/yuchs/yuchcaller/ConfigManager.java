@@ -128,6 +128,11 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	private ActiveRichTextField		m_aboutTextField	= null;
 	private NullField				m_aboutTextFieldNull = new NullField(Field.NON_FOCUSABLE);
 	
+	//! sync click bale
+	
+	//! the sync field null
+	private NullField				mSyncFieldNull	= new NullField(Field.NON_FOCUSABLE);		
+	
 	
 	private YuchCaller	m_mainApp = null;
 	
