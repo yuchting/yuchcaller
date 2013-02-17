@@ -73,6 +73,8 @@ public class CalendarSyncData {
 				
 		if(m_calendarData == null){
 			m_calendarData = new CalendarData();
+		}else{
+			m_calendarData.clear();
 		}
 				
 		// set the repeat information
@@ -222,32 +224,7 @@ public class CalendarSyncData {
 				m_calendarData.event_class = cls;
 				break;
 			}
-			
-//			if(_test){
-//
-//				if(id == Event.UID){
-//					event.setString(id, 0,Event.STRING, "GoogleCalendarID");
-//					event.commit();
-//				}
-//			}
-			
-//			if(t_event.getFieldDataType(id) == Event.STRING){
-//				
-//				for(int j=0; j < event.countValues(id); ++j){
-//					String value = event.getString(id, j);
-//					
-//					System.out.println(Integer.toString(id) + "=" + value);
-//				}
-//			}
 		}
-		
-//		ByteArrayOutputStream os = new ByteArrayOutputStream();
-//		try{
-//			m_calendarData.outputData(os);
-//			md5 = SyncMain.md5(os.toByteArray());
-//		}finally{
-//			os.close();
-//		}
 	}
 	
 	/**

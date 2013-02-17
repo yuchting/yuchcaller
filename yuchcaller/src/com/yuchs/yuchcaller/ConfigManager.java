@@ -1,14 +1,8 @@
 package com.yuchs.yuchcaller;
 
-import java.util.Enumeration;
 import java.util.Vector;
 
-import javax.microedition.pim.Event;
-import javax.microedition.pim.EventList;
-import javax.microedition.pim.PIM;
-
 import local.yuchcallerlocalResource;
-import net.rim.blackberry.api.pdap.BlackBerryEvent;
 import net.rim.device.api.system.Characters;
 import net.rim.device.api.system.Clipboard;
 import net.rim.device.api.ui.Field;
@@ -30,7 +24,7 @@ import net.rim.device.api.ui.component.TextField;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.util.MathUtilities;
 
-import com.yuchs.yuchcaller.sync.CalendarSyncData;
+import com.yuchs.yuchcaller.sync.SyncOptionManager;
 
 public class ConfigManager extends VerticalFieldManager implements FieldChangeListener {
 	
@@ -129,8 +123,10 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	private NullField				m_aboutTextFieldNull = new NullField(Field.NON_FOCUSABLE);
 	
 	//! sync click bale
+	private ClickLabel				mSyncSwitchLabel	= null;
 	
 	//! the sync field null
+	private SyncOptionManager		mSyncField		= null;
 	private NullField				mSyncFieldNull	= new NullField(Field.NON_FOCUSABLE);		
 	
 	
@@ -186,6 +182,13 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		m_aboutSwitchLabel.setChangeListener(this);
 		add(m_aboutSwitchLabel);
 		add(m_aboutTextFieldNull);
+		
+		// add the sync label
+		mSyncSwitchLabel			= new ClickLabel(getSyncConfigSwitchLabelText());
+		mSyncSwitchLabel.setFont(m_mainLabelBoldFont);
+		mSyncSwitchLabel.setChangeListener(this);
+		add(mSyncSwitchLabel);
+		add(mSyncFieldNull);
 				
 		// check the clipboard text is phone number or not 
 		Object t_clipboard = Clipboard.getClipboard().get();
@@ -351,6 +354,12 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 					"(-)" + m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_ABOUT);
 	}
 	
+	private String getSyncConfigSwitchLabelText(){
+		return (mSyncFieldNull.getManager() != null || mSyncField == null)?
+					("(+)" + m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SYNC)):
+					"(-)" + m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SYNC);
+	}
+	
 	//! field change event processing function
 	public void fieldChanged(Field field, int context) {
 		
@@ -409,6 +418,18 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			}
 			
 			m_aboutSwitchLabel.setText(getAboutSwitchLabelText());
+			
+		}else if(mSyncSwitchLabel == field){
+			
+			if(mSyncField == null){
+				mSyncField = new SyncOptionManager(m_mainApp);
+			}
+			
+			if(mSyncField.getManager() == null){
+				replace(mSyncFieldNull,mSyncField);
+			}else{
+				replace(mSyncField,mSyncFieldNull);
+			}
 			
 		}else if(field instanceof ClickLabel){
 			

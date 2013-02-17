@@ -134,67 +134,65 @@ public class CalendarSync extends GoogleAPISync{
 		}
 		
 		com.google.api.services.calendar.Calendar.Events.List tList = mService.events().list("primary");
-	    	    
+
 		tList.setTimeMin(new DateTime(new Date(mMinTimeToSync) , TimeZone.getTimeZone(mTimeZoneID)));
 
-	    Events events = tList.execute();
-	   
-	   
-	    
-	    while (true) {
-	    	
-	    	// insert and sort the event list by the last modification time
-	    	for (Event event : events.getItems()) {
-	    		
-	    		for(int i = 0;i < mSvrSyncDataList.size();i++){
-	    			Event e = (Event)mSvrSyncDataList.get(i);
-	    			if(getEventLastMod(event) > getEventLastMod(e)){
-	    					    				
-	    				mSvrSyncDataList.insertElementAt(event, i);
-	    				
-	    				event = null;
-	    				break;
-	    			}
-	    		}
-	    		
-	    		if(event != null){
-	    			mSvrSyncDataList.add(event);
-	    		}
-	        }
-	    	
-	        String pageToken = events.getNextPageToken();
-	        if (pageToken != null && !pageToken.isEmpty()) {
-	        	events = mService.events().list("primary").setPageToken(pageToken).execute();
-	        }else{
-	        	break;
-	        }
-	    }
-	    
-	    StringBuffer sb = new StringBuffer();
-	    StringBuffer debug = new StringBuffer();
-	    
-	    for(Event e : mSvrSyncDataList){
-	    	
-	    	long tLastMod = getEventLastMod(e);
-			sb.append(tLastMod);
+		Events events = tList.execute();
+			   
+		while (true) {
 			
-			debug.append(tLastMod).append(":").append(e.getId()).append("-").append(e.getSummary()).append("\n");
-	    }
-	    	    
-	    mAllSvrSyncDataMD5 = getMD5(sb.toString());
-	    
-	    // buffered the former event;
-	    if(tFormerEvent == null){
-	    	tFormerEvent = new BufferedEvents();
-	    }
-	    
-	    tFormerEvent.mAllEventMd5	= mAllSvrSyncDataMD5;
-	    tFormerEvent.mEventList		= mSvrSyncDataList;
-	    tFormerEvent.mRefreshTime	= System.currentTimeMillis();
-	    
-	    smEventHashMap.put(mYuchAcc,tFormerEvent);
-	    
-	    System.out.println(debug.toString());
+			// insert and sort the event list by the last modification time
+			for (Event event : events.getItems()) {
+				
+				for(int i = 0;i < mSvrSyncDataList.size();i++){
+					Event e = (Event)mSvrSyncDataList.get(i);
+					if(getEventLastMod(event) > getEventLastMod(e)){
+										
+						mSvrSyncDataList.insertElementAt(event, i);
+						
+						event = null;
+						break;
+					}
+				}
+				
+				if(event != null){
+					mSvrSyncDataList.add(event);
+				}
+		    }
+			
+		    String pageToken = events.getNextPageToken();
+		    if (pageToken != null && !pageToken.isEmpty()) {
+		    	events = mService.events().list("primary").setPageToken(pageToken).execute();
+		    }else{
+		    	break;
+		    }
+		}
+		
+		StringBuffer sb = new StringBuffer();
+		StringBuffer debug = new StringBuffer();
+		
+		for(Event e : mSvrSyncDataList){
+			
+			long tLastMod = getEventLastMod(e);
+					sb.append(tLastMod);
+					
+					debug.append(tLastMod).append(":").append(e.getId()).append("-").append(e.getSummary()).append("\n");
+		}
+		
+		mAllSvrSyncDataMD5 = getMD5(sb.toString());
+		
+		// buffered the former event;
+		if(tFormerEvent == null){
+			tFormerEvent = new BufferedEvents();
+		}
+		
+		tFormerEvent.mAllEventMd5	= mAllSvrSyncDataMD5;
+		tFormerEvent.mEventList		= mSvrSyncDataList;
+		tFormerEvent.mRefreshTime	= System.currentTimeMillis();
+		
+		smEventHashMap.put(mYuchAcc,tFormerEvent);
+		
+		System.out.println(debug.toString());
 	}
 	
 	
@@ -245,6 +243,8 @@ public class CalendarSync extends GoogleAPISync{
 			
 		}else if(mDiffType == 2){
 			
+			// process the NeedList
+			//
 			ByteArrayOutputStream os = new ByteArrayOutputStream();
 			try{
 				sendReceive.WriteInt(os, mClientSyncDataList.size());
@@ -258,8 +258,7 @@ public class CalendarSync extends GoogleAPISync{
 					for(Event svr : mSvrSyncDataList){
 						if(client.getGID().equals(svr.getId())){
 							
-							Event e = updateEvent(client);
-							client.setLastMod(getEventLastMod(e));
+							updateEvent(client);
 							
 							sendReceive.WriteString(os, client.getBBID());
 							sendReceive.WriteLong(os,client.getLastMod());
@@ -365,6 +364,11 @@ public class CalendarSync extends GoogleAPISync{
 				}else{
 
 					if(d.getGID().equals(e.getId())){
+						
+						if(d.getLastMod() == -1){
+							deleteEvent(d);
+						}
+						
 						continue add_total;
 					}
 				}
@@ -382,38 +386,42 @@ public class CalendarSync extends GoogleAPISync{
 		
 		del_total:
 		for(CalendarSyncData d : mClientSyncDataList){
+			
+			if(d.getLastMod() != -1){
 				
-			for(Event e : mSvrSyncDataList){
-				
-				if(d.getGID().equals(e.getId())){
+				for(Event e : mSvrSyncDataList){
 					
-					long tEventLastMod = getEventLastMod(e);
-					
-					if(d.getLastMod() > tEventLastMod){
-						// client is updated
-						// need list
-						//
-						if(tNeedList == null){
-							tNeedList = new Vector<CalendarSyncData>();
+					if(d.getGID().equals(e.getId())){
+						
+						long tEventLastMod = getEventLastMod(e);
+						
+						if(d.getLastMod() > tEventLastMod){
+							// client is updated
+							// need list
+							//
+							if(tNeedList == null){
+								tNeedList = new Vector<CalendarSyncData>();
+							}
+							tNeedList.add(d);
+							
+						}else if(d.getLastMod() < tEventLastMod){
+							
+							// server's updated
+							// update list
+							//
+							if(tUpdateList == null){
+								tUpdateList = new Vector<CalendarSyncData>();
+							}
+							
+							d.importEvent(e);
+							tUpdateList.add(d);
 						}
-						tNeedList.add(d);
 						
-					}else if(d.getLastMod() < tEventLastMod){
-						
-						// server's updated
-						// update list
-						//
-						if(tUpdateList == null){
-							tUpdateList = new Vector<CalendarSyncData>();
-						}
-						
-						d.importEvent(e);
-						tUpdateList.add(d);
+						continue del_total;
 					}
-					
-					continue del_total;
 				}
 			}
+			
 			
 			if(!d.getGID().isEmpty()){
 
@@ -444,8 +452,6 @@ public class CalendarSync extends GoogleAPISync{
 				sendReceive.WriteInt(os, tAddList.size());
 				for(CalendarSyncData d : tAddList){
 					d.output(os, true);
-					
-					mLogger.LogOut("AddList:" + d.getData().summary);
 				}
 			}else{
 				sendReceive.WriteInt(os, 0);
@@ -456,8 +462,6 @@ public class CalendarSync extends GoogleAPISync{
 				
 				for(CalendarSyncData d : tDelList){
 					sendReceive.WriteString(os,d.getBBID());
-					
-					mLogger.LogOut("DelList:" + d.getData().summary);
 				}
 			}else{
 				sendReceive.WriteInt(os,0);
@@ -468,8 +472,6 @@ public class CalendarSync extends GoogleAPISync{
 				
 				for(CalendarSyncData d : tUpdateList){
 					d.output(os, true);
-					
-					mLogger.LogOut("UpdateList:" + d.getData().summary);
 				}
 			}else{
 				sendReceive.WriteInt(os,0);
@@ -482,8 +484,6 @@ public class CalendarSync extends GoogleAPISync{
 					sendReceive.WriteString(os,d.getBBID());
 					sendReceive.WriteString(os,d.getGID());
 					sendReceive.WriteLong(os,d.getLastMod());
-					
-					mLogger.LogOut("UploadList:" + d.getData().summary);
 				}
 				
 			}else{
@@ -494,8 +494,6 @@ public class CalendarSync extends GoogleAPISync{
 				sendReceive.WriteInt(os,tNeedList.size());
 				for(CalendarSyncData d : tNeedList){
 					sendReceive.WriteString(os,d.getBBID());
-					
-					mLogger.LogOut("NeedList:" + d.getData().summary);
 				}
 			}else{
 				sendReceive.WriteInt(os,0);
@@ -523,12 +521,13 @@ public class CalendarSync extends GoogleAPISync{
 		// TODO: delete follow code
 		tEvent.setId("" + new Random().nextInt());
 		tEvent.setUpdated(new DateTime(new Date()));
-		
+		mSvrSyncDataList.add(tEvent);
+				
 		//tEvent = mService.events().insert("primary", tEvent).execute();
 		data.setGID(tEvent.getId());
 		data.setLastMod(getEventLastMod(tEvent));
 		
-		mLogger.LogOut(mYuchAcc + " uploadEvent:" + tEvent.getSummary());
+		mLogger.LogOut(mYuchAcc + " uploadEvent:" + data.getBBID());
 		
 		return tEvent;
 	}
@@ -551,9 +550,25 @@ public class CalendarSync extends GoogleAPISync{
 		data.setGID(tEvent.getId());
 		data.setLastMod(getEventLastMod(tEvent));		
 		
-		mLogger.LogOut(mYuchAcc + " updateEvent:" + tEvent.getSummary());
+		mLogger.LogOut(mYuchAcc + " updateEvent:" + data.getBBID());
 		
 		return tEvent;
+	}
+	
+	/**
+	 * delete the event 
+	 * @param data
+	 * @throws Exception
+	 */
+	private void deleteEvent(CalendarSyncData data)throws Exception{
+		try{
+			// TODO delete follow code 
+			//mService.events().delete("primary", data.getGID()).execute();
+			
+			mLogger.LogOut(mYuchAcc + " deleteEvent:" + data.getBBID());
+		}catch(Exception e){
+			mLogger.PrinterException(mYuchAcc,e);
+		}
 	}
 		
 	/**

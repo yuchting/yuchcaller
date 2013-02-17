@@ -5,7 +5,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Enumeration;
-import java.util.TimeZone;
 import java.util.Vector;
 
 import javax.microedition.io.Connector;
@@ -13,16 +12,17 @@ import javax.microedition.io.file.FileConnection;
 import javax.microedition.pim.Event;
 import javax.microedition.pim.EventList;
 import javax.microedition.pim.PIM;
+import javax.microedition.pim.PIMItem;
+
+import net.rim.blackberry.api.pdap.BlackBerryPIMList;
+import net.rim.blackberry.api.pdap.PIMListListener;
 
 import com.yuchs.yuchcaller.YuchCaller;
 import com.yuchs.yuchcaller.YuchCallerProp;
 import com.yuchs.yuchcaller.sendReceive;
 
-public class CalendarSync {
-	
-	// mark whether read the calendar list
-	private boolean	mReadCalendarList = false;
-		
+public class CalendarSync implements PIMListListener{
+			
 	// calendar sync list
 	private Vector	mCalendarSyncList = new Vector();
 	
@@ -31,17 +31,32 @@ public class CalendarSync {
 	
 	public CalendarSync(SyncMain _syncMain){
 		mSyncMain = _syncMain;
+				
+		try{
+
+			// read the calendar information in bb database
+			readBBCalendar();
+			
+			// read sync file (gID for bID)
+			readWriteSyncFile(true);
+			
+			// add the calendar event listener
+			BlackBerryPIMList tEventList = (BlackBerryPIMList)PIM.getInstance().openPIMList(PIM.EVENT_LIST,PIM.READ_WRITE);
+			try{
+				tEventList.addListener(this);
+			}finally{
+				tEventList.close();
+				tEventList = null;
+			}
+		}catch(Exception e){
+			mSyncMain.m_mainApp.SetErrorString("CSI", e);
+		}
+
 	}
 	
 	//! start sync
 	public void startSync(){
-		
-		// read the calendar information in bb database
-		readBBCalendar();
-		
-		// read sync file (gID for bID)
-		readWriteSyncFile(true);
-				
+						
 		// sync
 		syncRequest();
 	}
@@ -82,11 +97,7 @@ public class CalendarSync {
 	 * read the calendar information from bb calendar
 	 */
 	private void readBBCalendar(){
-		
-		if(mReadCalendarList){
-			return ;
-		}
-		
+				
 		mSyncMain.reportInfo("Reading Bb Calendar...");
 		
 		try{
@@ -113,8 +124,6 @@ public class CalendarSync {
 			    					    	
 			    	mCalendarSyncList.addElement(syncData);
 			    }			    
-			    
-			    mReadCalendarList = true;
 			    
 			}finally{
 				t_events.close();
@@ -178,6 +187,16 @@ public class CalendarSync {
 					
 					if(!fc.exists()){
 						fc.create();					
+					}
+					
+					// delete the calendar event which has been removed by client
+					//
+					for(int idx = 0;idx < mCalendarSyncList.size();idx++){
+						CalendarSyncData syncData = (CalendarSyncData)mCalendarSyncList.elementAt(idx);
+						if(syncData.getLastMod() == -1){
+							mCalendarSyncList.removeElementAt(idx);
+							idx--;
+						}
 					}
 					
 					OutputStream os = fc.openOutputStream();
@@ -489,14 +508,18 @@ public class CalendarSync {
 					CalendarSyncData d = getCalendarSyncData(bid);
 					if(d != null){
 						
-						for(int idx = 0;idx < t_eventList.size();idx++){
-							
-							Event e = (Event)t_eventList.elementAt(idx);
-							
-							if(e.getString(Event.UID, 0).equals(d.getBBID())){
-								tEvents.removeEvent(e);
-								t_eventList.removeElement(e);
-								break;
+						if(d.getLastMod() != -1){
+							// this event is NOT been deleted by client
+							//
+							for(int idx = 0;idx < t_eventList.size();idx++){
+								
+								Event e = (Event)t_eventList.elementAt(idx);
+								
+								if(e.getString(Event.UID, 0).equals(d.getBBID())){
+									tEvents.removeEvent(e);
+									t_eventList.removeElement(e);
+									break;
+								}
 							}
 						}
 						
@@ -606,18 +629,92 @@ public class CalendarSync {
 		}
 		
 		StringBuffer sb = new StringBuffer();
-		StringBuffer debug = new StringBuffer();
 		
 		// calculate the md5
 		for(int i = 0;i < tSortList.size();i++){
 			CalendarSyncData d = (CalendarSyncData)tSortList.elementAt(i);
 			sb.append(d.getLastMod());
-			
-			debug.append(d.getLastMod()).append(":").append(d.getGID()).append("-").append(d.getData().summary).append("\n");
 		}
-		
-		System.out.println(debug.toString());
 		
 		return SyncMain.md5(sb.toString());
 	}
+
+	//{{ PIMListListener
+	public void itemAdded(PIMItem item) {
+		
+		try{
+			EventList tEventList = (EventList)PIM.getInstance().openPIMList(PIM.EVENT_LIST,PIM.READ_ONLY);
+			try{
+				CalendarSyncData syncData = new CalendarSyncData();
+		    	syncData.importData((Event)item,tEventList);
+		    				    	
+		    	mCalendarSyncList.addElement(syncData);
+			}finally{
+				tEventList.close();
+				tEventList = null;
+			}
+		}catch(Exception e){
+			mSyncMain.m_mainApp.SetErrorString("CSIA", e);
+		}
+		
+	}
+
+	public void itemRemoved(PIMItem item) {
+		
+		if(item != null){
+			
+			String bid = CalendarSyncData.getStringField((Event)item, Event.UID);
+			
+			synchronized(mCalendarSyncList){
+				for(int i = 0;i < mCalendarSyncList.size();i++){
+					CalendarSyncData d = (CalendarSyncData)mCalendarSyncList.elementAt(i);
+					if(d.getBBID().equals(bid)){
+						
+						if(d.getGID() == null){
+							// remove directly
+							mCalendarSyncList.removeElementAt(i);
+						}else{
+							// mark delete to wait sync to delete server's event
+							d.setLastMod(-1);
+						}
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	public void itemUpdated(PIMItem oldItem, PIMItem newItem) {
+		
+		if(oldItem != null && newItem != null){
+			
+			try{
+				String bid = CalendarSyncData.getStringField((Event)oldItem, Event.UID);
+				
+				EventList tEventList = (EventList)PIM.getInstance().openPIMList(PIM.EVENT_LIST,PIM.READ_ONLY);
+				try{
+					synchronized(mCalendarSyncList){
+						for(int i = 0;i < mCalendarSyncList.size();i++){
+							CalendarSyncData d = (CalendarSyncData)mCalendarSyncList.elementAt(i);
+							if(d.getBBID().equals(bid)){
+								
+								d.importData((Event)newItem, tEventList);
+								d.setLastMod(System.currentTimeMillis());
+																
+								readWriteSyncFile(false);
+								
+								break;
+							}
+						}
+					}
+				}finally{
+					tEventList.close();
+					tEventList = null;
+				}
+			}catch(Exception e){
+				mSyncMain.m_mainApp.SetErrorString("CSIA", e);
+			}
+		}
+	}
+	//}}
 }

@@ -96,25 +96,25 @@ public class YuchCallerProp {
 	}
 	
 	public int getLocationPosition_x(){return m_locationInfoPosition_x;}
-	public void setLocationPosition_x(int _x){m_locationInfoPosition_x = _x;}
+	public synchronized void setLocationPosition_x(int _x){m_locationInfoPosition_x = _x;}
 	
 	public int getLocationPosition_y(){return m_locationInfoPosition_y;}
-	public void setLocationPosition_y(int _y){m_locationInfoPosition_y = _y;}
+	public synchronized void setLocationPosition_y(int _y){m_locationInfoPosition_y = _y;}
 	
 	public int getLocationColor(){return m_locationInfoColor;}
-	public void setLocationColor(int _color){m_locationInfoColor = _color;}
+	public synchronized void setLocationColor(int _color){m_locationInfoColor = _color;}
 	
 	public int getLocationHeight(){return m_locationInfoHeight;}
-	public void setLocationHeight(int _height){m_locationInfoHeight = _height;}
+	public synchronized void setLocationHeight(int _height){m_locationInfoHeight = _height;}
 	
 	public boolean showSystemMenu(){return m_showSystemMenu;}
-	public void setShowSystemMenu(boolean _show){m_showSystemMenu = _show;}
+	public synchronized void setShowSystemMenu(boolean _show){m_showSystemMenu = _show;}
 	
 	public boolean isBoldFont(){return m_locationBoldFont;}
-	public void setBoldFont(boolean _bold){m_locationBoldFont = _bold;}
+	public synchronized void setBoldFont(boolean _bold){m_locationBoldFont = _bold;}
 	
 	public String getIPDialNumber(){return m_IPDialPrefix;}
-	public void setIPDialNumber(String _prefix){m_IPDialPrefix = _prefix;}
+	public synchronized void setIPDialNumber(String _prefix){m_IPDialPrefix = _prefix;}
 	
 	public String getYuchAccount(){return mYuchAcc;}
 	public synchronized void setYuchAccount(String _acc){mYuchAcc = _acc;}
@@ -129,7 +129,7 @@ public class YuchCallerProp {
 	public synchronized void setYuchAccessToken(String _token){mYuchAcc = _token;}
 	
 	public int getSyncFormerDays(){return mSyncFormerDays;}
-	public void setSyncFormerDays(int _days){mSyncFormerDays = _days;}
+	public synchronized void setSyncFormerDays(int _days){mSyncFormerDays = _days;}
 	
     //Retrieves a copy of the effective properties set from storage.
     public void save(){
