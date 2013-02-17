@@ -132,6 +132,41 @@ public class Logger{
 		}
 	}
 	
+	public synchronized void PrinterException(String _label,Exception _e){
+		
+		if(m_disable){
+			return ;
+		}
+		
+		fsm_date.setTime(System.currentTimeMillis());
+		String timePrefix = fsm_timeFormat.format(fsm_date);
+		
+		if(m_systemOut){
+			System.out.print(timePrefix);
+		}		
+				
+		if(m_printStack != null){
+			
+			try{
+				
+				m_printStack.write(timePrefix.getBytes());
+				m_logFileStream.flush();
+				
+				if(_label != null && _label.length() != 0){
+					m_logFileStream.write(_label.getBytes());
+					m_logFileStream.write(0x20); // blank
+				}
+				
+			}catch(Exception e){}
+			
+			_e.printStackTrace(m_printStack);
+		}
+		
+		if(m_systemOut){
+			_e.printStackTrace();
+		}
+	}
+	
 	public void StopLogging(){
 		
 		try{

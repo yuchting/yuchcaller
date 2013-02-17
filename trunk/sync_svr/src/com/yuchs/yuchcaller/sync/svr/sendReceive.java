@@ -57,18 +57,15 @@ public class sendReceive {
 	
 	static public void WriteString(OutputStream _stream,String _string)throws Exception{
 		
-		if(_string == null){
-			_string = "";
-		}
-		
-		final byte[] t_strByte = _string.getBytes("UTF-8");
-		
-		WriteInt(_stream,t_strByte.length);
-		if(t_strByte.length != 0){
-			_stream.write(t_strByte);
+		if(_string == null || _string.length() == 0){
+			WriteInt(_stream,0);
+		}else{
+			byte[] t_strByte = _string.getBytes("UTF-8");
+			
+			WriteInt(_stream,t_strByte.length);
+			_stream.write(t_strByte);			
 		}
 	}
-	
 		
 	static public void ReadStringVector(InputStream _stream,Vector _vect)throws Exception{
 		
