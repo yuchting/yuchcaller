@@ -1,7 +1,32 @@
-package com.yuchs.yuchcaller.sync;
+/**
+ *  Dear developer:
+ *  
+ *   If you want to modify this file of project and re-publish this please visit:
+ *  
+ *     http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *     
+ *   to check your responsibility and my humble proposal. Thanks!
+ *   
+ *  -- 
+ *  Yuchs' Developer    
+ *  
+ *  
+ *  
+ *  
+ *  尊敬的开发者：
+ *   
+ *    如果你想要修改这个项目中的文件，同时重新发布项目程序，请访问一下：
+ *    
+ *      http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *      
+ *    了解你的责任，还有我卑微的建议。 谢谢！
+ *   
+ *  -- 
+ *  语盒开发者
+ *  
+ */
+package com.yuchs.yuchcaller.sync.calendar;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Enumeration;
@@ -13,36 +38,13 @@ import javax.microedition.pim.Event;
 import javax.microedition.pim.EventList;
 import javax.microedition.pim.RepeatRule;
 
+import com.yuchs.yuchcaller.sync.AbsData;
+import com.yuchs.yuchcaller.sync.AbsSyncData;
+import com.yuchs.yuchcaller.sync.SyncMain;
+
 import net.rim.blackberry.api.pdap.BlackBerryEvent;
 
-import com.yuchs.yuchcaller.YuchCaller;
-import com.yuchs.yuchcaller.sendReceive;
-
-public class CalendarSyncData {
-	
-	// the bb system calendar UID
-	private String bID = null;
-	
-	// the google calendar UID
-	private String gID = null;
-	
-	// last modified time
-	private long lastMod = 0;
-	
-	// calendar data
-	private CalendarData	m_calendarData = null;
-	
-	public void setBBID(String _bID){bID = _bID;}
-	public String getBBID(){return bID;}
-	
-	public void setGID(String _id){gID = _id;}
-	public String getGID(){	return gID;}
-	
-	public void setLastMod(long _mod){lastMod = _mod;}
-	public long getLastMod(){return lastMod;}
-	
-	public void setData(CalendarData data){m_calendarData = data;}
-	public CalendarData getData(){return m_calendarData;}
+public class CalendarSyncData extends AbsSyncData{
 		
 	private static final int[]	WeekConstant = 
 	{
@@ -65,16 +67,41 @@ public class CalendarSyncData {
 	};
 	
 	/**
+	 * ste the data to Calendar data
+	 * @param data
+	 */
+	public void setData(CalendarData data){m_data = data;}
+	
+	/**
+	 * get CalendarData
+	 * @return
+	 */
+	public CalendarData getData(){return (CalendarData)m_data;}
+	
+	/**
+	 * need calculate md5 by minTime
+	 * @param minTime
+	 * @return
+	 */
+	protected boolean needCalculateMD5(long minTime){
+		if(getData() == null){
+			return false;
+		}
+		
+		return getData().start > minTime || getData().repeat_type.length() != 0;
+	}
+	
+	/**
 	 * import blackberry event
 	 * @param event
-	 * @param list		EventList 
+	 * @param list		EventList
 	 */
 	public void importData(Event _event,EventList _list)throws Exception{
 				
-		if(m_calendarData == null){
-			m_calendarData = new CalendarData();
+		if(getData() == null){
+			setData(new CalendarData());
 		}else{
-			m_calendarData.clear();
+			getData().clear();
 		}
 				
 		// set the repeat information
@@ -166,7 +193,7 @@ public class CalendarSyncData {
 				
 			}catch(Exception e){}
 			
-			m_calendarData.repeat_type = tRecurring;
+			getData().repeat_type = tRecurring;
 		}
 		
 		// set the fields information
@@ -182,31 +209,31 @@ public class CalendarSyncData {
 				bID = getStringField(_event,id);
 				break;
 			case Event.SUMMARY:
-				m_calendarData.summary = getStringField(_event, id);
+				getData().summary = getStringField(_event, id);
 				break;
 			case Event.START:
-				m_calendarData.start = getDateField(_event, id);
+				getData().start = getDateField(_event, id);
 				break;
 			case Event.END:
-				m_calendarData.end = getDateField(_event, id);
+				getData().end = getDateField(_event, id);
 				break;
 			case Event.LOCATION:
-				m_calendarData.location = getStringField(_event,id);
+				getData().location = getStringField(_event,id);
 				break;
 			case Event.NOTE:
-				m_calendarData.note = getStringField(_event,id);
+				getData().note = getStringField(_event,id);
 				break;
 			case Event.ALARM:
-				m_calendarData.alarm = getIntField(_event,id);
+				getData().alarm = getIntField(_event,id);
 				break;
 			case BlackBerryEvent.ALLDAY:
-				m_calendarData.allDay = getBooleanField(_event, id);
+				getData().allDay = getBooleanField(_event, id);
 				break;
 			case BlackBerryEvent.ATTENDEES:
-				m_calendarData.attendees = getStringArrayField(_list,_event,id);
+				getData().attendees = getStringArrayField(_list,_event,id);
 				break;
 			case BlackBerryEvent.FREE_BUSY:
-				m_calendarData.free_busy = getIntField(_event, id);
+				getData().free_busy = getIntField(_event, id);
 				break;
 			case Event.CLASS:
 				int cls = getIntField(_event, id);
@@ -221,7 +248,7 @@ public class CalendarSyncData {
 					cls = CalendarData.CLASS_PUBLIC;
 					break;
 				}
-				m_calendarData.event_class = cls;
+				getData().event_class = cls;
 				break;
 			}
 		}
@@ -234,10 +261,10 @@ public class CalendarSyncData {
 	 */
 	public void exportData(Event _event,EventList _eventList)throws Exception{
 		
-		if(m_calendarData.repeat_type.length() > 0){
+		if(getData().repeat_type.length() > 0){
 			// add the repeat rule
 			//
-			String repeat = m_calendarData.repeat_type;
+			String repeat = getData().repeat_type;
 			RepeatRule repeatRule = new RepeatRule();
 			
 			while(true){
@@ -254,26 +281,26 @@ public class CalendarSyncData {
 			_event.setRepeat(repeatRule);
 		}
 		
-		setStringField(_eventList,_event, Event.SUMMARY,m_calendarData.summary);
-		setDateField(_eventList,_event, Event.START,m_calendarData.start);
-		setDateField(_eventList,_event, Event.END,m_calendarData.end);
+		setStringField(_eventList,_event, Event.SUMMARY,getData().summary);
+		setDateField(_eventList,_event, Event.START,getData().start);
+		setDateField(_eventList,_event, Event.END,getData().end);
 		
-		setStringField(_eventList,_event, Event.LOCATION,m_calendarData.location);
-		setStringField(_eventList,_event, Event.NOTE,m_calendarData.note);
+		setStringField(_eventList,_event, Event.LOCATION,getData().location);
+		setStringField(_eventList,_event, Event.NOTE,getData().note);
 		
-		if(m_calendarData.alarm > 0){
-			setIntField(_eventList,_event, Event.ALARM,m_calendarData.alarm);
+		if(getData().alarm > 0){
+			setIntField(_eventList,_event, Event.ALARM,getData().alarm);
 		}
 		
-		if(m_calendarData.allDay){
-			setBooleanField(_eventList,_event, BlackBerryEvent.ALLDAY,m_calendarData.allDay);
+		if(getData().allDay){
+			setBooleanField(_eventList,_event, BlackBerryEvent.ALLDAY,getData().allDay);
 		}
 		
-		setStringArrayField(_eventList,_event, BlackBerryEvent.ATTENDEES,m_calendarData.attendees);
-		setIntField(_eventList,_event,BlackBerryEvent.FREE_BUSY,m_calendarData.free_busy);
+		setStringArrayField(_eventList,_event, BlackBerryEvent.ATTENDEES,getData().attendees);
+		setIntField(_eventList,_event,BlackBerryEvent.FREE_BUSY,getData().free_busy);
 		
 		int id = BlackBerryEvent.CLASS_PRIVATE;
-		switch(m_calendarData.event_class){
+		switch(getData().event_class){
 		case CalendarData.CLASS_PUBLIC:
 			id = BlackBerryEvent.CLASS_PUBLIC;
 			break;
@@ -388,6 +415,14 @@ public class CalendarSyncData {
 	}
 	
 	/**
+	 * new a data for calendar
+	 * @return
+	 */
+	protected AbsData newData(){
+		return new CalendarData();
+	}
+	
+	/**
 	 * set the repeat rull class int field
 	 * @param _rule
 	 * @param _id
@@ -435,47 +470,6 @@ public class CalendarSyncData {
 		try{
 			_rule.setDate(_id, _value);
 		}catch(Exception e){}
-	}
-
-	
-	
-	/**
-	 * input the data from the byte stream
-	 * @param in
-	 * @throws Exception
-	 */
-	public void input(InputStream in)throws Exception{
-		setBBID(sendReceive.ReadString(in));
-		setGID(sendReceive.ReadString(in));
-		setLastMod(sendReceive.ReadLong(in));
-		
-		boolean tHasData = sendReceive.ReadBoolean(in);
-		if(tHasData){
-
-			if(m_calendarData == null){
-				m_calendarData = new CalendarData();
-			}
-			
-			m_calendarData.inputData(in);
-		}		
-	}
-	
-	/**
-	 * output the data to the byte stream
-	 * @param os
-	 * @throws Exception
-	 */
-	public void output(OutputStream os,boolean _outputData)throws Exception{
-		sendReceive.WriteString(os,getBBID());
-		sendReceive.WriteString(os,getGID());
-		sendReceive.WriteLong(os,getLastMod());
-		
-		if(m_calendarData != null && _outputData){
-			sendReceive.WriteBoolean(os, true);
-			m_calendarData.outputData(os);
-		}else{
-			sendReceive.WriteBoolean(os, false);
-		}
 	}
 	
 	/**
@@ -618,266 +612,5 @@ public class CalendarSyncData {
 		return time;
 	}
 	
-	/**
-	 * get the blackberry event string 
-	 * @param _event
-	 * @param _id
-	 * @return
-	 */
-	public static String getStringField(Event _event,int _id){
-		int tCount = _event.countValues(_id);
-		if(tCount > 0){
-			return _event.getString(_id, 0);
-		}
-		
-		return "";
-	}
 	
-	/**
-	 * set the event id by string
-	 * @param _list 
-	 * @param _event
-	 * @param _id
-	 * @param _value
-	 */
-	public static void setStringField(EventList _list,Event _event,int _id,String _value){
-		try{
-			if(_list.isSupportedField(_id)){
-				
-				if(_event.countValues(_id) > 0){
-					if(_value != null && _value.length() > 0){
-						_event.setString(_id,0,Event.ATTR_NONE,_value);
-					}else{
-						_event.removeValue(_id,0);
-					}
-				}else{
-					if(_value != null && _value.length() > 0){
-						_event.addString(_id,Event.ATTR_NONE,_value);
-					}				
-				}
-			}
-		}catch(Exception e){
-			System.out.println("Fuck!");
-		}
-		
-	}
-	
-	/**
-	 * get the the long(for date) field
-	 * @param _event
-	 * @param _id
-	 * @return
-	 */
-	public static long getDateField(Event _event,int _id){
-		int tCount = _event.countValues(_id);
-		if(tCount > 0){
-			return _event.getDate(_id, 0);
-		}
-		
-		return 0;
-	}
-	
-	/**
-	 * set the date field for event
-	 * @param _list
-	 * @param _event
-	 * @param _id
-	 * @param _value
-	 */
-	public static void setDateField(EventList _list,Event _event,int _id,long _value){
-		try{
-		if(_list.isSupportedField(_id)){
-			if(_event.countValues(_id) > 0){
-				_event.setDate(_id,0,Event.ATTR_NONE,_value);
-			}else{
-				_event.addDate(_id,Event.ATTR_NONE,_value);
-			}
-			
-		}
-		
-	}catch(Exception e){
-		System.out.println("Fuck!");
-	}
-	
-	}
-	
-	/**
-	 * set the date field for event by data value
-	 * @param _list
-	 * @param _event
-	 * @param _id
-	 * @param _value
-	 */
-	public static void setDateField(EventList _list,Event _event,int _id,String _value){
-		
-		try{
-			long v = Long.parseLong(_value);
-			setDateField(_list,_event,_id,v);
-		}catch(Exception e){}
-	}
-	
-	
-	/**
-	 * get the integer field for the event
-	 * @param _event
-	 * @param _id
-	 * @return
-	 */
-	public static int getIntField(Event _event,int _id){
-		int tCount = _event.countValues(_id);
-		if(tCount > 0){
-			return _event.getInt(_id, 0);
-		}
-		
-		return 0;
-	}
-	
-	/**
-	 * set the int value of this event
-	 * @param _list
-	 * @param _event
-	 * @param _id
-	 * @param _value
-	 */
-	public static void setIntField(EventList _list,Event _event,int _id,int _value){
-		try{
-		if(_list.isSupportedField(_id)){
-			if(_event.countValues(_id) > 0){
-				_event.setInt(_id,0,Event.ATTR_NONE,_value);
-			}else{
-				_event.addInt(_id,Event.ATTR_NONE,_value);
-			}
-		}
-	}catch(Exception e){
-		System.out.println("Fuck!");
-	}
-	
-	}
-	
-	/**
-	 * set the int field by int string
-	 * @param _list
-	 * @param _event
-	 * @param _id
-	 * @param _value
-	 */
-	public static void setIntField(EventList _list,Event _event,int _id,String _value){
-		
-		try{
-			int v = Integer.parseInt(_value);
-			setIntField(_list,_event,_id,v);
-		}catch(Exception e){}
-	}
-	
-	/**
-	 * get the boolean field for the event
-	 * @param _event
-	 * @param _id
-	 * @return
-	 */
-	public static boolean getBooleanField(Event _event,int _id){
-		int tCount = _event.countValues(_id);
-		if(tCount > 0){
-			return _event.getBoolean(_id, 0);
-		}
-		
-		return false;
-	}
-	
-	/**
-	 * set the boolean field
-	 * @param _list
-	 * @param _event
-	 * @param _id
-	 * @param _value
-	 */
-	public static void setBooleanField(EventList _list,Event _event,int _id,boolean _value){
-		try{
-		if(_list.isSupportedField(_id)){
-			if(_event.countValues(_id) > 0){
-				_event.setBoolean(_id, 0, Event.ATTR_NONE, _value);
-			}else{
-				_event.addBoolean(_id, Event.ATTR_NONE, _value);
-			}
-		}
-	}catch(Exception e){
-		System.out.println("Fuck!");
-	}
-	
-	}
-	
-	/**
-	 * get the string array field 
-	 * @param _event
-	 * @param _id
-	 * @return
-	 */
-	public static String[] getStringArrayField(EventList _list,Event _event,int _id){
-		int tCount = _event.countValues(_id);
-		if(tCount > 0){
-			if(_list.getFieldDataType(_id) == Event.STRING_ARRAY){
-				
-				return _event.getStringArray(_id, 0);
-				
-			}else if(_list.getFieldDataType(_id) == Event.STRING){
-
-				String[] tResult = new String[tCount];
-				for(int i = 0 ;i < tCount;i++){
-					tResult[i] = _event.getString(_id, i);
-				}
-				
-				return tResult;
-			}
-		}
-		
-		return null;
-	}
-	
-	/**
-	 * set the String array field
-	 * @param _list
-	 * @param _event
-	 * @param _id
-	 * @param _value
-	 */
-	public static void setStringArrayField(EventList _list,Event _event,int _id,String[] _value){
-		try{
-		if(_list.isSupportedField(_id)){
-			
-			int count = _event.countValues(_id);
-			
-			if(_list.getFieldDataType(_id) == Event.STRING_ARRAY){
-
-				if(count > 0){
-					if(_value != null && _value.length > 0){
-						_event.setStringArray(_id, 0, Event.STRING_ARRAY, _value);
-					}else{
-						_event.removeValue(_id,0);
-					}				
-				}else{
-					if(_value != null && _value.length > 0){
-						_event.addStringArray(_id, Event.STRING_ARRAY, _value);
-					}				
-				}
-				
-			}else if(_list.getFieldDataType(_id) == Event.STRING){
-				
-				if(count > 0){
-					for(int i = 0;i < count;i++){
-						_event.removeValue(_id,0);
-					}
-				}
-				
-				if(_value != null && _value.length > 0){
-					for(int i = 0 ;i < _value.length;i++){
-						_event.addString(_id, Event.ATTR_NONE, _value[i]);
-					}
-				}
-			}
-		}
-	}catch(Exception e){
-		System.out.println("Fuck!");
-	}
-	
-	}
 }

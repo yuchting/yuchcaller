@@ -1,3 +1,30 @@
+/**
+ *  Dear developer:
+ *  
+ *   If you want to modify this file of project and re-publish this please visit:
+ *  
+ *     http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *     
+ *   to check your responsibility and my humble proposal. Thanks!
+ *   
+ *  -- 
+ *  Yuchs' Developer    
+ *  
+ *  
+ *  
+ *  
+ *  尊敬的开发者：
+ *   
+ *    如果你想要修改这个项目中的文件，同时重新发布项目程序，请访问一下：
+ *    
+ *      http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *      
+ *    了解你的责任，还有我卑微的建议。 谢谢！
+ *   
+ *  -- 
+ *  语盒开发者
+ *  
+ */
 package com.yuchs.yuchcaller.sync;
 
 import java.util.Vector;
@@ -11,7 +38,10 @@ import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.EmailAddressEditField;
 import net.rim.device.api.ui.component.NullField;
+import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.PasswordEditField;
+import net.rim.device.api.ui.component.SeparatorField;
+import net.rim.device.api.ui.component.TextField;
 import net.rim.device.api.ui.container.HorizontalFieldManager;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 
@@ -35,10 +65,6 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 	 */
 	private Dialog					mWaitInfoDlg = null;
 	
-	/**
-	 * the small font to sync
-	 */
-	private Font					mSmallFont = Font.getDefault().derive(Font.getDefault().getStyle(),Font.getDefault().getHeight() - 2);
 	
 	/**
 	 * account manager field
@@ -58,6 +84,9 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 	private VerticalFieldManager		mConfigMgr	= null;
 	private NullField					mConfigMgrNull = new NullField(Field.NON_FOCUSABLE);
 	
+	private ObjectChoiceField			mAutoManualList = null;
+	private ObjectChoiceField			mFormerDaysList = null;
+	
 	private ButtonField					mSyncBtn	= null;
 	private ButtonField					mLogoutBtn	= null;
 	
@@ -75,10 +104,29 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 		}
 	}
 	
+	/**
+	 * this manager field is dirty 
+	 */
+	public boolean isDirty(){
+		
+		if(mAutoManualList != null){
+			return mAutoManualList.isDirty() || mFormerDaysList.isDirty();
+		}
+		
+		return false;		
+	}
+	
 	private void prepareAccountMgr(){
 		
 		if(mAccountMgr == null){
 			mAccountMgr = new VerticalFieldManager();
+			
+			TextField tDescText = new TextField(Field.NON_FOCUSABLE);
+			tDescText.setFont(Font.getDefault().derive(Font.getDefault().getStyle(),Font.getDefault().getHeight() * 5 / 6));
+			tDescText.setText(mMainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SYNC_DESC));
+			
+			mAccountMgr.add(tDescText);
+			mAccountMgr.add(new SeparatorField(Field.NON_FOCUSABLE));
 			
 			mYuchAccount = new EmailAddressEditField(mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_ACCOUNT_PREFIX),
 													mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_ACCOUNT_INIT));
@@ -86,22 +134,18 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 			mYuchPass = new PasswordEditField(mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_PASS_PREFIX),
 												mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_PASS_INIT));
 						
-			mYuchAccount.setFont(mSmallFont);
-			mYuchPass.setFont(mSmallFont);
 			
 			mAccountMgr.add(mYuchAccount);
 			mAccountMgr.add(mYuchPass);
 			
-			HorizontalFieldManager btnMgr = new HorizontalFieldManager(Field.FIELD_HCENTER);
+			HorizontalFieldManager btnMgr = new HorizontalFieldManager();
 			
 			mLoginBtn	= new ButtonField(mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_LOGIN_BTN),
-										ButtonField.CONSUME_CLICK | ButtonField.NEVER_DIRTY | ButtonField.FIELD_HCENTER);
+										ButtonField.CONSUME_CLICK | ButtonField.NEVER_DIRTY );
 			
 			mSigninBtn	= new ButtonField(mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_SIGNIN_BTN),
-										ButtonField.CONSUME_CLICK | ButtonField.NEVER_DIRTY | ButtonField.FIELD_HCENTER);
+										ButtonField.CONSUME_CLICK | ButtonField.NEVER_DIRTY );
 			
-			mLoginBtn.setFont(mSmallFont);
-			mSigninBtn.setFont(mSmallFont);
 			
 			btnMgr.add(mLoginBtn);
 			btnMgr.add(mSigninBtn);
@@ -124,32 +168,73 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 	
 	private void prepareConfigMgr(){
 		if(mConfigMgr == null){
-			mConfigMgr = new VerticalFieldManager();
 			
-			HorizontalFieldManager btnMgr = new HorizontalFieldManager(Field.FIELD_HCENTER);
+			YuchCallerProp tProp = mMainApp.getProperties();
 			
+			mConfigMgr 			= new VerticalFieldManager();
+			
+			String[] tAutoManualList = new String[]{
+				mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_AUTO_LABEL),
+				mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_MANUAL_LABEL),
+			};
+						
+			mAutoManualList		= new ObjectChoiceField(mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_AUTO_MANUAL_LABEL), 
+										tAutoManualList, tProp.getSyncAutoOrManual()?0:1);
+			mConfigMgr.add(mAutoManualList);
+			
+			mFormerDaysList		= new ObjectChoiceField(mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_FORMER_DAYS), 
+										YuchCallerProp.fsm_formerDaysList,tProp.getSyncFormerDaysIndex());
+			
+			mConfigMgr.add(mFormerDaysList);			
+			
+			HorizontalFieldManager btnMgr = new HorizontalFieldManager();
 			mSyncBtn	= new ButtonField(mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_SYNC_BTN),
-											ButtonField.CONSUME_CLICK | ButtonField.NEVER_DIRTY | ButtonField.FIELD_HCENTER);
+											ButtonField.CONSUME_CLICK | ButtonField.NEVER_DIRTY);
 			
 			mLogoutBtn	= new ButtonField(mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_LOGOUT_BTN),
-											ButtonField.CONSUME_CLICK | ButtonField.NEVER_DIRTY | ButtonField.FIELD_HCENTER);
-
+											ButtonField.CONSUME_CLICK | ButtonField.NEVER_DIRTY);
+			
 			btnMgr.add(mSyncBtn);
 			btnMgr.add(mLogoutBtn);
 			
 			mConfigMgr.add(btnMgr);
+			
+			mSyncBtn.setChangeListener(this);
+			mLogoutBtn.setChangeListener(this);
 		}
 		
 		if(mConfigMgr.getManager() == null){
 			replace(mConfigMgrNull, mConfigMgr);
 		}
 	}
+	
 
+	/**
+	 * fetch sync prop to YuchCallerProp
+	 */
+	public void fetchSyncProp(){
+		if(mAutoManualList != null){
+
+			YuchCallerProp tProp = mMainApp.getProperties();
+			
+			tProp.setSyncAutoOrManual(mAutoManualList.getSelectedIndex() == 0);
+			
+			int tDays = Integer.parseInt(YuchCallerProp.fsm_formerDaysList[mFormerDaysList.getSelectedIndex()]); 
+			tProp.setSyncFormerDays(tDays);
+		}
+	}
+
+	/**
+	 * read the yuchAccount thread
+	 */
 	private Thread mReadYuchAccThread = null;
 	
 	public void fieldChanged(Field field, int context) {
+		
 		if(context != FieldChangeListener.PROGRAMMATIC){
+			
 			if(field == mLoginBtn){
+				
 				if(isValidateEmail(mYuchAccount.getText())
 				&& isValidateUserPass(mYuchPass.getText())){
 
@@ -169,7 +254,14 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 								}
 							};
 							
-							mReadYuchAccThread.start();
+							// start on YuchCaller context
+							Application.getApplication().invokeLater(new Runnable() {
+								
+								public void run() {
+									mReadYuchAccThread.start();
+								}
+							});
+							
 						}
 					}
 					
@@ -181,6 +273,22 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 				
 			}else if(field == mSigninBtn){
 				
+			}else if(field == mSyncBtn){
+				
+				mMainApp.startSync();
+				
+			}else if(field == mLogoutBtn){
+				
+				if(Dialog.ask(Dialog.D_YES_NO, mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_LOGOUT_ASK_PROMPT),Dialog.NO) == Dialog.YES){
+					
+					YuchCallerProp tProp = mMainApp.getProperties();
+					tProp.setYuchAccessToken("");
+					tProp.setYuchRefreshToken("");
+					tProp.save();
+					
+					prepareAccountMgr();
+					replace(mConfigMgr, mConfigMgrNull);
+				}
 			}
 		}
 		
@@ -205,7 +313,7 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 					mWaitInfoDlg.doModal();
 				}else{
 					mWaitInfoDlg.getLabel().setText(_info);
-				}				
+				}
 			}
 		});
 		
@@ -219,9 +327,16 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 		
 		Application.getApplication().invokeLater(new Runnable() {
 			public void run() {
-				if(mWaitInfoDlg != null){
-					mWaitInfoDlg.close();
+				try{
+
+					if(mWaitInfoDlg != null && mWaitInfoDlg.getScreen() != null){
+						mWaitInfoDlg.close();						
+					}
+					
 					mWaitInfoDlg = null;
+					
+				}catch(Exception e){
+					mMainApp.SetErrorString("SOMRE", e);
 				}
 				
 				if(_error != null && _error.length() != 0){
@@ -245,69 +360,70 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 		
 		YuchCallerProp tProp = mMainApp.getProperties();
 		
-		if(tProp.getYuchAccount().length() == 0 
-		|| tProp.getYuchPass().length() == 0){
-			return;
-		}
-
-		reportInfo("Reading Yuch Account...");
-		
-		if(tProp.getYuchAccessToken().length() == 0 || tProp.getYuchRefreshToken().length() == 0){
+		if(tProp.getYuchAccount().length() > 0 && tProp.getYuchPass().length() > 0){
 			
-			// request the yuch server
+			reportInfo("Reading Yuch Account...");
 			
-			String url = "http://192.168.100.116:8888/f/login/" + YuchCaller.getHTTPAppendString();
-			//String url = "http://192.168.10.4:8888/f/login/" + YuchCaller.getHTTPAppendString();
-			//String url = "http://www.yuchs.com/f/login/" + YuchCaller.getHTTPAppendString();
-						
-			String[] tParamName = {
-				"acc",	"pass",	"type",
-			};
-			
-			String[] tParamValue = {
-				tProp.getYuchAccount(),
-				tProp.getYuchPass(),				
-				"yuchcaller",
-			};
-		
-			try{
-				String tResult = SyncMain.requestPOSTHTTP(url,tParamName,tParamValue);
+			if(tProp.getYuchAccessToken().length() == 0 || tProp.getYuchRefreshToken().length() == 0){
 				
-				if(tResult.startsWith("<Error>")){
-					reportError(tResult.substring(7));
-				}else{
-										
-					Vector data = SyncMain.splitStr(tResult, '|');
-					
-					if(data.size() >= 5){						
-						
-						tProp.setYuchRefreshToken(data.elementAt(0).toString());
-						tProp.setYuchAccessToken(data.elementAt(1).toString());
-						
-						tProp.save();
-						
-						mMainApp.invokeLater(new Runnable() {
+				// request the yuch server
+				
+				String url = "http://192.168.100.116:8888/f/login/" + YuchCaller.getHTTPAppendString();
+				//String url = "http://192.168.10.4:8888/f/login/" + YuchCaller.getHTTPAppendString();
+				//String url = "http://www.yuchs.com/f/login/" + YuchCaller.getHTTPAppendString();
 							
-							public void run() {
-								prepareConfigMgr();
-							}
-						});						
-						
-					}else{
-						reportError("Unkown:" + tResult);
-					}					
-				}
+				String[] tParamName = {
+					"acc",	"pass",	"type",
+				};
 				
-			}catch(Exception e){
-				// network problem
-				reportError("Can not get the YuchAccount",e);
-			}			
+				String[] tParamValue = {
+					tProp.getYuchAccount(),
+					tProp.getYuchPass(),				
+					"yuchcaller",
+				};
+			
+				try{
+					String tResult = SyncMain.requestPOSTHTTP(url,tParamName,tParamValue);
+					
+					if(tResult.startsWith("<Error>")){
+						reportError(tResult.substring(7));
+					}else{
+											
+						Vector data = SyncMain.splitStr(tResult, '|');
+						
+						if(data.size() >= 5){						
+							
+							tProp.setYuchRefreshToken(data.elementAt(0).toString());
+							tProp.setYuchAccessToken(data.elementAt(1).toString());
+							
+							tProp.save();
+							
+							Application.getApplication().invokeLater(new Runnable() {
+								
+								public void run() {
+									prepareConfigMgr();
+									
+									// remove the account manager
+									replace(mAccountMgr, mAccountMgrNull);							
+								}
+							});						
+							
+						}else{
+							reportError("Unkown:" + tResult);
+						}					
+					}
+					
+				}catch(Exception e){
+					// network problem
+					reportError("Can not get the YuchAccount",e);
+				}			
+			}
 		}
 		
 		// close the report info dialog
 		reportError(null);
 	}
-	
+		
 	/**
 	 * whether this string is valid Email  
 	 * @param _str

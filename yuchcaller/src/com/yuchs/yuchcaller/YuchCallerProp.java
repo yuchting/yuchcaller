@@ -1,3 +1,30 @@
+/**
+ *  Dear developer:
+ *  
+ *   If you want to modify this file of project and re-publish this please visit:
+ *  
+ *     http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *     
+ *   to check your responsibility and my humble proposal. Thanks!
+ *   
+ *  -- 
+ *  Yuchs' Developer    
+ *  
+ *  
+ *  
+ *  
+ *  尊敬的开发者：
+ *   
+ *    如果你想要修改这个项目中的文件，同时重新发布项目程序，请访问一下：
+ *    
+ *      http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *      
+ *    了解你的责任，还有我卑微的建议。 谢谢！
+ *   
+ *  -- 
+ *  语盒开发者
+ *  
+ */
 package com.yuchs.yuchcaller;
 
 import java.io.InputStream;
@@ -55,8 +82,19 @@ public class YuchCallerProp {
 	//! the yuch account google api access token; 
 	private String mAccessToken				= "";
 	
+	//! sync former days list string
+	public final static String[] fsm_formerDaysList = new String[]{
+		"30",
+		"60",
+		"90",
+		"120",
+	};
+	
 	//! the sync former days
 	private int mSyncFormerDays		 	= 60;
+	
+	//! sync automaticly or manually 
+	private boolean mSyncAutoOrManual		= true;
 	
 	final private YuchCaller	m_mainApp;
 	
@@ -126,10 +164,27 @@ public class YuchCallerProp {
 	public synchronized void setYuchRefreshToken(String _token){mRefreshToken = _token;}
 	
 	public String getYuchAccessToken(){return mAccessToken;}
-	public synchronized void setYuchAccessToken(String _token){mYuchAcc = _token;}
+	public synchronized void setYuchAccessToken(String _token){mAccessToken = _token;}
 	
 	public int getSyncFormerDays(){return mSyncFormerDays;}
 	public synchronized void setSyncFormerDays(int _days){mSyncFormerDays = _days;}
+	
+	/**
+	 * get the index of sync former days in list
+	 * @return
+	 */
+	public int getSyncFormerDaysIndex(){
+		for(int i = 0;i < fsm_formerDaysList.length;i++){
+			if(Integer.parseInt(fsm_formerDaysList[i]) == mSyncFormerDays){
+				return i;
+			}
+		}
+		
+		return 0;
+	}
+	
+	public boolean getSyncAutoOrManual(){return mSyncAutoOrManual;}
+	public synchronized void setSyncAutoOrManual(boolean _autoOrManual){mSyncAutoOrManual = _autoOrManual;}
 	
     //Retrieves a copy of the effective properties set from storage.
     public void save(){
@@ -291,6 +346,7 @@ public class YuchCallerProp {
 				    			mRefreshToken	= sendReceive.ReadString(in);
 				    			mAccessToken	= sendReceive.ReadString(in);
 				    			mSyncFormerDays	= sendReceive.ReadInt(in);
+				    			mSyncAutoOrManual= sendReceive.ReadBoolean(in);
 				    		}
 				    
 			    			if(t_currVer == 0 && !YuchCaller.fsm_OS_version.startsWith("4.")){
@@ -332,6 +388,7 @@ public class YuchCallerProp {
 						sendReceive.WriteString(os, mRefreshToken);
 						sendReceive.WriteString(os, mAccessToken);
 						sendReceive.WriteInt(os,mSyncFormerDays);
+						sendReceive.WriteBoolean(os, mSyncAutoOrManual);
 						
 					}finally{
 						os.close();

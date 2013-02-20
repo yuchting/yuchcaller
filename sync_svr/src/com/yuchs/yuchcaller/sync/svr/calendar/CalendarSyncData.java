@@ -1,4 +1,4 @@
-package com.yuchs.yuchcaller.sync.svr;
+package com.yuchs.yuchcaller.sync.svr.calendar;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,69 +15,60 @@ import com.google.api.services.calendar.model.EventAttendee;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.EventReminder;
 import com.google.api.services.calendar.model.Event.Reminders;
+import com.yuchs.yuchcaller.sync.svr.GoogleAPIData;
+import com.yuchs.yuchcaller.sync.svr.GoogleAPISyncData;
+import com.yuchs.yuchcaller.sync.svr.sendReceive;
 
-public class CalendarSyncData {
+public class CalendarSyncData extends GoogleAPISyncData{
 	
-	// the bb system calendar UID
-	private String bID = null;
+	public void setData(CalendarData data){m_APIData = data;}
+	public CalendarData getData(){return (CalendarData)m_APIData;}
 	
-	// the google calendar UID
-	private String gID = null;
-	
-	// this sync solt data md5
-	private long lastMod = 0;
-	
-	// calendar data
-	private CalendarData	m_calendarData = null;
-	
-	public void setBBID(String _bID){bID = _bID;}
-	public String getBBID(){return bID;}
-	
-	public void setGID(String _id){gID = _id;}
-	public String getGID(){	return gID;}
-	
-	public void setLastMod(long _mod){lastMod = _mod;}
-	public long getLastMod(){return lastMod;}
-	
-	public void setData(CalendarData data){m_calendarData = data;}
-	public CalendarData getData(){return m_calendarData;}
+	@Override
+	protected GoogleAPIData newData() {
+		return new CalendarData();
+	}
 	
 	/**
 	 * import the data from the google calendar Event
-	 * @param _event
+	 * @param g
 	 */
-	public void importEvent(Event _event)throws Exception{
-		setGID(_event.getId());
-		setLastMod(CalendarSync.getEventLastMod(_event));
+	@Override
+	public void importGoogleData(Object g)throws Exception{
 		
-		if(m_calendarData == null){
-			m_calendarData = new CalendarData();
+		Event event = (Event)g; 
+		
+		setGID(event.getId());
+		setLastMod(CalendarSync.getEventLastMod(event));
+		
+		if(getData() == null){
+			m_APIData = newData();
 		}
 		
-		m_calendarData.repeat_type = "";		
-		List<String> tList = _event.getRecurrence();
+		getData().repeat_type = "";		
+		List<String> tList = event.getRecurrence();
 		if(tList != null){
 			for(String re : tList){
-				if(m_calendarData.repeat_type.length() != 0){
-					m_calendarData.repeat_type += "\n"; 
+				if(getData().repeat_type.length() != 0){
+					getData().repeat_type += "\n"; 
 				}
 				
-				m_calendarData.repeat_type += re;
+				getData().repeat_type += re;
 			}			
 		}
 		
-		m_calendarData.summary	= _event.getSummary();
-		m_calendarData.note		= _event.getDescription();
+		getData().summary	= event.getSummary();
+		getData().note		= event.getDescription();
 		
-		m_calendarData.start	= getEventDateTime(_event.getStart());
-		m_calendarData.end		= getEventDateTime(_event.getEnd());
+		getData().start	= getEventDateTime(event.getStart());
+		getData().end		= getEventDateTime(event.getEnd());
 		
-		m_calendarData.location	= _event.getLocation();
+		getData().location	= event.getLocation();
 		
-		m_calendarData.alarm = 0;
+		getData().alarm = 0;
 		
 		// set the alarm 
-		Reminders tReminders = _event.getReminders();
+		Reminders tReminders = event.getReminders();
 		if(tReminders != null){
 			List<EventReminder> _eventReminderList = tReminders.getOverrides();
 			if(_eventReminderList != null){
@@ -85,18 +76,18 @@ public class CalendarSyncData {
 					if(ev.getMinutes() != null){
 						int second = ev.getMinutes() * 60;
 						
-						if(m_calendarData.alarm == 0 || m_calendarData.alarm > second){
-							m_calendarData.alarm = second;
+						if(getData().alarm == 0 || getData().alarm > second){
+							getData().alarm = second;
 						}
 					}
 				}
 			}
 		}
 		
-		m_calendarData.attendees = null;
+		getData().attendees = null;
 		
 		// set the attendess
-		List<EventAttendee> tAttendeesList = _event.getAttendees();
+		List<EventAttendee> tAttendeesList = event.getAttendees();
 		if(tAttendeesList != null){
 			
 			Vector<String>	tTmpList = new Vector<String>();
@@ -106,26 +97,26 @@ public class CalendarSyncData {
 				}				
 			}
 			
-			m_calendarData.attendees = new String[tTmpList.size()];
+			getData().attendees = new String[tTmpList.size()];
 			
 			for(int i = 0;i < tTmpList.size();i++){
-				m_calendarData.attendees[i] = tTmpList.get(i);
+				getData().attendees[i] = tTmpList.get(i);
 			}
 		}
 		
-		String visibility = _event.getVisibility();
+		String visibility = event.getVisibility();
 		
 		if(visibility != null){			
 			if(visibility.equalsIgnoreCase("default")
 			|| visibility.equalsIgnoreCase("private")){
 				
-				m_calendarData.event_class = CalendarData.CLASS_PRIVATE; 
+				getData().event_class = CalendarData.CLASS_PRIVATE; 
 				
 			}else if(visibility.equalsIgnoreCase("public")){
 				
-				m_calendarData.event_class = CalendarData.CLASS_PUBLIC;
+				getData().event_class = CalendarData.CLASS_PUBLIC;
 			}else{
-				m_calendarData.event_class = CalendarData.CLASS_CONFIDENTIAL;
+				getData().event_class = CalendarData.CLASS_CONFIDENTIAL;
 			}
 		}
 		
@@ -133,32 +124,34 @@ public class CalendarSyncData {
 	
 	/**
 	 * export the data to the google's calendar Event
-	 * @param _event
+	 * @param g
 	 * @param _timeZoneID
 	 */
-	public void exportEvent(Event _event,String _timeZoneID)throws Exception{
+	public void exportGoogleData(Object g,String _timeZoneID)throws Exception{
 		
-		_event.setSummary(getData().summary);
+		Event event = (Event)g;
+		
+		event.setSummary(getData().summary);
 		
 		if(getData().allDay){
 			
 			SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 			
 			DateTime startTime = DateTime.parseRfc3339(format.format(new Date(getData().start)));
-			_event.setStart(new EventDateTime().setDateTime(startTime).setTimeZone(_timeZoneID));
+			event.setStart(new EventDateTime().setDateTime(startTime).setTimeZone(_timeZoneID));
 			
 			startTime = DateTime.parseRfc3339(format.format(new Date(getData().start + 24 * 3600 * 1000)));
-			_event.setEnd(new EventDateTime().setDateTime(startTime).setTimeZone(_timeZoneID));
+			event.setEnd(new EventDateTime().setDateTime(startTime).setTimeZone(_timeZoneID));
 			
 		}else{
 
 			Date tDate = new Date(getData().start);
-			_event.setStart(new EventDateTime().setDate(new DateTime(tDate,TimeZone.getTimeZone(_timeZoneID))));
+			event.setStart(new EventDateTime().setDate(new DateTime(tDate,TimeZone.getTimeZone(_timeZoneID))));
 			
 			tDate	= new Date(getData().end);
-			_event.setEnd(new EventDateTime().setDate(new DateTime(tDate,TimeZone.getTimeZone(_timeZoneID))));
+			event.setEnd(new EventDateTime().setDate(new DateTime(tDate,TimeZone.getTimeZone(_timeZoneID))));
 			
-			_event.setLocation(getData().location);
+			event.setLocation(getData().location);
 		}
 		
 		if(getData().alarm > 0){
@@ -174,10 +167,10 @@ public class CalendarSyncData {
 			tRemindersList.add(re);
 			
 			tReminders.setOverrides(tRemindersList);
-			_event.setReminders(tReminders);
+			event.setReminders(tReminders);
 		}
 		
-		_event.setDescription(getData().note);
+		event.setDescription(getData().note);
 		
 		// the attendees
 		//
@@ -192,7 +185,7 @@ public class CalendarSyncData {
 				tAttendeesList.add(eventAtt);
 			}
 			
-			_event.setAttendees(tAttendeesList);
+			event.setAttendees(tAttendeesList);
 		}
 
 		// visibility
@@ -210,8 +203,7 @@ public class CalendarSyncData {
 			break;
 		}
 		
-		_event.setVisibility(tVisibility);
-		
+		event.setVisibility(tVisibility);		
 		
 		// repeat type
 		//
@@ -223,7 +215,7 @@ public class CalendarSyncData {
 				tRecurrence.add(re);
 			}
 			
-			_event.setRecurrence(tRecurrence);
+			event.setRecurrence(tRecurrence);
 		}
 	}
 	
@@ -241,7 +233,7 @@ public class CalendarSyncData {
 		if(ed.toStringRfc3339().length() <= 11){
 			// yyyy-mm-dd 
 			//
-			m_calendarData.allDay = true;
+			getData().allDay = true;
 		}
 		
 		return ed.getValue();
@@ -252,6 +244,7 @@ public class CalendarSyncData {
 	 * @param in
 	 * @throws Exception
 	 */
+	@Override
 	public void input(InputStream in)throws Exception{
 		setBBID(sendReceive.ReadString(in));
 		setGID(sendReceive.ReadString(in));
@@ -260,29 +253,32 @@ public class CalendarSyncData {
 		boolean tHasData = sendReceive.ReadBoolean(in);
 		if(tHasData){
 
-			if(m_calendarData == null){
-				m_calendarData = new CalendarData();
+			if(getData() == null){
+				m_APIData = newData();
 			}
 			
-			m_calendarData.inputData(in);
+			getData().inputData(in);
 		}		
 	}
 	
 	/**
 	 * output the data to the byte stream
 	 * @param os
+	 * @param _outputData output data detail or NOT
 	 * @throws Exception
 	 */
+	@Override
 	public void output(OutputStream os,boolean _outputData)throws Exception{
 		sendReceive.WriteString(os,getBBID());
 		sendReceive.WriteString(os,getGID());
 		sendReceive.WriteLong(os,getLastMod());
 		
-		if(m_calendarData != null && _outputData){
+		if(getData() != null && _outputData){
 			sendReceive.WriteBoolean(os, true);
-			m_calendarData.outputData(os);
+			getData().outputData(os);
 		}else{
 			sendReceive.WriteBoolean(os, false);
 		}
 	}
+	
 }

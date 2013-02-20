@@ -1,3 +1,30 @@
+/**
+ *  Dear developer:
+ *  
+ *   If you want to modify this file of project and re-publish this please visit:
+ *  
+ *     http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *     
+ *   to check your responsibility and my humble proposal. Thanks!
+ *   
+ *  -- 
+ *  Yuchs' Developer    
+ *  
+ *  
+ *  
+ *  
+ *  尊敬的开发者：
+ *   
+ *    如果你想要修改这个项目中的文件，同时重新发布项目程序，请访问一下：
+ *    
+ *      http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *      
+ *    了解你的责任，还有我卑微的建议。 谢谢！
+ *   
+ *  -- 
+ *  语盒开发者
+ *  
+ */
 package com.yuchs.yuchcaller;
 
 import java.io.ByteArrayOutputStream;
@@ -114,7 +141,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	private SearchLocationMenu m_addrSearchMenu = new SearchLocationMenu();
 
 	//! sync main
-	public SyncMain		m_syncMain			= new SyncMain(this);
+	private SyncMain		m_syncMain			= null;
 
 	//! ip dial menu
 	private IPDialMenu m_ipDialMenu = new IPDialMenu();
@@ -377,6 +404,62 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		return m_prop;
 	}
 	
+	/**
+	 * this thread will initialize the SyncMain to read the Calendar/Contact/Task
+	 */
+	private Thread		mStartSyncThread = null;
+	
+	/**
+	 * start sync the calendar/contacts/task 
+	 */
+	public void startSync(){
+		
+		// run sync proccess in YuchCaller context
+		//
+		invokeLater(new Runnable() {
+			
+			public void run() {
+				
+				if(m_syncMain == null){
+					
+					if(mStartSyncThread == null){
+						
+						synchronized(this){
+							
+							mStartSyncThread = new Thread(){
+								public void run(){
+									m_syncMain = new SyncMain(YuchCaller.this);
+									m_syncMain.startSync();
+									
+									synchronized(YuchCaller.this){
+										mStartSyncThread = null;
+									}
+								}
+							};
+							
+							mStartSyncThread.start();
+						}
+					}
+					
+				}else{
+					
+					if(mStartSyncThread == null){ // SyncMain must be constructed
+						m_syncMain.startSync();
+					}					
+				}
+			}
+		});
+		
+	}
+	
+	/**
+	 * get the sync main
+	 * @return
+	 */
+	public SyncMain getSyncMain(){
+		return m_syncMain;
+	}
+		
 	/**
 	 * popup a dialog to show user some message
 	 * @param _msg
