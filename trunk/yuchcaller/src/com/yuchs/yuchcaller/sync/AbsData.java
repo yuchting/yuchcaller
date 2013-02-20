@@ -25,20 +25,34 @@
  *  语盒开发者
  *  
  */
-package com.yuchs.yuchcaller;
+package com.yuchs.yuchcaller.sync;
+
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
- * bineary search for number
+ * data interface to operate
  * @author tzz
  *
  */
-public abstract class BinSearchNumber {
+public interface AbsData {
+
+	/**
+	 * clear the data to initial state
+	 */
+	public void clear();
 	
 	/**
-	 * child class must derive this function
-	 * to compare a number to bineary search
-	 * @param _number
-	 * @return
+	 * import the data from stream
+	 * @param _in
 	 */
-	public abstract int Compare(int _number);
+	public void inputData(InputStream _in)throws Exception;
+		
+	/**
+	 * output data to a stream
+	 * @param _os
+	 * @throws Excetion
+	 */
+	public void outputData(OutputStream _os)throws Exception;
+	
 }

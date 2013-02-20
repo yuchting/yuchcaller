@@ -1,9 +1,12 @@
-package com.yuchs.yuchcaller.sync.svr;
+package com.yuchs.yuchcaller.sync.svr.calendar;
 
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class CalendarData {
+import com.yuchs.yuchcaller.sync.svr.GoogleAPIData;
+import com.yuchs.yuchcaller.sync.svr.sendReceive;
+
+public class CalendarData implements GoogleAPIData{
 
 	/**
 	 * value of free_busy field

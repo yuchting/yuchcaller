@@ -1,3 +1,30 @@
+/**
+ *  Dear developer:
+ *  
+ *   If you want to modify this file of project and re-publish this please visit:
+ *  
+ *     http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *     
+ *   to check your responsibility and my humble proposal. Thanks!
+ *   
+ *  -- 
+ *  Yuchs' Developer    
+ *  
+ *  
+ *  
+ *  
+ *  尊敬的开发者：
+ *   
+ *    如果你想要修改这个项目中的文件，同时重新发布项目程序，请访问一下：
+ *    
+ *      http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *      
+ *    了解你的责任，还有我卑微的建议。 谢谢！
+ *   
+ *  -- 
+ *  语盒开发者
+ *  
+ */
 package com.yuchs.yuchcaller.sync;
 
 import java.io.ByteArrayInputStream;
@@ -5,7 +32,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.TimeZone;
 import java.util.Vector;
 
 import javax.microedition.io.Connector;
@@ -18,11 +44,30 @@ import net.rim.device.api.io.http.HttpProtocolConstants;
 
 import com.yuchs.yuchcaller.ConnectorHelper;
 import com.yuchs.yuchcaller.YuchCaller;
-import com.yuchs.yuchcaller.YuchCallerProp;
-import com.yuchs.yuchcaller.sendReceive;
+import com.yuchs.yuchcaller.sync.calendar.CalendarSync;
 
 public class SyncMain {
 	
+	/**
+	 * type of sync
+	 */
+	public static final int		SYNC_CALENDAR	= 0;
+	public static final int		SYNC_CONTACT	= 1;
+	public static final int		SYNC_TASK		= 2;
+	
+	/**
+	 * former error prompt 
+	 */
+	public final String[]		mErrorStr	= new String[AbsSync.fsm_syncDataType.length];
+	
+	/**
+	 * former information string
+	 */
+	public final String[]		mInfoStr	= new String[AbsSync.fsm_syncDataType.length];
+	
+	/**
+	 * main yuchcaller app context
+	 */
 	public YuchCaller	m_mainApp;
 	
 	private boolean	m_isSyncing = false;
@@ -31,7 +76,7 @@ public class SyncMain {
 	private final CalendarSync mCalendarSync;
 		
 	public SyncMain(YuchCaller _mainApp){
-		m_mainApp = _mainApp;
+		m_mainApp		= _mainApp;		
 		mCalendarSync = new CalendarSync(this);
 	}
 	
@@ -132,91 +177,83 @@ public class SyncMain {
 			return ;
 		}
 		
-		m_mainApp.invokeLater(new Runnable() {
-			
-			// started in own YuchCaller context
-			//
-			public void run() {
-
-				(new Thread(){
-					public void run(){
-						m_isSyncing = true;
-						startSyncImpl();
-						m_isSyncing = false;
-					}
-				}).start();	
+		if(m_mainApp.getProperties().getYuchRefreshToken().length() == 0){
+			return;
+		}
+		
+		(new Thread(){
+			public void run(){
+				if(m_isSyncing){
+					return;
+				}
+				
+				synchronized(SyncMain.this){
+					m_isSyncing = true;
+				}
+				
+				startSyncImpl();
+				
+				synchronized(SyncMain.this){
+					m_isSyncing = false;
+				}
 			}
-		});
-	}
-	
-	/**
-	 * write the account information to a OutputStream
-	 * @param os
-	 * @param type
-	 * @param md5		sync data md5
-	 * @param diffType 	of sync
-	 * @throws Exception
-	 */
-	public void writeAccountInfo(OutputStream os,String type,String md5,long minSyncTime,int diffType)throws Exception{
-		
-		YuchCallerProp tProp = m_mainApp.getProperties();
-		
-		// write the version
-		sendReceive.WriteShort(os,(short)0);
-		sendReceive.WriteString(os, type);
-		
-		// send the min time for sync
-		sendReceive.WriteLong(os, minSyncTime);
-		
-		//sendReceive.WriteString(os,tProp.getYuchRefreshToken());
-		//sendReceive.WriteString(os,tProp.getYuchAccessToken());
-		
-		sendReceive.WriteString(os,"1/VQPrbZhyWhXrYP6eVNnwkQwj2RQK3Gyc1q-3k08sKxE");
-		sendReceive.WriteString(os,"ya29.AHES6ZQr1KFYYlAqCoU0H6ag1q9EI7kwOcMNynpIYXsxtJlqUAe9");
-		
-		sendReceive.WriteString(os,tProp.getYuchAccount());
-		
-		sendReceive.WriteString(os,TimeZone.getDefault().getID());
-		sendReceive.WriteString(os,md5);
-		
-		// write the diff type
-		os.write(diffType);
+		}).start();
 	}
 	
 	private void startSyncImpl(){
 		
-		// read yuch account 
-//		if(!readYuchAccount()){
-//			return;
-//		}
+		clearReport();
 		
 		mCalendarSync.startSync();
 	}
 	
 	//! report error
-	public void reportError(String error){
-		error = "SyncError: " + error;
-		System.err.println(error);
+	public void reportError(String error,int _type){
 		
-		m_mainApp.SetErrorString(error);
+		if(error != null && error.length() > 0){
+			error = AbsSync.fsm_syncDataType[_type] + " Error: " + error;		
+			m_mainApp.SetErrorString(error);
+		}
+		
+		mErrorStr[_type] = error;
+				
+		if(m_mainApp.m_configManager != null){
+			m_mainApp.m_configManager.refreshSyncPrompt();
+		}
 	}
 	
 	//! report error
-	public void reportError(String errorLabel,Exception e){
-		System.err.println(errorLabel + ": " + e.getClass().getName() + " " + e.getMessage());
-		
-		m_mainApp.SetErrorString(errorLabel, e);
+	public void reportError(String errorLabel,Exception e,int _type){
+		reportError(errorLabel + " " + e.getMessage() + " " + e.getClass().getName(),_type);
 	}
 	
 	// report the information
-	public void reportInfo(String info){
-		info = "SyncInfo: " + info;
+	public void reportInfo(String info,int _type){
+		if(info != null && info.length() > 0){
+			info = AbsSync.fsm_syncDataType[_type] + " Info: " + info;
+			m_mainApp.SetErrorString(info);
+		}
 		
-		System.out.println(info);
-		m_mainApp.SetErrorString(info);
+		mInfoStr[_type] = info;
+		
+		if(m_mainApp.m_configManager != null){
+			m_mainApp.m_configManager.refreshSyncPrompt();
+		}
 	}
 	
-	
+	/**
+	 * clear report error and information
+	 */
+	public void clearReport(){
+		for(int i = 0;i < mInfoStr.length;i++){
+			mInfoStr[i] 	= null;
+			mErrorStr[i]	= null;
+		}
+		
+		if(m_mainApp.m_configManager != null){
+			m_mainApp.m_configManager.refreshSyncPrompt();
+		}
+	}
 	
 	/**
 	 * request the url via POST
@@ -242,7 +279,7 @@ public class SyncMain {
 			tParam.append(_paramsName[i]).append('=').append(_paramsValue[i]);
 		}
 		
-		return new String(requestPOSTHTTP(_url,tParam.toString().getBytes("UTF-8"),false),"UTF-8");
+		return new String(requestPOSTHTTP(_url,tParam.toString().getBytes("UTF-8"),false,true),"UTF-8");
 		
 	}
 	
@@ -255,6 +292,18 @@ public class SyncMain {
 	 * @throws Exception
 	 */
 	public static byte[] requestPOSTHTTP(String _url,byte[] _content,boolean _gzip)throws Exception{
+		return requestPOSTHTTP(_url,_content,_gzip,false);
+	}
+	
+	/**
+	 * post the http request directly by content
+	 * @param _url
+	 * @param _content
+	 * @param _gzip
+	 * @return _www_form add HTTP header "Content-Type: application/x-www-form-urlencoded"
+	 * @throws Exception
+	 */
+	public static byte[] requestPOSTHTTP(String _url,byte[] _content,boolean _gzip,boolean _www_form)throws Exception{
 		
 		byte[] tParamByte = _content;
 		
@@ -287,13 +336,11 @@ public class SyncMain {
 			
 			conn.setRequestMethod(HttpConnection.POST);
 			conn.setRequestProperty(HttpProtocolConstants.HEADER_CONTENT_LENGTH,String.valueOf(tParamByte.length));
+
+			if(_www_form){
+				conn.setRequestProperty("Content-Type","application/x-www-form-urlencoded");
+			}
 			
-			conn.setRequestProperty("Content-Type","application/x-www-form-urlencoded");
-//			conn.setRequestProperty("User-Agent","Profile/MIDP-2.0 Configuration/CLDC-1.0");
-			
-//			conn.setRequestProperty("Keep-Alive","60000");
-//			conn.setRequestProperty("Connection","keep-alive");
-						
 			if(_gzip){
 				conn.setRequestProperty("Content-Encoding","gzip");
 			}

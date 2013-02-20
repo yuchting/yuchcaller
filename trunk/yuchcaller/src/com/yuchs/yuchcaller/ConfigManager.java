@@ -1,3 +1,30 @@
+/**
+ *  Dear developer:
+ *  
+ *   If you want to modify this file of project and re-publish this please visit:
+ *  
+ *     http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *     
+ *   to check your responsibility and my humble proposal. Thanks!
+ *   
+ *  -- 
+ *  Yuchs' Developer    
+ *  
+ *  
+ *  
+ *  
+ *  尊敬的开发者：
+ *   
+ *    如果你想要修改这个项目中的文件，同时重新发布项目程序，请访问一下：
+ *    
+ *      http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *      
+ *    了解你的责任，还有我卑微的建议。 谢谢！
+ *   
+ *  -- 
+ *  语盒开发者
+ *  
+ */
 package com.yuchs.yuchcaller;
 
 import java.util.Vector;
@@ -33,14 +60,17 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	{
 		0,
 		0xffffff,
+		
 		0xf7d8a2,
 		0x52aa80,
 		0x0b93df,
 		0xcb4ae2,
+		
 		0xfef171,
 		0xfdbe55,
 		0x8a8dfe,
 		0xd20005,
+		
 		0x59d200,
 		0x44c778,
 		0xbc9543,
@@ -51,14 +81,17 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	{
 		0,
 		0,
+		
 		yuchcallerlocalResource.PHONE_CONFIG_COLOR_1,
 		yuchcallerlocalResource.PHONE_CONFIG_COLOR_2,
 		yuchcallerlocalResource.PHONE_CONFIG_COLOR_3,
 		yuchcallerlocalResource.PHONE_CONFIG_COLOR_4,
+		
 		yuchcallerlocalResource.PHONE_CONFIG_COLOR_5,
 		yuchcallerlocalResource.PHONE_CONFIG_COLOR_6,
 		yuchcallerlocalResource.PHONE_CONFIG_COLOR_7,
 		yuchcallerlocalResource.PHONE_CONFIG_COLOR_8,
+		
 		yuchcallerlocalResource.PHONE_CONFIG_COLOR_9,
 		yuchcallerlocalResource.PHONE_CONFIG_COLOR_10,
 		yuchcallerlocalResource.PHONE_CONFIG_COLOR_11,
@@ -129,12 +162,16 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	private SyncOptionManager		mSyncField		= null;
 	private NullField				mSyncFieldNull	= new NullField(Field.NON_FOCUSABLE);		
 	
+	//! sync error text field
+	private ActiveRichTextField		mSyncErrorTextField = null;
+	private ActiveRichTextField		mSyncInfoTextField = null;
 	
 	private YuchCaller	m_mainApp = null;
 	
 	public ConfigManager(YuchCaller _mainApp){
 		
 		m_mainApp = _mainApp;
+		m_mainApp.m_configManager = this;
 				
 		// search the phone
 		LabelField t_label = new LabelField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SEARCH),Field.NON_FOCUSABLE);
@@ -202,22 +239,8 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			}		
 		}
 		
-		//Test code
-		ButtonField t_but = new ButtonField("Test"){
-			public boolean isDirty(){
-				return false;
-			}
-		};
-		
-		t_but.setChangeListener(new FieldChangeListener() {
-			
-			public void fieldChanged(Field field, int context) {
-				if(FieldChangeListener.PROGRAMMATIC != context){
-					m_mainApp.m_syncMain.startSync();					
-				}
-			}
-		});
-		add(t_but);
+		// refresh the sync prompt
+		refreshSyncPromptImpl();
 	}
 	
 	private void showOrHideAdvanceSetting(){
@@ -431,6 +454,8 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 				replace(mSyncField,mSyncFieldNull);
 			}
 			
+			mSyncSwitchLabel.setText(getSyncConfigSwitchLabelText());
+			
 		}else if(field instanceof ClickLabel){
 			
 			// is intel-search result label
@@ -470,34 +495,44 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	public void saveProp(){
 		try{
 
-			m_mainApp.getProperties().setRecvPhoneVibrationTime(getTextFieldNum(m_recvVibrationTime));
-			m_mainApp.getProperties().setHangupPhoneVibrationTime(getTextFieldNum(m_hangupVibrationTime));
+			YuchCallerProp tProp = m_mainApp.getProperties();
 			
-			m_mainApp.getProperties().setLocationPosition_x(getTextFieldNum(m_locationInfoPosition_x));
-			m_mainApp.getProperties().setLocationPosition_y(getTextFieldNum(m_locationInfoPosition_y));			
-			
-			m_mainApp.getProperties().setLocationColor(fsm_locationCandColor[m_locationInfoColor.getSelectedIndex()]);
-			m_mainApp.getProperties().setLocationHeight(MathUtilities.clamp(20, getTextFieldNum(m_locationInfoHeight), YuchCallerProp.fsm_maxFontHeight));
-			
-			m_mainApp.getProperties().setBoldFont(m_locationBoldFont.getChecked());
-			
-			boolean t_initMenu = false;
-			
-			if(!m_IPDialPrefix.getText().equals(m_mainApp.getProperties().getIPDialNumber())){
-				m_mainApp.getProperties().setIPDialNumber(m_IPDialPrefix.getText());
-				t_initMenu = true;
-			}			
-			
-			if(m_showSystemMenu.getChecked() != m_mainApp.getProperties().showSystemMenu()){
-				m_mainApp.getProperties().setShowSystemMenu(m_showSystemMenu.getChecked());
-				t_initMenu = true;
+			if(m_recvVibrationTime != null){
+				
+				tProp.setRecvPhoneVibrationTime(getTextFieldNum(m_recvVibrationTime));
+				tProp.setHangupPhoneVibrationTime(getTextFieldNum(m_hangupVibrationTime));
+				
+				tProp.setLocationPosition_x(getTextFieldNum(m_locationInfoPosition_x));
+				tProp.setLocationPosition_y(getTextFieldNum(m_locationInfoPosition_y));			
+				
+				tProp.setLocationColor(fsm_locationCandColor[m_locationInfoColor.getSelectedIndex()]);
+				tProp.setLocationHeight(MathUtilities.clamp(20, getTextFieldNum(m_locationInfoHeight), YuchCallerProp.fsm_maxFontHeight));
+				
+				tProp.setBoldFont(m_locationBoldFont.getChecked());
+				
+				boolean t_initMenu = false;
+				
+				if(!m_IPDialPrefix.getText().equals(tProp.getIPDialNumber())){
+					tProp.setIPDialNumber(m_IPDialPrefix.getText());
+					t_initMenu = true;
+				}			
+				
+				if(m_showSystemMenu.getChecked() != tProp.showSystemMenu()){
+					tProp.setShowSystemMenu(m_showSystemMenu.getChecked());
+					t_initMenu = true;
+				}
+				
+				if(t_initMenu){
+					m_mainApp.initMenus(false);
+				}
 			}
 			
-			if(t_initMenu){
-				m_mainApp.initMenus(false);
-			}			
 			
-			m_mainApp.getProperties().save();
+			if(mSyncField != null && mSyncField.isDirty()){
+				mSyncField.fetchSyncProp();
+			}
+			
+			tProp.save();
 			
 			// notify the yuchcaller to change style of text font
 			m_mainApp.changeLocationTextFont();
@@ -615,6 +650,77 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	}
 	
 	/**
+	 * refresh the sync prompt 
+	 */
+	public void refreshSyncPrompt(){		
+		if(getScreen() != null && getScreen().getApplication() != null){
+			
+			getScreen().getApplication().invokeLater(new Runnable() {
+				
+				public void run() {
+					refreshSyncPromptImpl();					
+				}
+			});
+		}
+	}
+	
+	/**
+	 * report text font
+	 */
+	private Font mReportTextFont = Font.getDefault().derive(Font.getDefault().getStyle(),Font.getDefault().getHeight() - 2);
+	
+	/**
+	 * refresh sync prompt implement
+	 */
+	private void refreshSyncPromptImpl(){
+		
+		if(m_mainApp.getSyncMain() == null){
+			return;
+		}
+		
+		String[] tErrorStr	= m_mainApp.getSyncMain().mErrorStr;
+		String[] tInfoStr	= m_mainApp.getSyncMain().mInfoStr;
+		
+		StringBuffer sb = new StringBuffer();
+		
+		for(int i = 0 ; i < tErrorStr.length;i++){
+			String e = tErrorStr[i];
+			
+			if(e != null){
+				sb.append(e).append("\n");
+			}
+		}
+		
+		if(mSyncErrorTextField == null){
+			mSyncErrorTextField = new ColorActiveRichTextField(sb.toString(),EditField.READONLY,0xd20005);
+			mSyncErrorTextField.setFont(mReportTextFont);
+			
+			add(mSyncErrorTextField);
+		}else{
+			mSyncErrorTextField.setText(sb.toString());
+		}
+		
+		// refresh the information prompt
+		sb = new StringBuffer();
+		for(int i = 0 ; i < tInfoStr.length;i++){
+			String e = tInfoStr[i];
+			
+			if(e != null){
+				sb.append(e).append("\n");
+			}
+		}
+		
+		if(mSyncInfoTextField == null){
+			mSyncInfoTextField = new ActiveRichTextField(sb.toString(),EditField.READONLY);
+			mSyncInfoTextField.setFont(mReportTextFont);
+			
+			add(mSyncInfoTextField);
+		}else{
+			mSyncInfoTextField.setText(sb.toString());
+		}
+	}
+	
+	/**
 	 * escape key press return or clear state
 	 * @return
 	 */
@@ -644,6 +750,13 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 				fieldChanged(m_advanceSwitchLabel, 0);
 				t_escaped = false;
 			}
+		}
+		
+		if(mSyncFieldNull.getManager() == null){
+			if(!mSyncField.isDirty()){
+				fieldChanged(mSyncSwitchLabel, 0);
+				t_escaped = false;
+			}			
 		}
 		
 		return t_escaped;
@@ -796,6 +909,36 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	        keyChar(Characters.ENTER, status, time );            
 	        return true;
 	    }		
+	}
+	
+	/**
+	 * active rich textfield with color
+	 * @author tzz
+	 *
+	 */
+	final static class ColorActiveRichTextField extends ActiveRichTextField{
+		
+		/**
+		 * foreground color
+		 */
+		private int mColor;
+		
+		public ColorActiveRichTextField(String text,long style,int color){
+			super(text,style);
+			
+			mColor = color;
+		}
+		
+		protected void paint(Graphics graphics) {
+			int color = graphics.getColor();
+			try{
+				graphics.setColor(mColor);
+				super.paint(graphics);
+			}finally{
+				graphics.setColor(color);
+			}
+		}
+		
 	}
 
 }
