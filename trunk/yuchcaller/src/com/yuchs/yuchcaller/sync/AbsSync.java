@@ -31,22 +31,31 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Enumeration;
 import java.util.TimeZone;
 import java.util.Vector;
 
 import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
+import javax.microedition.pim.Contact;
+import javax.microedition.pim.Event;
+import javax.microedition.pim.EventList;
+import javax.microedition.pim.PIM;
+import javax.microedition.pim.PIMItem;
+import javax.microedition.pim.PIMList;
+import javax.microedition.pim.ToDo;
+
+import net.rim.blackberry.api.pdap.BlackBerryPIMList;
+import net.rim.blackberry.api.pdap.PIMListListener;
 
 import com.yuchs.yuchcaller.YuchCaller;
 import com.yuchs.yuchcaller.YuchCallerProp;
 import com.yuchs.yuchcaller.sendReceive;
+import com.yuchs.yuchcaller.sync.calendar.CalendarSyncData;
 
-public abstract class AbsSync {
+public abstract class AbsSync implements PIMListListener{
 	
-	/**
-	 * sync data file list
-	 */
-	public static final String[]	fsm_syncDataType = 
+	private static final String[] fsm_syncTypeString =
 	{
 		"calendar",
 		"contact",
@@ -68,6 +77,21 @@ public abstract class AbsSync {
 	
 	public AbsSync(SyncMain _syncMain){
 		mSyncMain = _syncMain;
+		
+		try{
+
+			// add the PIMList listener
+			BlackBerryPIMList tEventList = (BlackBerryPIMList)PIM.getInstance().openPIMList(getSyncPIMListType(),PIM.READ_WRITE);
+			
+			try{
+				tEventList.addListener(this);
+			}finally{
+				tEventList.close();
+				tEventList = null;
+			}
+		}catch(Exception e){
+			mSyncMain.m_mainApp.SetErrorString("CSC", e);
+		}
 		
 		// read the calendar/contact/task information in bb database
 		readBBSyncData();
@@ -109,44 +133,226 @@ public abstract class AbsSync {
 	}
 	
 	/**
-	 * read the bb sync data
+	 * read the calendar information from bb calendar
 	 */
-	protected abstract void readBBSyncData();
+	private void readBBSyncData(){
+				
+		try{
+			
+			PIMList tPIMList = (PIMList)PIM.getInstance().openPIMList(getSyncPIMListType(),PIM.READ_ONLY);
+			try{
+
+				Enumeration t_allItems = tPIMList.items();
+				
+				Vector t_eventList = new Vector();
+			    if(t_allItems != null){
+				    while(t_allItems.hasMoreElements()) {			    	
+				    	t_eventList.addElement(t_allItems.nextElement());
+				    }
+			    }
+			    			    
+			    mSyncDataList.removeAllElements();
+			    for(int i = 0;i < t_eventList.size();i++){
+			    	
+			    	PIMItem item = (PIMItem)t_eventList.elementAt(i);
+			    	
+			    	AbsSyncData syncData = newSyncData();
+			    	syncData.importData(item,tPIMList);
+			    					    	
+			    	mSyncDataList.addElement(syncData);
+			    }			    
+			    
+			}finally{
+				tPIMList.close();
+				tPIMList = null;
+			}
+		    
+		}catch(Exception e){
+			reportError("Can not read PIMList ",e);
+		}
+	}
 
 	/**
 	 * return the sync main type:
 	 * 
-	 * SyncMain.SYNC_CALENDAR
-	 * SyncMain.SYNC_CONTACT
-	 * SyncMain.SYNC_TASK
+	 * PIM.EVENT_LIST
+	 * PIM.CONTACT_LIST
+	 * PIM.TODO_LIST
 	 * 
 	 * @return
 	 */
-	protected abstract int getSyncMainType();
+	protected abstract int getSyncPIMListType();
 	
-	/**
-	 * add a PIMItem to bb by the abs sync data (CalendarSyncData/ContactSyncData/TaskSyncData)
-	 * @param _data
-	 */
-	protected abstract void addPIMItem(Vector _addList);
-	
-	/**
-	 * remove PIMItem from a del list
-	 * @param _delList
-	 */
-	protected abstract void deletePIMItem(Vector _delList);
-	
-	/**
-	 * update the PIMItem from a update list(AbsSyncData list)
-	 * @param _updateList
-	 */
-	protected abstract void updatePIMItem(Vector _updateList);
-
 	/**
 	 * create a sync data
 	 * @return
 	 */
 	protected abstract AbsSyncData newSyncData();
+		
+	/**
+	 * add a PIMItem to bb by the abs sync data (CalendarSyncData/ContactSyncData/TaskSyncData)
+	 * @param _data
+	 */
+	protected void addPIMItem(Vector _addList){
+		
+		if(_addList == null || _addList.size() <= 0){
+			return;
+		}
+		
+		try{
+						
+			EventList tEvents = (EventList)PIM.getInstance().openPIMList(PIM.EVENT_LIST,PIM.READ_WRITE);
+			try{
+				
+				Enumeration t_allEvents = tEvents.items();
+				Vector t_eventList =  new Vector();
+				
+			    if(t_allEvents != null){
+				    while(t_allEvents.hasMoreElements()) {			    	
+				    	t_eventList.addElement(t_allEvents.nextElement());
+				    }
+			    }
+			    
+			    // add the event to bb system
+				//
+				for(int i = 0;i < _addList.size();i++){
+					CalendarSyncData d = (CalendarSyncData)_addList.elementAt(i);
+					
+					Event e = tEvents.createEvent();
+					d.exportData(e,tEvents);
+					
+					e.commit();
+					d.setBBID(AbsSyncData.getStringField(e, Event.UID));
+					
+					// added to main list
+					mSyncDataList.addElement(d);
+				}
+			    
+			}finally{
+				tEvents.close();
+				tEvents = null;
+			}
+			
+		}catch(Exception e){
+			mSyncMain.m_mainApp.SetErrorString("API", e);
+		}
+		
+	}
+	
+	/**
+	 * remove PIMItem from a del list
+	 * @param _delList
+	 */
+	protected void deletePIMItem(Vector _delList){
+		
+		if(_delList == null || _delList.size() <= 0){
+			return;
+		}
+		
+		try{
+			EventList tEvents = (EventList)PIM.getInstance().openPIMList(PIM.EVENT_LIST,PIM.READ_WRITE);
+			try{
+				
+				Enumeration t_allEvents = tEvents.items();
+				Vector t_eventList =  new Vector();
+				
+			    if(t_allEvents != null){
+				    while(t_allEvents.hasMoreElements()) {			    	
+				    	t_eventList.addElement(t_allEvents.nextElement());
+				    }
+			    }
+			    
+				for(int i = 0;i < _delList.size();i++){
+					String bid = (String)_delList.elementAt(i);
+					
+					CalendarSyncData d = (CalendarSyncData)getSyncData(bid);
+					if(d != null){
+						
+						if(d.getLastMod() != -1){
+							
+							// this event is NOT been deleted by client
+							//
+							for(int idx = 0;idx < t_eventList.size();idx++){
+								
+								Event e = (Event)t_eventList.elementAt(idx);
+																
+								if(d.getBBID().equals(AbsSyncData.getStringField(e, Event.UID))){
+									
+									tEvents.removeEvent(e);
+									t_eventList.removeElement(e);
+									
+									break;
+								}
+							}
+						}
+						
+						removeSyncData(d.getBBID());
+					}
+				}
+			    
+			}finally{
+				tEvents.close();
+				tEvents = null;
+			}
+			
+		}catch(Exception e){
+			mSyncMain.m_mainApp.SetErrorString("DPI", e);
+		}
+		
+	}
+	
+	/**
+	 * update the PIMItem from a update list(AbsSyncData list)
+	 * @param _updateList
+	 */
+	protected void updatePIMItem(Vector _updateList){
+		
+		if(_updateList == null || _updateList.size() <= 0){
+			return;
+		}
+		
+		try{
+			EventList tEvents = (EventList)PIM.getInstance().openPIMList(PIM.EVENT_LIST,PIM.READ_WRITE);
+			try{
+				
+				Enumeration t_allEvents = tEvents.items();
+				Vector t_eventList =  new Vector();
+				
+			    if(t_allEvents != null){
+				    while(t_allEvents.hasMoreElements()) {			    	
+				    	t_eventList.addElement(t_allEvents.nextElement());
+				    }
+			    }
+			    
+			    for(int i = 0;i < _updateList.size();i++){
+					CalendarSyncData update = (CalendarSyncData)_updateList.elementAt(i);
+					
+					// remove sync data first
+					removeSyncData(update.getBBID());
+					
+					// add data  
+					mSyncDataList.addElement(update);
+					
+					for(int idx = 0;idx < t_eventList.size();idx++){
+						Event e = (Event)t_eventList.elementAt(idx);
+						
+						if(update.getBBID().equals(AbsSyncData.getStringField(e, Event.UID))){
+							update.exportData(e,tEvents);
+							e.commit();
+						}
+					}
+				}
+			    
+			}finally{
+				tEvents.close();
+				tEvents = null;
+			}
+			
+		}catch(Exception e){
+			mSyncMain.m_mainApp.SetErrorString("UPI", e);
+		}
+	}
+
 	
 	
 	/**
@@ -166,13 +372,13 @@ public abstract class AbsSync {
 	 * @param diffType 	of sync
 	 * @throws Exception
 	 */
-	private void writeAccountInfo(OutputStream os,String type,String md5,long minSyncTime,int diffType)throws Exception{
+	private void writeAccountInfo(OutputStream os,String md5,long minSyncTime,int diffType)throws Exception{
 		
 		YuchCallerProp tProp = mSyncMain.m_mainApp.getProperties();
 		
 		// write the version
 		sendReceive.WriteShort(os,(short)0);
-		sendReceive.WriteString(os, type);
+		sendReceive.WriteString(os, fsm_syncTypeString[getReportLabel()]);
 		
 		// send the min time for sync
 		sendReceive.WriteLong(os, minSyncTime);
@@ -224,7 +430,7 @@ public abstract class AbsSync {
 				
 				String md5 = prepareSyncMD5(tSyncMinTime);
 				
-				writeAccountInfo(os,fsm_syncDataType[getSyncMainType()],md5,tSyncMinTime,0);
+				writeAccountInfo(os,md5,tSyncMinTime,0);
 				
 				//String url = "http://192.168.10.7:8888" + YuchCaller.getHTTPAppendString();
 				//String url = "http://192.168.100.116:8888" + YuchCaller.getHTTPAppendString();
@@ -279,7 +485,7 @@ public abstract class AbsSync {
 		ByteArrayOutputStream os = new ByteArrayOutputStream();
 		try{
 			
-			writeAccountInfo(os,fsm_syncDataType[getSyncMainType()],md5,minSyncTime,1);
+			writeAccountInfo(os,md5,minSyncTime,1);
 			
 			sendReceive.WriteInt(os, mSyncDataList.size());
 			
@@ -302,7 +508,7 @@ public abstract class AbsSync {
 	 */
 	protected void readWriteSyncFile(boolean _readOrWrite){
 		
-		String tFilename = YuchCallerProp.fsm_rootPath_back + "YuchCaller/" + fsm_syncDataType[getSyncMainType()] + ".data"; 
+		String tFilename = YuchCallerProp.fsm_rootPath_back + "YuchCaller/" + fsm_syncTypeString[getReportLabel()] + ".data"; 
 		
 		mSyncMain.m_mainApp.getProperties().preWriteReadIni(_readOrWrite, tFilename);
 		
@@ -558,7 +764,7 @@ public abstract class AbsSync {
 		ByteArrayOutputStream os = new ByteArrayOutputStream();
 		try{
 			
-			writeAccountInfo(os,fsm_syncDataType[getSyncMainType()],_md5,minSyncTime,2);
+			writeAccountInfo(os,_md5,minSyncTime,2);
 						
 			// write the sync data
 			sendReceive.WriteInt(os,needList.size());
@@ -594,16 +800,125 @@ public abstract class AbsSync {
 		
 	}
 	
+	//{{ PIMListListener
+	public void itemAdded(PIMItem item) {
+		
+		try{
+			PIMList tEventList = (PIMList)PIM.getInstance().openPIMList(getSyncPIMListType(),PIM.READ_ONLY);
+			try{
+				AbsSyncData syncData = newSyncData();
+		    	syncData.importData((Event)item,tEventList);
+		    				    	
+		    	mSyncDataList.addElement(syncData);
+			}finally{
+				tEventList.close();
+				tEventList = null;
+			}
+		}catch(Exception e){
+			mSyncMain.m_mainApp.SetErrorString("CSIA", e);
+		}
+		
+	}
+
+	/**
+	 * get the UID Id
+	 * @return
+	 */
+	private int getUIDId(){
+		switch(getSyncPIMListType()){
+		case PIM.EVENT_LIST:
+			return Event.UID;
+		case PIM.CONTACT_LIST:
+			return Contact.UID;
+		default:
+			return ToDo.UID;
+		}
+	}
+	
+	public void itemRemoved(PIMItem item) {
+		
+		if(item != null){
+			
+			String bid = AbsSyncData.getStringField(item, getUIDId());
+			
+			synchronized(mSyncDataList){
+				for(int i = 0;i < mSyncDataList.size();i++){
+					AbsSyncData d = (AbsSyncData)mSyncDataList.elementAt(i);
+					if(d.getBBID().equals(bid)){
+						
+						if(d.getGID() == null){
+							// remove directly
+							mSyncDataList.removeElementAt(i);
+						}else{
+							// mark delete to wait sync to delete server's event
+							d.setLastMod(-1);
+						}
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	public void itemUpdated(PIMItem oldItem, PIMItem newItem) {
+		
+		if(oldItem != null && newItem != null){
+			
+			try{
+				String bid = AbsSyncData.getStringField(oldItem, getUIDId());
+				
+				PIMList tPIMList = (PIMList)PIM.getInstance().openPIMList(getSyncPIMListType(),PIM.READ_ONLY);
+				
+				try{
+					synchronized(mSyncDataList){
+						for(int i = 0;i < mSyncDataList.size();i++){
+							AbsSyncData d = (AbsSyncData)mSyncDataList.elementAt(i);
+							if(d.getBBID().equals(bid)){
+								
+								d.importData(newItem, tPIMList);
+								d.setLastMod(System.currentTimeMillis());
+																
+								readWriteSyncFile(false);
+								
+								break;
+							}
+						}
+					}
+				}finally{
+					tPIMList.close();
+					tPIMList = null;
+				}
+			}catch(Exception e){
+				mSyncMain.m_mainApp.SetErrorString("CSIA", e);
+			}
+		}
+	}
+	//}}
+	
+	/**
+	 * get the 0-base index of report by SyncPIMListType
+	 * @return
+	 */
+	private final int getReportLabel(){
+		switch(getSyncPIMListType()){
+		case PIM.EVENT_LIST:
+			return 0;
+		case PIM.CONTACT_LIST:
+			return 1;
+		default:
+			return 2;
+		}
+	}
 	/**
 	 * report error to sync main
 	 * @param error
 	 */
 	protected final void reportError(String error){
-		mSyncMain.reportError(error, getSyncMainType());
+		mSyncMain.reportError(error, getReportLabel());
 	}
 	
 	protected final void reportError(String label,Exception e){
-		mSyncMain.reportError(label,e,getSyncMainType());
+		mSyncMain.reportError(label,e,getReportLabel());
 	}
 	
 	/**
@@ -611,7 +926,7 @@ public abstract class AbsSync {
 	 * @param info
 	 */
 	protected final void reportInfo(String info){
-		mSyncMain.reportInfo(info,getSyncMainType());
+		mSyncMain.reportInfo(info,getReportLabel());
 	}
 	
 }

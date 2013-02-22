@@ -36,35 +36,17 @@ import java.util.Vector;
 
 import javax.microedition.pim.Event;
 import javax.microedition.pim.EventList;
+import javax.microedition.pim.PIMItem;
+import javax.microedition.pim.PIMList;
 import javax.microedition.pim.RepeatRule;
+
+import net.rim.blackberry.api.pdap.BlackBerryEvent;
 
 import com.yuchs.yuchcaller.sync.AbsData;
 import com.yuchs.yuchcaller.sync.AbsSyncData;
 import com.yuchs.yuchcaller.sync.SyncMain;
 
-import net.rim.blackberry.api.pdap.BlackBerryEvent;
-
 public class CalendarSyncData extends AbsSyncData{
-		
-	private static final int[]	WeekConstant = 
-	{
-		RepeatRule.MONDAY,RepeatRule.TUESDAY,RepeatRule.WEDNESDAY,RepeatRule.THURSDAY,RepeatRule.FRIDAY,RepeatRule.SATURDAY,
-	};
-	
-	private static final String[] WeekSign = 
-	{
-		"MO","TU","WE","TH","FR","SU"	
-	};
-	
-	private static final String[] RepeatTypeStr = 
-	{
-		"DAILY","WEEKLY","MONTHLY","YEARLY"
-	};
-	
-	private static final int[] RepeatType = 
-	{
-		RepeatRule.DAILY,RepeatRule.WEEKLY,RepeatRule.MONTHLY,RepeatRule.YEARLY,
-	};
 	
 	/**
 	 * ste the data to Calendar data
@@ -91,13 +73,35 @@ public class CalendarSyncData extends AbsSyncData{
 		return getData().start > minTime || getData().repeat_type.length() != 0;
 	}
 	
+	private static final int[]	WeekConstant = 
+	{
+		RepeatRule.MONDAY,RepeatRule.TUESDAY,RepeatRule.WEDNESDAY,RepeatRule.THURSDAY,RepeatRule.FRIDAY,RepeatRule.SATURDAY,
+	};
+	
+	private static final String[] WeekSign = 
+	{
+		"MO","TU","WE","TH","FR","SU"	
+	};
+	
+	private static final String[] RepeatTypeStr = 
+	{
+		"DAILY","WEEKLY","MONTHLY","YEARLY"
+	};
+	
+	private static final int[] RepeatType = 
+	{
+		RepeatRule.DAILY,RepeatRule.WEEKLY,RepeatRule.MONTHLY,RepeatRule.YEARLY,
+	};
+	
 	/**
 	 * import blackberry event
 	 * @param event
 	 * @param list		EventList
 	 */
-	public void importData(Event _event,EventList _list)throws Exception{
-				
+	public void importData(PIMItem _item,PIMList _list)throws Exception{
+		
+		Event event = (Event)_item;
+		
 		if(getData() == null){
 			setData(new CalendarData());
 		}else{
@@ -105,7 +109,7 @@ public class CalendarSyncData extends AbsSyncData{
 		}
 				
 		// set the repeat information
-		RepeatRule repeat = _event.getRepeat();
+		RepeatRule repeat = event.getRepeat();
 		if(repeat != null){
 						
 			// http://www.ietf.org/rfc/rfc2445
@@ -197,7 +201,7 @@ public class CalendarSyncData extends AbsSyncData{
 		}
 		
 		// set the fields information
-		int[] fieldIds = _event.getFields();
+		int[] fieldIds = event.getFields();
 		int id;
 		
 		for(int index = 0; index < fieldIds.length; ++index){
@@ -206,37 +210,37 @@ public class CalendarSyncData extends AbsSyncData{
 			
 			switch(id){
 			case Event.UID:
-				bID = getStringField(_event,id);
+				bID = getStringField(event,id);
 				break;
 			case Event.SUMMARY:
-				getData().summary = getStringField(_event, id);
+				getData().summary = getStringField(event, id);
 				break;
 			case Event.START:
-				getData().start = getDateField(_event, id);
+				getData().start = getDateField(event, id);
 				break;
 			case Event.END:
-				getData().end = getDateField(_event, id);
+				getData().end = getDateField(event, id);
 				break;
 			case Event.LOCATION:
-				getData().location = getStringField(_event,id);
+				getData().location = getStringField(event,id);
 				break;
 			case Event.NOTE:
-				getData().note = getStringField(_event,id);
+				getData().note = getStringField(event,id);
 				break;
 			case Event.ALARM:
-				getData().alarm = getIntField(_event,id);
+				getData().alarm = getIntField(event,id);
 				break;
 			case BlackBerryEvent.ALLDAY:
-				getData().allDay = getBooleanField(_event, id);
+				getData().allDay = getBooleanField(event, id);
 				break;
 			case BlackBerryEvent.ATTENDEES:
-				getData().attendees = getStringArrayField(_list,_event,id);
+				getData().attendees = getStringArrayField(_list,event,id);
 				break;
 			case BlackBerryEvent.FREE_BUSY:
-				getData().free_busy = getIntField(_event, id);
+				getData().free_busy = getIntField(event, id);
 				break;
 			case Event.CLASS:
-				int cls = getIntField(_event, id);
+				int cls = getIntField(event, id);
 				switch(cls){
 				case Event.CLASS_CONFIDENTIAL:
 					cls = CalendarData.CLASS_CONFIDENTIAL;
@@ -259,7 +263,8 @@ public class CalendarSyncData extends AbsSyncData{
 	 * @param event
 	 * @throws Exception
 	 */
-	public void exportData(Event _event,EventList _eventList)throws Exception{
+	public void exportData(PIMItem _item,PIMList _list)throws Exception{
+		Event event = (Event)_item;
 		
 		if(getData().repeat_type.length() > 0){
 			// add the repeat rule
@@ -278,26 +283,26 @@ public class CalendarSyncData extends AbsSyncData{
 				}
 			} 
 			
-			_event.setRepeat(repeatRule);
+			event.setRepeat(repeatRule);
 		}
 		
-		setStringField(_eventList,_event, Event.SUMMARY,getData().summary);
-		setDateField(_eventList,_event, Event.START,getData().start);
-		setDateField(_eventList,_event, Event.END,getData().end);
+		setStringField(_list,event, Event.SUMMARY,getData().summary);
+		setDateField(_list,event, Event.START,getData().start);
+		setDateField(_list,event, Event.END,getData().end);
 		
-		setStringField(_eventList,_event, Event.LOCATION,getData().location);
-		setStringField(_eventList,_event, Event.NOTE,getData().note);
+		setStringField(_list,event, Event.LOCATION,getData().location);
+		setStringField(_list,event, Event.NOTE,getData().note);
 		
 		if(getData().alarm > 0){
-			setIntField(_eventList,_event, Event.ALARM,getData().alarm);
+			setIntField(_list,event, Event.ALARM,getData().alarm);
 		}
 		
 		if(getData().allDay){
-			setBooleanField(_eventList,_event, BlackBerryEvent.ALLDAY,getData().allDay);
+			setBooleanField(_list,event, BlackBerryEvent.ALLDAY,getData().allDay);
 		}
 		
-		setStringArrayField(_eventList,_event, BlackBerryEvent.ATTENDEES,getData().attendees);
-		setIntField(_eventList,_event,BlackBerryEvent.FREE_BUSY,getData().free_busy);
+		setStringArrayField(_list,event, BlackBerryEvent.ATTENDEES,getData().attendees);
+		setIntField(_list,event,BlackBerryEvent.FREE_BUSY,getData().free_busy);
 		
 		int id = BlackBerryEvent.CLASS_PRIVATE;
 		switch(getData().event_class){
@@ -309,7 +314,7 @@ public class CalendarSyncData extends AbsSyncData{
 			break;
 		}
 		
-		setIntField(_eventList, _event, BlackBerryEvent.CLASS, id);		
+		setIntField(_list, event, BlackBerryEvent.CLASS, id);		
 	}
 	
 	private void parseRULE(String ruleStr,RepeatRule rule){

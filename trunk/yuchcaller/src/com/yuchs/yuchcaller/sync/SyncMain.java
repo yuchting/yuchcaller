@@ -47,14 +47,7 @@ import com.yuchs.yuchcaller.YuchCaller;
 import com.yuchs.yuchcaller.sync.calendar.CalendarSync;
 
 public class SyncMain {
-	
-	/**
-	 * type of sync
-	 */
-	public static final int		SYNC_CALENDAR	= 0;
-	public static final int		SYNC_CONTACT	= 1;
-	public static final int		SYNC_TASK		= 2;
-	
+		
 	/**
 	 * former error prompt 
 	 */

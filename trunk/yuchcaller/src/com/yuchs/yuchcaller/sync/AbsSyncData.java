@@ -30,6 +30,8 @@ package com.yuchs.yuchcaller.sync;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import javax.microedition.pim.Event;
+import javax.microedition.pim.EventList;
 import javax.microedition.pim.PIMItem;
 import javax.microedition.pim.PIMList;
 
@@ -110,6 +112,20 @@ public abstract class AbsSyncData {
 			m_data.inputData(in);
 		}
 	}
+	
+	/**
+	 * import blackberry PIM list data
+	 * @param event
+	 * @param list		EventList
+	 */
+	public abstract void importData(PIMItem _item,PIMList _list)throws Exception;
+	
+	/**
+	 * export the blackberry PIM item to the blackberry
+	 * @param event
+	 * @throws Exception
+	 */
+	public abstract void exportData(PIMItem _item,PIMList _list)throws Exception;
 	
 	/**
 	 * get the blackberry event string 
