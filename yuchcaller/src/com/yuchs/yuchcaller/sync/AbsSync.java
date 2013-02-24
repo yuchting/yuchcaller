@@ -55,7 +55,7 @@ import com.yuchs.yuchcaller.sync.calendar.CalendarSyncData;
 
 public abstract class AbsSync implements PIMListListener{
 	
-	private static final String[] fsm_syncTypeString =
+	public static final String[] fsm_syncTypeString =
 	{
 		"calendar",
 		"contact",
