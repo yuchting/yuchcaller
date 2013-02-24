@@ -35,7 +35,7 @@ public class sendReceive {
 	
 	// static function to input and output integer
 	//
-	static public void WriteStringVector(OutputStream _stream,Vector _vect)throws Exception{
+	public static void WriteStringVector(OutputStream _stream,Vector _vect)throws Exception{
 		
 		final int t_size = _vect.size();
 		WriteInt(_stream,t_size);
@@ -45,17 +45,21 @@ public class sendReceive {
 		}
 	}
 	
-	static public void WriteStringVector(OutputStream _stream,String[] _vect)throws Exception{
+	public static void WriteStringArr(OutputStream _stream,String[] _vect)throws Exception{
 		
-		final int t_size = _vect.length;
-		WriteInt(_stream,t_size);
-		
-		for(int i = 0;i < t_size;i++){
-			WriteString(_stream,(String)_vect[i]);
-		}
+		if(_vect == null){
+			WriteInt(_stream,0);
+		}else{
+			final int t_size = _vect.length;
+			WriteInt(_stream,t_size);
+			
+			for(int i = 0;i < t_size;i++){
+				WriteString(_stream,(String)_vect[i]);
+			}
+		}	
 	}
 	
-	static public void WriteString(OutputStream _stream,String _string)throws Exception{
+	public static void WriteString(OutputStream _stream,String _string)throws Exception{
 		
 		if(_string == null || _string.length() == 0){
 			WriteInt(_stream,0);
@@ -67,7 +71,7 @@ public class sendReceive {
 		}
 	}
 		
-	static public void ReadStringVector(InputStream _stream,Vector _vect)throws Exception{
+	public static void ReadStringVector(InputStream _stream,Vector _vect)throws Exception{
 		
 		_vect.removeAllElements();
 		
@@ -78,7 +82,26 @@ public class sendReceive {
 		}
 	}
 	
-	static public String ReadString(InputStream _stream)throws Exception{
+	public static String[] ReadStringArr(InputStream _stream)throws Exception{
+
+		final int t_size = ReadInt(_stream);
+		if(t_size == 0){
+			
+			return null;
+			
+		}else{
+
+			String[] arr = new String[t_size];
+			
+			for(int i = 0;i < t_size;i++){
+				arr[i] = ReadString(_stream);
+			}
+			
+			return arr;
+		}
+	}
+	
+	public static String ReadString(InputStream _stream)throws Exception{
 		
 		final int len = ReadInt(_stream);
 		
@@ -90,11 +113,10 @@ public class sendReceive {
 			return new String(t_buffer,"UTF-8");
 		}
 		
-		return "";
-		
+		return "";	
 	}
 	
-	static public int ReadInt(InputStream _stream)throws Exception{
+	public static int ReadInt(InputStream _stream)throws Exception{
 		
 		int[] t_byte = {0,0,0,0};
 	
@@ -126,7 +148,7 @@ public class sendReceive {
 		return t_byte[0] | (t_byte[1] << 8) | (t_byte[2]  << 16) | (t_byte[3] << 24);	
 	}
 	
-	static public short ReadShort(InputStream _stream)throws Exception{
+	public static short ReadShort(InputStream _stream)throws Exception{
 		
 		int[] t_byte = {0,0};
 	
@@ -158,7 +180,7 @@ public class sendReceive {
 		return (short)(t_byte[0] | (t_byte[1] << 8));
 	}
 	
-	static public long ReadLong(InputStream _stream)throws Exception{
+	public static long ReadLong(InputStream _stream)throws Exception{
 		final int t_timeLow = sendReceive.ReadInt(_stream);
 		final long t_timeHigh = sendReceive.ReadInt(_stream);
 				
@@ -169,24 +191,24 @@ public class sendReceive {
 		}
 	}
 		
-	static public void WriteLong(OutputStream _stream,long _val)throws Exception{		
+	public static void WriteLong(OutputStream _stream,long _val)throws Exception{		
 		sendReceive.WriteInt(_stream,(int)_val);
 		sendReceive.WriteInt(_stream,(int)(_val >>> 32));
 	}
 	
-	static public void WriteShort(OutputStream _stream,short _val)throws Exception{
+	public static void WriteShort(OutputStream _stream,short _val)throws Exception{
 		_stream.write(_val);
 		_stream.write(_val >>> 8 );
 	}
 
-	static public void WriteInt(OutputStream _stream,int _val)throws Exception{
+	public static void WriteInt(OutputStream _stream,int _val)throws Exception{
 		_stream.write(_val);
 		_stream.write(_val >>> 8 );
 		_stream.write(_val >>> 16);
 		_stream.write(_val >>> 24);
 	}
 	
-	static public void WriteDouble(OutputStream _stream,double _val)throws Exception{
+	public static void WriteDouble(OutputStream _stream,double _val)throws Exception{
 		if(_val == 0){
 			WriteInt(_stream,0);
 		}else{
@@ -195,7 +217,7 @@ public class sendReceive {
 		}		
 	}
 	
-	static public void WriteFloat(OutputStream _stream,float _val)throws Exception{
+	public static void WriteFloat(OutputStream _stream,float _val)throws Exception{
 		if(_val == 0){
 			WriteInt(_stream,0);
 		}else{
@@ -204,7 +226,7 @@ public class sendReceive {
 		}
 	}
 	
-	static public double ReadDouble(InputStream _stream)throws Exception{
+	public static double ReadDouble(InputStream _stream)throws Exception{
 		String t_valString = ReadString(_stream);
 		if(t_valString.length() == 0){
 			return 0;
@@ -214,7 +236,7 @@ public class sendReceive {
 		
 	}
 	
-	static public float ReadFloat(InputStream _stream)throws Exception{
+	public static float ReadFloat(InputStream _stream)throws Exception{
 		String t_valString = ReadString(_stream);
 		if(t_valString.length() == 0){
 			return 0;
@@ -223,10 +245,10 @@ public class sendReceive {
 		}
 	}
 	
-	static public void WriteBoolean(OutputStream _stream,boolean _val)throws Exception{
+	public static void WriteBoolean(OutputStream _stream,boolean _val)throws Exception{
 		_stream.write(_val?1:0);
 	}
-	static public boolean ReadBoolean(InputStream _stream)throws Exception{
+	public static boolean ReadBoolean(InputStream _stream)throws Exception{
 		
 		int t_counter = 0;
 		int t_val = 0;
@@ -252,7 +274,7 @@ public class sendReceive {
 		return t_val == 1;		
 	}
 	
-	static public void ForceReadByte(InputStream _stream,byte[] _buffer,int _readLen)throws Exception{
+	public static void ForceReadByte(InputStream _stream,byte[] _buffer,int _readLen)throws Exception{
 		int t_readIndex = 0;
 		int t_counter = 0;
 		

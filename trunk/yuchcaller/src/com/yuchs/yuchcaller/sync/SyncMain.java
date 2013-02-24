@@ -36,6 +36,9 @@ import java.util.Vector;
 
 import javax.microedition.io.Connector;
 import javax.microedition.io.HttpConnection;
+import javax.microedition.pim.Contact;
+import javax.microedition.pim.ContactList;
+import javax.microedition.pim.PIM;
 
 import net.rim.device.api.compress.GZIPInputStream;
 import net.rim.device.api.compress.GZIPOutputStream;
@@ -45,18 +48,19 @@ import net.rim.device.api.io.http.HttpProtocolConstants;
 import com.yuchs.yuchcaller.ConnectorHelper;
 import com.yuchs.yuchcaller.YuchCaller;
 import com.yuchs.yuchcaller.sync.calendar.CalendarSync;
+import com.yuchs.yuchcaller.sync.contact.ContactData;
 
 public class SyncMain {
 		
 	/**
 	 * former error prompt 
 	 */
-	public final String[]		mErrorStr	= new String[AbsSync.fsm_syncDataType.length];
+	public final String[]		mErrorStr	= new String[AbsSync.fsm_syncTypeString.length];
 	
 	/**
 	 * former information string
 	 */
-	public final String[]		mInfoStr	= new String[AbsSync.fsm_syncDataType.length];
+	public final String[]		mInfoStr	= new String[AbsSync.fsm_syncTypeString.length];
 	
 	/**
 	 * main yuchcaller app context
@@ -204,7 +208,7 @@ public class SyncMain {
 	public void reportError(String error,int _type){
 		
 		if(error != null && error.length() > 0){
-			error = AbsSync.fsm_syncDataType[_type] + " Error: " + error;		
+			error = AbsSync.fsm_syncTypeString[_type] + " Error: " + error;		
 			m_mainApp.SetErrorString(error);
 		}
 		
@@ -223,7 +227,7 @@ public class SyncMain {
 	// report the information
 	public void reportInfo(String info,int _type){
 		if(info != null && info.length() > 0){
-			info = AbsSync.fsm_syncDataType[_type] + " Info: " + info;
+			info = AbsSync.fsm_syncTypeString[_type] + " Info: " + info;
 			m_mainApp.SetErrorString(info);
 		}
 		

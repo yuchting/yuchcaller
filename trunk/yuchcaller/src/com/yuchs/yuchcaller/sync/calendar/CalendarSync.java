@@ -27,12 +27,6 @@
  */
 package com.yuchs.yuchcaller.sync.calendar;
 
-import java.util.Enumeration;
-import java.util.Vector;
-
-import javax.microedition.pim.ContactList;
-import javax.microedition.pim.Event;
-import javax.microedition.pim.EventList;
 import javax.microedition.pim.PIM;
 
 import net.rim.blackberry.api.pdap.PIMListListener;

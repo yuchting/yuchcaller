@@ -35,7 +35,6 @@ import java.util.TimeZone;
 import java.util.Vector;
 
 import javax.microedition.pim.Event;
-import javax.microedition.pim.EventList;
 import javax.microedition.pim.PIMItem;
 import javax.microedition.pim.PIMList;
 import javax.microedition.pim.RepeatRule;
