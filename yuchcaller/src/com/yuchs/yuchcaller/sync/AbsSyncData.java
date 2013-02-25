@@ -172,7 +172,7 @@ public abstract class AbsSyncData {
 	 */
 	public static void setStringField(PIMList _list,PIMItem _item,int _id,int _attr,String _value){
 		
-		if(_list.isSupportedField(_id) && _value != null){
+		if(_list.isSupportedField(_id)){
 			
 			if(_item.countValues(_id) > 0){
 				if(_value != null && _value.length() > 0){
@@ -379,7 +379,7 @@ public abstract class AbsSyncData {
 	 * @param _value
 	 */
 	public static void setStringArrayField(PIMList _list,PIMItem _item,int _id,int _attr,String[] _value){
-		if(_list.isSupportedField(_id) && _value != null){
+		if(_list.isSupportedField(_id)){
 			
 			int count = _item.countValues(_id);
 			

@@ -62,7 +62,6 @@ public class CalendarSync extends GoogleAPISync{
 		compareEvent();
 	}
 
-	
 	/**
 	 * read the server event list
 	 * @throws Exception
@@ -70,15 +69,8 @@ public class CalendarSync extends GoogleAPISync{
 	@Override
 	protected void readSvrGoogleData()throws Exception{
 		
-		BufferedEvents tFormerEvent = smEventHashMap.get(mYuchAcc + getClass().getSimpleName());
-		
-		if(tFormerEvent != null){
-			if(tFormerEvent.mRefreshTime - System.currentTimeMillis() < 2 * 60 * 1000){
-				mAllSvrSyncDataMD5	= tFormerEvent.mAllEventMd5;
-				mSvrSyncDataList	= tFormerEvent.mGoogleDataList;
-				
-				return;
-			}
+		if(fetchFormerEvent()){
+			return;
 		}
 		
 		if(mSvrSyncDataList == null){
@@ -88,6 +80,7 @@ public class CalendarSync extends GoogleAPISync{
 		com.google.api.services.calendar.Calendar.Events.List tList = mService.events().list("primary");
 
 		tList.setTimeMin(new DateTime(new Date(mMinTimeToSync) , TimeZone.getTimeZone(mTimeZoneID)));
+		tList.setMaxResults(999999);
 
 		Events events = tList.execute();
 			   
@@ -134,18 +127,9 @@ public class CalendarSync extends GoogleAPISync{
 		
 		mAllSvrSyncDataMD5 = getMD5(sb.toString());
 		
-		// buffered the former event;
-		if(tFormerEvent == null){
-			tFormerEvent = new BufferedEvents();
-		}
-		
-		tFormerEvent.mAllEventMd5	= mAllSvrSyncDataMD5;
-		tFormerEvent.mGoogleDataList= mSvrSyncDataList;
-		tFormerEvent.mRefreshTime	= System.currentTimeMillis();
-		
-		smEventHashMap.put(mYuchAcc + getClass().getSimpleName(),tFormerEvent);
-		
 		System.out.println(debug.toString());
+		
+		storeFormerEvent();
 	}
 	
 	@Override
@@ -170,46 +154,44 @@ public class CalendarSync extends GoogleAPISync{
 		
 		Event e				= (Event)o;
 		CalendarSyncData d	= (CalendarSyncData)g;
-		
-		if(d.getGID().isEmpty() && d.getData() != null){
 			
-			if((d.getData().summary.equals(e.getSummary()) || (d.getData().summary.length() == 0 && e.getSummary() == null))
-			&& (d.getData().note.equals(e.getDescription()) || (d.getData().note.length() == 0 && e.getDescription() == null) )){ // same text attribute
-				
-				if(e.getRecurrence() != null){
-					// recurrence event
-					//
-					List<String> recurList = e.getRecurrence();
-					StringBuffer sb = new StringBuffer();
-					for(String s : recurList){
-						if(sb.length() > 0){
-							sb.append("\n");
-						}
-						sb.append(s);
+		if((d.getData().summary.equals(e.getSummary()) || (d.getData().summary.length() == 0 && e.getSummary() == null))
+		&& (d.getData().note.equals(e.getDescription()) || (d.getData().note.length() == 0 && e.getDescription() == null) )){ // same text attribute
+			
+			if(e.getRecurrence() != null){
+				// recurrence event
+				//
+				List<String> recurList = e.getRecurrence();
+				StringBuffer sb = new StringBuffer();
+				for(String s : recurList){
+					if(sb.length() > 0){
+						sb.append("\n");
 					}
-					
-					return sb.toString().equalsIgnoreCase(d.getData().repeat_type);
-					
-				}else{
-					
-					
-					if(e.getStart() != null){
-					
-						DateTime ed = e.getStart().getDate();
-						if(ed == null){
-							ed = e.getStart().getDateTime();
-						}
-					
-						if( ed != null && Math.abs(d.getData().start - ed.getValue()) <= 1000){
-							
-							// same date
-							//
-							return true;
-						}
+					sb.append(s);
+				}
+				
+				return sb.toString().equalsIgnoreCase(d.getData().repeat_type);
+				
+			}else{
+				
+				
+				if(e.getStart() != null){
+				
+					DateTime ed = e.getStart().getDate();
+					if(ed == null){
+						ed = e.getStart().getDateTime();
+					}
+				
+					if( ed != null && Math.abs(d.getData().start - ed.getValue()) <= 1000){
+						
+						// same date
+						//
+						return true;
 					}
 				}
 			}
 		}
+		
 		
 		return false;
 	}

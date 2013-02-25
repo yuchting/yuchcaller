@@ -28,6 +28,8 @@ public class ContactData implements AbsData {
 	public static final int ADDR_POSTALCODE = 5;
 	public static final int ADDR_COUNTRY = 6;
 	
+	public static final int ADDR_SiZE = ADDR_COUNTRY + 1;
+	
 	/**
 	 * telephone number attribute
 	 */
@@ -41,9 +43,20 @@ public class ContactData implements AbsData {
 	public static final int TEL_FAX	= 7;
 	public static final int TEL_OTHER	= 8;
 	
+	public static final int TEL_SIZE = TEL_OTHER + 1;
 	
 	/**
-	 * title
+	 * email
+	 */
+	public static final int EMAIL_WORK = 0;
+	public static final int EMAIL_HOME = 1;
+	public static final int EMAIL_OTHER = 2;
+	
+	public static final int EMAIL_SIZE = EMAIL_OTHER + 1;
+	
+	
+	/**
+	 * job title
 	 */
 	public String title		= null;
 	
@@ -51,6 +64,11 @@ public class ContactData implements AbsData {
 	 * name string array
 	 */
 	public String[] names	= null;
+	
+	/**
+	 * nickname
+	 */
+	public String nickname	= null;
 	
 	/**
 	 * address string array
@@ -66,10 +84,10 @@ public class ContactData implements AbsData {
 	/**
 	 * email address string
 	 */
-	public String email		= null;
+	public String[] email	= null;
 	
 	/**
-	 * organization
+	 * organization(company)
 	 */
 	public String org		= null;
 	
@@ -89,6 +107,7 @@ public class ContactData implements AbsData {
 	public void clear() {
 		title = null;
 		names = null;
+		nickname = null;
 		addr_work = null;
 		addr_home = null;
 		tel = null;
@@ -101,10 +120,11 @@ public class ContactData implements AbsData {
 	public void inputData(InputStream in) throws Exception {
 		title	= sendReceive.ReadString(in);
 		names	= sendReceive.ReadStringArr(in);
+		nickname	= sendReceive.ReadString(in);
 		addr_work	= sendReceive.ReadStringArr(in);
 		addr_home	= sendReceive.ReadStringArr(in);
 		tel		= sendReceive.ReadStringArr(in);
-		email	= sendReceive.ReadString(in);
+		email	= sendReceive.ReadStringArr(in);
 		org		= sendReceive.ReadString(in);
 		birthday= sendReceive.ReadLong(in);
 	}
@@ -112,10 +132,11 @@ public class ContactData implements AbsData {
 	public void outputData(OutputStream os) throws Exception {
 		sendReceive.WriteString(os,title);
 		sendReceive.WriteStringArr(os,names);
+		sendReceive.WriteString(os,nickname);
 		sendReceive.WriteStringArr(os,addr_work);
 		sendReceive.WriteStringArr(os,addr_home);
 		sendReceive.WriteStringArr(os,tel);
-		sendReceive.WriteString(os,email);
+		sendReceive.WriteStringArr(os,email);
 		sendReceive.WriteString(os,org);
 		sendReceive.WriteLong(os,birthday);
 	}

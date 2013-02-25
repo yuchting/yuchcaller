@@ -28,6 +28,8 @@
 package com.yuchs.yuchcaller.sync.svr;
 
 import java.net.InetSocketAddress;
+import java.net.URL;
+import java.util.List;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -41,6 +43,20 @@ import org.jboss.netty.handler.timeout.ReadTimeoutHandler;
 import org.jboss.netty.util.HashedWheelTimer;
 import org.jboss.netty.util.Timer;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.gdata.client.Query;
+import com.google.gdata.client.contacts.ContactsService;
+import com.google.gdata.data.contacts.Birthday;
+import com.google.gdata.data.contacts.ContactEntry;
+import com.google.gdata.data.contacts.ContactFeed;
+import com.google.gdata.data.contacts.Occupation;
+import com.google.gdata.data.extensions.Organization;
+import com.google.gdata.data.extensions.PhoneNumber;
+import com.google.gdata.data.extensions.StructuredPostalAddress;
+
+
 
 public class Main {
 
@@ -51,7 +67,7 @@ public class Main {
 	 */
 	public static void main(String[] args) throws Exception {		
 		
-		(new Main()).startNetty(6029);
+		//(new Main()).startNetty(6029);
 		
 		//System.getProperties().put("socksProxySet","true");
 		//System.getProperties().put("socksProxyHost","127.0.0.1");
@@ -59,8 +75,11 @@ public class Main {
 				
 	    // The clientId and clientSecret are copied from the API Access tab on
 	    // the Google APIs Console
-//	    String clientId = GoogleAPISync.getGoogleAPIClientId();
-//	    String clientSecret = GoogleAPISync.getGoogleAPIClientSecret();
+	    String clientId = GoogleAPISync.getGoogleAPIClientId();
+	    String clientSecret = GoogleAPISync.getGoogleAPIClientSecret();
+	    
+	    NetHttpTransport httpTransport = new NetHttpTransport();
+	    JacksonFactory jsonFactory = new JacksonFactory();
 //
 //	    // Or your redirect URL for web based applications.
 //	    String redirectUrl = "urn:ietf:wg:oauth:2.0:oob";
@@ -94,11 +113,187 @@ public class Main {
 //	    // End of Step 2 <--
 	    
 		
-//		GoogleCredential cd = new GoogleCredential.Builder()
-//								    .setClientSecrets(clientId, clientSecret)
-//								    .setJsonFactory(jsonFactory).setTransport(httpTransport).build()
-//								    .setRefreshToken("1/5IYu1JNlGdBMoIMo5SrOEVFt1wIzk-GWw-EHbwFwGz8")
-//								    .setAccessToken("ya29.AHES6ZSssslGQywppEfLsx9CW8u2cwbaNoqqdQKmuT4Eo9fwgtnvbw");
+		GoogleCredential cd = new GoogleCredential.Builder()
+								    .setClientSecrets(clientId, clientSecret)
+								    .setJsonFactory(jsonFactory).setTransport(httpTransport).build()
+								    .setRefreshToken("1/e1F3-Cdrgb47ZQrivinMcbc07ChiyT6tKwBv3EgfDcI")
+								    .setAccessToken("ya29.AHES6ZTls-yP-AgPCPkg_VpF4b4fHVzzjzb6Vt3nawLVwn_AJE0-cA");
+		
+		ContactsService service = new ContactsService("YuchCaller");
+		service.setOAuth2Credentials(cd);
+		
+		
+		
+		URL feedUrl = new URL("https://www.google.com/m8/feeds/contacts/default/full");
+		Query myQuery = new Query(feedUrl);
+		myQuery.setMaxResults(999999);
+		myQuery.setStringCustomParameter("orderby","lastmodified");
+		ContactFeed resultFeed;
+		
+		try{
+			//resultFeed = service.query(myQuery, ContactFeed.class);
+			
+			ContactEntry cc = service.getEntry(new URL("https://www.google.com/m8/feeds/contacts/default/full/52656a38a8499d2"), ContactEntry.class);
+			System.out.println("" + cc.getName().getFullName());
+			System.out.println("" + cc.getName().getNamePrefix());
+			
+		}catch(NullPointerException e){
+			if(e.getMessage().startsWith("No authentication header information")){
+				cd.refreshToken();
+				//resultFeed = service.query(myQuery, ContactFeed.class);
+				
+				ContactEntry cc = service.getEntry(new URL("https://www.google.com/m8/feeds/contacts/default/full/52656a38a8499d2"), ContactEntry.class);
+				System.out.println("" + cc.getName().getFullName());
+				System.out.println("" + cc.getName().getNamePrefix());
+				
+				List<PhoneNumber> tList = cc.getPhoneNumbers();
+				List<StructuredPostalAddress> tList1 = cc.getStructuredPostalAddresses();
+				//Occupation op = cc.getOccupation();
+				List<Organization> tList2 = cc.getOrganizations();
+				Organization org = tList2.get(0);
+				System.out.println(org.getOrgName());
+				System.out.println(org.getOrgTitle());
+				
+				Birthday b = cc.getBirthday();
+				System.out.println(b.getValue());
+				System.out.println(b.getWhen());
+				
+				//System.out.println(op.getValue());
+				System.out.println(tList);
+				
+			}else{
+				throw e;
+			}
+		}
+		
+//		System.out.println("Contacts size:" + resultFeed.getEntries().size());
+//		
+//		//resultFeed.get
+//		  // Print the results
+//		  System.out.println(resultFeed.getTitle().getPlainText());
+//		  for (ContactEntry entry : resultFeed.getEntries()) {
+//			 
+//			  System.out.println("last modified time: " + entry.getUpdated().getValue());
+//			  
+//			  System.out.println("id:" + entry.getId());
+//			 
+//		    if (entry.hasName()) {
+//		    	
+//		      Name name = entry.getName();
+//		      if (name.hasFullName()) {
+//		        String fullNameToDisplay = name.getFullName().getValue();
+//		        if (name.getFullName().hasYomi()) {
+//		          fullNameToDisplay += " (" + name.getFullName().getYomi() + ")";
+//		        }
+//		      System.out.println("\\\t\\\t" + fullNameToDisplay);
+//		      
+//			     
+//		      } else {
+//		        System.out.println("\\\t\\\t (no full name found)");
+//		      }
+//		      if (name.hasNamePrefix()) {
+//		        System.out.println("\\\t\\\t" + name.getNamePrefix().getValue());
+//		      } else {
+//		        System.out.println("\\\t\\\t (no name prefix found)");
+//		      }
+//		      if (name.hasGivenName()) {
+//		        String givenNameToDisplay = name.getGivenName().getValue();
+//		        if (name.getGivenName().hasYomi()) {
+//		          givenNameToDisplay += " (" + name.getGivenName().getYomi() + ")";
+//		        }
+//		        System.out.println("\\\t\\\t" + givenNameToDisplay);
+//		      } else {
+//		        System.out.println("\\\t\\\t (no given name found)");
+//		      }
+//		      if (name.hasAdditionalName()) {
+//		        String additionalNameToDisplay = name.getAdditionalName().getValue();
+//		        if (name.getAdditionalName().hasYomi()) {
+//		          additionalNameToDisplay += " (" + name.getAdditionalName().getYomi() + ")";
+//		        }
+//		        System.out.println("\\\t\\\t" + additionalNameToDisplay);
+//		      } else {
+//		        System.out.println("\\\t\\\t (no additional name found)");
+//		      }
+//		      if (name.hasFamilyName()) {
+//		        String familyNameToDisplay = name.getFamilyName().getValue();
+//		        if (name.getFamilyName().hasYomi()) {
+//		          familyNameToDisplay += " (" + name.getFamilyName().getYomi() + ")";
+//		        }
+//		        System.out.println("\\\t\\\t" + familyNameToDisplay);
+//		      } else {
+//		        System.out.println("\\\t\\\t (no family name found)");
+//		      }
+//		      if (name.hasNameSuffix()) {
+//		        System.out.println("\\\t\\\t" + name.getNameSuffix().getValue());
+//		      } else {
+//		        System.out.println("\\\t\\\t (no name suffix found)");
+//		      }
+//		    } else {
+//		      System.out.println("\t (no name found)");
+//		    }
+//		    System.out.println("Email addresses:");
+//		    for (Email email : entry.getEmailAddresses()) {
+//		      System.out.print(" " + email.getAddress());
+//		      if (email.getRel() != null) {
+//		        System.out.print(" rel:" + email.getRel());
+//		      }
+//		      if (email.getLabel() != null) {
+//		        System.out.print(" label:" + email.getLabel());
+//		      }
+//		      if (email.getPrimary()) {
+//		        System.out.print(" (primary) ");
+//		      }
+//		      System.out.print("\n");
+//		    }
+//		    System.out.println("IM addresses:");
+//		    for (Im im : entry.getImAddresses()) {
+//		      System.out.print(" " + im.getAddress());
+//		      if (im.getLabel() != null) {
+//		        System.out.print(" label:" + im.getLabel());
+//		      }
+//		      if (im.getRel() != null) {
+//		        System.out.print(" rel:" + im.getRel());
+//		      }
+//		      if (im.getProtocol() != null) {
+//		        System.out.print(" protocol:" + im.getProtocol());
+//		      }
+//		      if (im.getPrimary()) {
+//		        System.out.print(" (primary) ");
+//		      }
+//		      System.out.print("\n");
+//		    }
+//		    System.out.println("Groups:");
+//		    for (GroupMembershipInfo group : entry.getGroupMembershipInfos()) {
+//		      String groupHref = group.getHref();
+//		      System.out.println("  Id: " + groupHref);
+//		    }
+//		    System.out.println("Extended Properties:");
+//		    for (ExtendedProperty property : entry.getExtendedProperties()) {
+//		      if (property.getValue() != null) {
+//		        System.out.println("  " + property.getName() + "(value) = " +
+//		            property.getValue());
+//		      } else if (property.getXmlBlob() != null) {
+//		        System.out.println("  " + property.getName() + "(xmlBlob)= " +
+//		            property.getXmlBlob().getBlob());
+//		      }
+//		    }
+//		    Link photoLink = entry.getContactPhotoLink();
+//		    String photoLinkHref = photoLink.getHref();
+//		    System.out.println("Photo Link: " + photoLinkHref);
+//		    if (photoLink.getEtag() != null) {
+//		      System.out.println("Contact Photo's ETag: " + photoLink.getEtag());
+//		    }
+//		    System.out.println("Contact's ETag: " + entry.getEtag());
+//		    
+//		    Content cc =  entry.getContent();
+//		  if(cc instanceof TextContent){
+//			  System.out.println("Plain Text content " + entry.getPlainTextContent());
+//		  }
+//		    
+//		    System.out.println();
+//		    System.out.println();
+//		  }
+
 //		
 //	    Calendar service = new Calendar(httpTransport, jsonFactory,cd);
 //	    	    

@@ -167,6 +167,40 @@ public abstract class GoogleAPISync {
 	}
 	
 	/**
+	 * fetch the buffered events
+	 * @return
+	 */
+	protected boolean fetchFormerEvent(){
+		BufferedEvents tFormerEvent = smEventHashMap.get(mYuchAcc + getClass().getSimpleName());
+		
+		if(tFormerEvent != null){
+			if(tFormerEvent.mRefreshTime - System.currentTimeMillis() < 2 * 60 * 1000){
+				mAllSvrSyncDataMD5	= tFormerEvent.mAllEventMd5;
+				mSvrSyncDataList	= tFormerEvent.mGoogleDataList;
+				
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * store former events
+	 * @param events
+	 */
+	protected void storeFormerEvent(){
+		// buffered the former event;
+		BufferedEvents tFormerEvent = new BufferedEvents();
+				
+		tFormerEvent.mAllEventMd5	= mAllSvrSyncDataMD5;
+		tFormerEvent.mGoogleDataList= mSvrSyncDataList;
+		tFormerEvent.mRefreshTime	= System.currentTimeMillis();
+		
+		smEventHashMap.put(mYuchAcc + getClass().getSimpleName(),tFormerEvent);
+	}
+	
+	/**
 	 * read the server google data
 	 */
 	protected abstract void readSvrGoogleData() throws Exception;
@@ -265,7 +299,8 @@ public abstract class GoogleAPISync {
 			
 			for(GoogleAPISyncData d : mClientSyncDataList){
 				
-				if(isFristSyncSameData(g,d)){
+				if(d.getGID().isEmpty() && d.getAPIData() != null
+				&& isFristSyncSameData(g,d)){
 						
 					if(tUploadList == null){
 						tUploadList = new Vector<GoogleAPISyncData>();
