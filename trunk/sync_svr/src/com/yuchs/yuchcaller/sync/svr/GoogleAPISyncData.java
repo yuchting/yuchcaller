@@ -26,6 +26,9 @@ public abstract class GoogleAPISyncData {
 	public void setLastMod(long _mod){lastMod = _mod;}
 	public long getLastMod(){return lastMod;}
 	
+	public GoogleAPIData getAPIData(){return m_APIData;}
+	public void setAPIData(GoogleAPIData _data){m_APIData = _data;}
+	
 	/**
 	 * create the new data
 	 * @return

@@ -33,10 +33,19 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/netty-3.6.2.Final.jar" sourcepath="lib/netty-3.6.2.Final-sources.jar"/>
-	<classpathentry kind="lib" path="lib/gdata-contacts-3.0.jar"/>
+	<classpathentry kind="lib" path="lib/gdata-contacts-3.0.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:platform:/resource/sync_svr/lib/gdata_javadoc.zip!/"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="lib" path="lib/gdata-core-1.0.jar">
 		<attributes>
-			<attribute name="javadoc_location" value="jar:platform:/resource/sync_svr/lib/gdata-docs-3.0.jar!/"/>
+			<attribute name="javadoc_location" value="jar:platform:/resource/sync_svr/lib/gdata_javadoc.zip!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/gdata-client-1.0.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:platform:/resource/sync_svr/lib/gdata_javadoc.zip!/"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="output" path="bin"/>

@@ -25,8 +25,11 @@ public class ContactSyncData extends AbsSyncData {
 		return new ContactData();
 	}
 	
+	/**
+	 * export data to PIMItem(Contact)
+	 */
 	public void exportData(PIMItem item, PIMList list) throws Exception {
-		// TODO Auto-generated method stub
+		
 		Contact contact = (Contact)item;
 		
 		setStringArrayField(list, contact, Contact.NAME,getRightSizeArr(getData().names,list.stringArraySize(Contact.NAME)));
@@ -69,10 +72,29 @@ public class ContactSyncData extends AbsSyncData {
 			}
 		}
 		
-		setStringField(list,contact,Contact.EMAIL,getData().email);
+		if(getData().email != null){
+			
+			for(int i = 0;i < getData().tel.length;i++){
+				String email = getData().tel[i];
+				
+				switch(i){
+				case ContactData.EMAIL_WORK:
+					setStringField(list, contact, Contact.EMAIL, Contact.ATTR_WORK,email);
+					break;
+				case ContactData.EMAIL_HOME:
+					setStringField(list, contact, Contact.EMAIL, Contact.ATTR_HOME,email);
+					break;				
+				case ContactData.EMAIL_OTHER:
+					setStringField(list, contact, Contact.EMAIL, Contact.ATTR_OTHER,email);
+					break;					
+				}
+			}
+		}
+		
 		setStringField(list,contact,Contact.ORG,getData().org);
 		setStringField(list,contact,Contact.NOTE,getData().note);
 		setDateField(list,contact,Contact.BIRTHDAY,getData().birthday);
+		setStringField(list,contact,Contact.NICKNAME,getData().nickname);
 	}
 	
 	/**
@@ -118,6 +140,9 @@ public class ContactSyncData extends AbsSyncData {
 			case Contact.NAME:
 				getData().names = getStringArrayField(list, contact, id);
 				break;
+			case Contact.NICKNAME:
+				getData().nickname = getStringField(contact,id);
+				break;
 			case Contact.ADDR:
 				getData().addr_work = getStringArrayField(list, contact, id,0);
 				getData().addr_home = getStringArrayField(list, contact, id,1);
@@ -160,9 +185,27 @@ public class ContactSyncData extends AbsSyncData {
 						break;
 					}
 				}
+				
 				break;
+				
 			case Contact.EMAIL:
-				getData().email = getStringField(contact,id);
+				getData().email = new String[ContactData.EMAIL_SIZE];
+				int num = contact.countValues(id);
+				for(int c = 0;c < num;c++){
+					int attr		= contact.getAttributes(id, c);
+					String value	= contact.getString(id, c);
+					switch(attr){
+					case Contact.ATTR_WORK:
+						getData().tel[ContactData.EMAIL_WORK] = value;
+						break;
+					case Contact.ATTR_HOME:
+						getData().tel[ContactData.EMAIL_HOME] = value;
+						break;
+					case Contact.ATTR_OTHER:
+						getData().tel[ContactData.EMAIL_OTHER] = value;
+						break;
+					}					
+				}
 				break;
 			case Contact.ORG:
 				getData().org = getStringField(contact,id);
