@@ -23,6 +23,8 @@ public class ContactSync extends GoogleAPISync {
 	
 	private ContactsService myService = new ContactsService("YuchCaller");
 	
+	
+	
 	public ContactSync(InputStream in, Logger logger) throws Exception {
 		super(in, logger);
 
@@ -32,7 +34,17 @@ public class ContactSync extends GoogleAPISync {
 		// read the svr google data
 		readSvrGoogleData();
 		
-
+		// compare event
+		compareEvent();
+	}
+	
+	/**
+	 * get the URL by google id
+	 * @param gid
+	 * @return
+	 */
+	private URL getContactURL(String gid)throws Exception{
+		return new URL("https://www.google.com/m8/feeds/contacts/default/full/" + gid);
 	}
 
 
@@ -360,26 +372,46 @@ public class ContactSync extends GoogleAPISync {
 
 	@Override
 	protected GoogleAPISyncData newSyncData() {
-		// TODO Auto-generated method stub
-		return null;
+		return new ContactSyncData();
 	}
 
 	@Override
 	protected void deleteGoogleData(GoogleAPISyncData g) throws Exception {
-		// TODO Auto-generated method stub
-
+		
+		ContactEntry contact = myService.getEntry(getContactURL(g.getGID()), ContactEntry.class);
+		if(contact != null){
+			contact.delete();			
+		}		
 	}
 
 	@Override
 	protected Object updateGoogleData(GoogleAPISyncData g) throws Exception {
-		// TODO Auto-generated method stub
-		return null;
+		ContactEntry contact = myService.getEntry(getContactURL(g.getGID()), ContactEntry.class);
+		if(contact != null){
+			
+			g.exportGoogleData(contact, mTimeZoneID);
+			
+			URL editUrl = new URL(contact.getEditLink().getHref());
+			contact = myService.update(editUrl, contact);
+			
+			g.setGID(contact.getId());
+			g.setLastMod(contact.getUpdated().getValue());
+		}
+		
+		return contact;
 	}
 
 	@Override
 	protected Object uploadGoogleData(GoogleAPISyncData g) throws Exception {
-		// TODO Auto-generated method stub
-		return null;
+		ContactEntry contact = new ContactEntry();
+		g.exportGoogleData(contact, mTimeZoneID);
+		
+		contact = myService.insert(getContactURL(""), contact);
+		
+		g.setGID(contact.getId());
+		g.setLastMod(contact.getUpdated().getValue());
+		
+		return contact;
 	}
 
 }
