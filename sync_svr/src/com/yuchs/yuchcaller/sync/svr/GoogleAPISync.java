@@ -171,6 +171,11 @@ public abstract class GoogleAPISync {
 	 * @return
 	 */
 	protected boolean fetchFormerEvent(){
+		
+		if(mDiffType == 0){
+			return false;
+		}
+		
 		BufferedEvents tFormerEvent = smEventHashMap.get(mYuchAcc + getClass().getSimpleName());
 		
 		if(tFormerEvent != null){
@@ -525,7 +530,8 @@ public abstract class GoogleAPISync {
 					for(Object svr : mSvrSyncDataList){
 						if(client.getGID().equals(getGoogleDataId(svr))){
 							
-							updateGoogleData(client);
+							mSvrSyncDataList.remove(svr);
+							mSvrSyncDataList.add(updateGoogleData(client));
 							
 							sendReceive.WriteString(os, client.getBBID());
 							sendReceive.WriteLong(os,client.getLastMod());

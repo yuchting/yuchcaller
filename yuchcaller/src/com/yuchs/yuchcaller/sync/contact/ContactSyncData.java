@@ -2,7 +2,6 @@ package com.yuchs.yuchcaller.sync.contact;
 
 import javax.microedition.pim.Contact;
 import javax.microedition.pim.PIMItem;
-import javax.microedition.pim.PIMList;
 
 import com.yuchs.yuchcaller.sync.AbsData;
 import com.yuchs.yuchcaller.sync.AbsSyncData;
@@ -28,45 +27,45 @@ public class ContactSyncData extends AbsSyncData {
 	/**
 	 * export data to PIMItem(Contact)
 	 */
-	public void exportData(PIMItem item, PIMList list) throws Exception {
+	public void exportData(PIMItem item) throws Exception {
 		
 		Contact contact = (Contact)item;
 		
-		setStringArrayField(list, contact, Contact.NAME,getRightSizeArr(getData().names,list.stringArraySize(Contact.NAME)));
+		setStringArrayField( contact, Contact.NAME,getRightSizeArr(getData().names,contact.getPIMList().stringArraySize(Contact.NAME)));
 		
-		setStringArrayField(list, contact, Contact.ADDR,Contact.ATTR_HOME,getRightSizeArr(getData().addr_home,list.stringArraySize(Contact.ADDR)));
-		setStringArrayField(list, contact, Contact.ADDR,Contact.ATTR_WORK,getRightSizeArr(getData().addr_work,list.stringArraySize(Contact.ADDR)));
+		setStringArrayField( contact, Contact.ADDR,Contact.ATTR_HOME,getRightSizeArr(getData().addr_home,contact.getPIMList().stringArraySize(Contact.ADDR)));
+		setStringArrayField( contact, Contact.ADDR,Contact.ATTR_WORK,getRightSizeArr(getData().addr_work,contact.getPIMList().stringArraySize(Contact.ADDR)));
 		
 		if(getData().tel != null){
 			for(int i = 0;i < getData().tel.length;i++){
 				String telNum = getData().tel[i];
 				switch(i){
 				case ContactData.TEL_WORK:
-					setStringField(list, contact, Contact.TEL, Contact.ATTR_WORK,telNum);
+					setStringField( contact, Contact.TEL, Contact.ATTR_WORK,telNum);
 					break;
 				case ContactData.TEL_WORK2:
-					setStringField(list, contact, Contact.TEL, Contact.ATTR_WORK << 16,telNum);
+					setStringField( contact, Contact.TEL, Contact.ATTR_WORK << 16,telNum);
 					break;
 				case ContactData.TEL_HOME:
-					setStringField(list, contact, Contact.TEL, Contact.ATTR_HOME,telNum);
+					setStringField( contact, Contact.TEL, Contact.ATTR_HOME,telNum);
 					break;
 				case ContactData.TEL_HOME2:
-					setStringField(list, contact, Contact.TEL, Contact.ATTR_HOME << 16,telNum);
+					setStringField( contact, Contact.TEL, Contact.ATTR_HOME << 16,telNum);
 					break;
 				case ContactData.TEL_MOBILE:
-					setStringField(list, contact, Contact.TEL, Contact.ATTR_MOBILE,telNum);
+					setStringField( contact, Contact.TEL, Contact.ATTR_MOBILE,telNum);
 					break;
 				case ContactData.TEL_MOBILE2:
-					setStringField(list, contact, Contact.TEL, Contact.ATTR_MOBILE << 16,telNum);
+					setStringField( contact, Contact.TEL, Contact.ATTR_MOBILE << 16,telNum);
 					break;
 				case ContactData.TEL_PAGER:
-					setStringField(list, contact, Contact.TEL, Contact.ATTR_PAGER,telNum);
+					setStringField( contact, Contact.TEL, Contact.ATTR_PAGER,telNum);
 					break;
 				case ContactData.TEL_FAX:
-					setStringField(list, contact, Contact.TEL, Contact.ATTR_FAX,telNum);
+					setStringField( contact, Contact.TEL, Contact.ATTR_FAX,telNum);
 					break;
 				case ContactData.TEL_OTHER:
-					setStringField(list, contact, Contact.TEL, Contact.ATTR_OTHER,telNum);
+					setStringField( contact, Contact.TEL, Contact.ATTR_OTHER,telNum);
 					break;					
 				}
 			}
@@ -79,22 +78,22 @@ public class ContactSyncData extends AbsSyncData {
 				
 				switch(i){
 				case ContactData.EMAIL_WORK:
-					setStringField(list, contact, Contact.EMAIL, Contact.ATTR_WORK,email);
+					setStringField( contact, Contact.EMAIL, Contact.ATTR_WORK,email);
 					break;
 				case ContactData.EMAIL_HOME:
-					setStringField(list, contact, Contact.EMAIL, Contact.ATTR_HOME,email);
+					setStringField( contact, Contact.EMAIL, Contact.ATTR_HOME,email);
 					break;				
 				case ContactData.EMAIL_OTHER:
-					setStringField(list, contact, Contact.EMAIL, Contact.ATTR_OTHER,email);
+					setStringField( contact, Contact.EMAIL, Contact.ATTR_OTHER,email);
 					break;					
 				}
 			}
 		}
 		
-		setStringField(list,contact,Contact.ORG,getData().org);
-		setStringField(list,contact,Contact.NOTE,getData().note);
-		setDateField(list,contact,Contact.BIRTHDAY,getData().birthday);
-		setStringField(list,contact,Contact.NICKNAME,getData().nickname);
+		setStringField(contact,Contact.ORG,getData().org);
+		setStringField(contact,Contact.NOTE,getData().note);
+		setDateField(contact,Contact.BIRTHDAY,getData().birthday);
+		setStringField(contact,Contact.NICKNAME,getData().nickname);
 	}
 	
 	/**
@@ -118,7 +117,8 @@ public class ContactSyncData extends AbsSyncData {
 		
 		return arr;
 	}
-	public void importData(PIMItem item, PIMList list) throws Exception {
+	
+	public void importData(PIMItem item) throws Exception {
 
 		Contact contact = (Contact)item;
 		
@@ -138,17 +138,17 @@ public class ContactSyncData extends AbsSyncData {
 				setBBID(getStringField(contact,id));
 				break;
 			case Contact.NAME:
-				getData().names = getStringArrayField(list, contact, id);
+				getData().names = getStringArrayField(contact, id);
 				break;
 			case Contact.NICKNAME:
 				getData().nickname = getStringField(contact,id);
 				break;
 			case Contact.ADDR:
-				getData().addr_work = getStringArrayField(list, contact, id,0);
-				getData().addr_home = getStringArrayField(list, contact, id,1);
+				getData().addr_work = getStringArrayField(contact, id,0);
+				getData().addr_home = getStringArrayField(contact, id,1);
 				break;
 			case Contact.TEL:
-				getData().tel = new String[list.maxValues(id)];
+				getData().tel = new String[contact.getPIMList().maxValues(id)];
 				int count = contact.countValues(id);
 				for(int c = 0;c < count;c++){
 					

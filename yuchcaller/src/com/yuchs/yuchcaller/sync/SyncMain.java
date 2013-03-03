@@ -36,9 +36,7 @@ import java.util.Vector;
 
 import javax.microedition.io.Connector;
 import javax.microedition.io.HttpConnection;
-import javax.microedition.pim.Contact;
-import javax.microedition.pim.ContactList;
-import javax.microedition.pim.PIM;
+import javax.microedition.io.file.FileConnection;
 
 import net.rim.device.api.compress.GZIPInputStream;
 import net.rim.device.api.compress.GZIPOutputStream;
@@ -47,8 +45,9 @@ import net.rim.device.api.io.http.HttpProtocolConstants;
 
 import com.yuchs.yuchcaller.ConnectorHelper;
 import com.yuchs.yuchcaller.YuchCaller;
+import com.yuchs.yuchcaller.YuchCallerProp;
 import com.yuchs.yuchcaller.sync.calendar.CalendarSync;
-import com.yuchs.yuchcaller.sync.contact.ContactData;
+import com.yuchs.yuchcaller.sync.contact.ContactSync;
 
 public class SyncMain {
 		
@@ -71,10 +70,14 @@ public class SyncMain {
 	
 	// calendar sync
 	private final CalendarSync mCalendarSync;
+	
+	// contact sync
+	private final ContactSync mContactSync;
 		
 	public SyncMain(YuchCaller _mainApp){
 		m_mainApp		= _mainApp;		
-		mCalendarSync = new CalendarSync(this);
+		mCalendarSync	= new CalendarSync(this);
+		mContactSync	= new ContactSync(this);
 	}
 	
 	/**
@@ -202,6 +205,8 @@ public class SyncMain {
 		clearReport();
 		
 		mCalendarSync.startSync();
+		
+		//mContactSync.startSync();
 	}
 	
 	//! report error
@@ -250,6 +255,31 @@ public class SyncMain {
 		if(m_mainApp.m_configManager != null){
 			m_mainApp.m_configManager.refreshSyncPrompt();
 		}
+	}
+	
+	/**
+	 * destroy sync data
+	 */
+	public void destroySyncData(){
+		
+		for(int i = 0;i < AbsSync.fsm_syncTypeString.length;i++){
+			
+			String tFilename = YuchCallerProp.fsm_rootPath_back + "YuchCaller/" + AbsSync.fsm_syncTypeString[i] + ".data";
+			try{
+				FileConnection fc = (FileConnection) Connector.open(tFilename,Connector.READ_WRITE);
+				try{
+					if(fc.exists()){
+						fc.delete();
+					}
+				}finally{
+					fc.close();
+					fc = null;
+				}
+			}catch(Exception e){
+				m_mainApp.SetErrorString("DSD", e);
+			}
+		}
+		 	
 	}
 	
 	/**

@@ -31,7 +31,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import javax.microedition.pim.PIMItem;
-import javax.microedition.pim.PIMList;
 
 import com.yuchs.yuchcaller.sendReceive;
 
@@ -116,14 +115,14 @@ public abstract class AbsSyncData {
 	 * @param event
 	 * @param list		EventList
 	 */
-	public abstract void importData(PIMItem _item,PIMList _list)throws Exception;
+	public abstract void importData(PIMItem _item)throws Exception;
 	
 	/**
 	 * export the blackberry PIM item to the blackberry
 	 * @param event
 	 * @throws Exception
 	 */
-	public abstract void exportData(PIMItem _item,PIMList _list)throws Exception;
+	public abstract void exportData(PIMItem _item)throws Exception;
 	
 	/**
 	 * get the PIMItem string without index 
@@ -153,26 +152,24 @@ public abstract class AbsSyncData {
 	
 	/**
 	 * set the PIMItem id by string without attribute
-	 * @param _list 
 	 * @param _item
 	 * @param _id
 	 * @param _value
 	 */
-	public static void setStringField(PIMList _list,PIMItem _item,int _id,String _value){
-		setStringField(_list,_item,_id,PIMItem.ATTR_NONE,_value);
+	public static void setStringField(PIMItem _item,int _id,String _value){
+		setStringField(_item,_id,PIMItem.ATTR_NONE,_value);
 	}
 	
 	/**
 	 * set the event id by string
-	 * @param _list 
 	 * @param _item
 	 * @param _id
 	 * @param _index
 	 * @param _value
 	 */
-	public static void setStringField(PIMList _list,PIMItem _item,int _id,int _attr,String _value){
+	public static void setStringField(PIMItem _item,int _id,int _attr,String _value){
 		
-		if(_list.isSupportedField(_id)){
+		if(_item.getPIMList().isSupportedField(_id)){
 			
 			if(_item.countValues(_id) > 0){
 				if(_value != null && _value.length() > 0){
@@ -206,13 +203,12 @@ public abstract class AbsSyncData {
 	
 	/**
 	 * set the date field for PIMItem
-	 * @param _list
 	 * @param _item
 	 * @param _id
 	 * @param _value
 	 */
-	public static void setDateField(PIMList _list,PIMItem _item,int _id,long _value){
-		if(_list.isSupportedField(_id)){
+	public static void setDateField(PIMItem _item,int _id,long _value){
+		if(_item.getPIMList().isSupportedField(_id)){
 			if(_item.countValues(_id) > 0){
 				_item.setDate(_id,0,PIMItem.ATTR_NONE,_value);
 			}else{
@@ -224,16 +220,15 @@ public abstract class AbsSyncData {
 		
 	/**
 	 * set the date field for event by data value
-	 * @param _list
 	 * @param _item
 	 * @param _id
 	 * @param _value
 	 */
-	public static void setDateField(PIMList _list,PIMItem _item,int _id,String _value){
+	public static void setDateField(PIMItem _item,int _id,String _value){
 		
 		try{
 			long v = Long.parseLong(_value);
-			setDateField(_list,_item,_id,v);
+			setDateField(_item,_id,v);
 		}catch(Exception e){}
 	}
 	
@@ -255,13 +250,12 @@ public abstract class AbsSyncData {
 	
 	/**
 	 * set the int value of this event
-	 * @param _list
 	 * @param _item
 	 * @param _id
 	 * @param _value
 	 */
-	public static void setIntField(PIMList _list,PIMItem _item,int _id,int _value){
-		if(_list.isSupportedField(_id)){
+	public static void setIntField(PIMItem _item,int _id,int _value){
+		if(_item.getPIMList().isSupportedField(_id)){
 			if(_item.countValues(_id) > 0){
 				_item.setInt(_id,0,PIMItem.ATTR_NONE,_value);
 			}else{
@@ -272,16 +266,15 @@ public abstract class AbsSyncData {
 	
 	/**
 	 * set the int field by int string
-	 * @param _list
 	 * @param _item
 	 * @param _id
 	 * @param _value
 	 */
-	public static void setIntField(PIMList _list,PIMItem _item,int _id,String _value){
+	public static void setIntField(PIMItem _item,int _id,String _value){
 		
 		try{
 			int v = Integer.parseInt(_value);
-			setIntField(_list,_item,_id,v);
+			setIntField(_item,_id,v);
 		}catch(Exception e){}
 	}
 	
@@ -307,8 +300,8 @@ public abstract class AbsSyncData {
 	 * @param _id
 	 * @param _value
 	 */
-	public static void setBooleanField(PIMList _list,PIMItem _item,int _id,boolean _value){
-		if(_list.isSupportedField(_id)){
+	public static void setBooleanField(PIMItem _item,int _id,boolean _value){
+		if(_item.getPIMList().isSupportedField(_id)){
 			if(_item.countValues(_id) > 0){
 				_item.setBoolean(_id, 0, PIMItem.ATTR_NONE, _value);
 			}else{
@@ -323,8 +316,8 @@ public abstract class AbsSyncData {
 	 * @param _id
 	 * @return
 	 */
-	public static String[] getStringArrayField(PIMList _list,PIMItem _item,int _id){
-		return getStringArrayField(_list,_item,_id,0);
+	public static String[] getStringArrayField(PIMItem _item,int _id){
+		return getStringArrayField(_item,_id,0);
 	}
 	
 	/**
@@ -334,10 +327,10 @@ public abstract class AbsSyncData {
 	 * @param _index
 	 * @return
 	 */
-	public static String[] getStringArrayField(PIMList _list,PIMItem _item,int _id,int _index){
+	public static String[] getStringArrayField(PIMItem _item,int _id,int _index){
 		int tCount = _item.countValues(_id);
 		if(tCount > 0){
-			if(_list.getFieldDataType(_id) == PIMItem.STRING_ARRAY){
+			if(_item.getPIMList().getFieldDataType(_id) == PIMItem.STRING_ARRAY){
 				
 				if(_index < tCount){
 					return _item.getStringArray(_id, _index);
@@ -345,7 +338,7 @@ public abstract class AbsSyncData {
 					return null;
 				}				
 				
-			}else if(_list.getFieldDataType(_id) == PIMItem.STRING){
+			}else if(_item.getPIMList().getFieldDataType(_id) == PIMItem.STRING){
 						
 				String[] tResult = new String[tCount];
 				for(int i = 0 ;i < tCount;i++){
@@ -361,29 +354,27 @@ public abstract class AbsSyncData {
 	
 	/**
 	 * set the field array field without attribute
-	 * @param _list
 	 * @param _item
 	 * @param _id
 	 * @param _value
 	 */
-	public static void setStringArrayField(PIMList _list,PIMItem _item,int _id,String[] _value){
-		setStringArrayField(_list,_item,_id,PIMItem.ATTR_NONE,_value);
+	public static void setStringArrayField(PIMItem _item,int _id,String[] _value){
+		setStringArrayField(_item,_id,PIMItem.ATTR_NONE,_value);
 	}
 	
 	/**
 	 * set the String array field
-	 * @param _list
 	 * @param _item
 	 * @param _id
 	 * @param _attr
 	 * @param _value
 	 */
-	public static void setStringArrayField(PIMList _list,PIMItem _item,int _id,int _attr,String[] _value){
-		if(_list.isSupportedField(_id)){
+	public static void setStringArrayField(PIMItem _item,int _id,int _attr,String[] _value){
+		if(_item.getPIMList().isSupportedField(_id)){
 			
 			int count = _item.countValues(_id);
 			
-			if(_list.getFieldDataType(_id) == PIMItem.STRING_ARRAY){
+			if(_item.getPIMList().getFieldDataType(_id) == PIMItem.STRING_ARRAY){
 
 				if(count > 0){
 					if(_value != null && _value.length > 0){
@@ -397,7 +388,7 @@ public abstract class AbsSyncData {
 					}				
 				}
 				
-			}else if(_list.getFieldDataType(_id) == PIMItem.STRING){
+			}else if(_item.getPIMList().getFieldDataType(_id) == PIMItem.STRING){
 				
 				if(count > 0){
 					for(int i = 0;i < count;i++){

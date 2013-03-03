@@ -94,10 +94,9 @@ public class CalendarSyncData extends AbsSyncData{
 	
 	/**
 	 * import blackberry event
-	 * @param event
-	 * @param list		EventList
+	 * @param _item
 	 */
-	public void importData(PIMItem _item,PIMList _list)throws Exception{
+	public void importData(PIMItem _item)throws Exception{
 		
 		Event event = (Event)_item;
 		
@@ -233,7 +232,7 @@ public class CalendarSyncData extends AbsSyncData{
 				getData().allDay = getBooleanField(event, id);
 				break;
 			case BlackBerryEvent.ATTENDEES:
-				getData().attendees = getStringArrayField(_list,event,id);
+				getData().attendees = getStringArrayField(event,id);
 				break;
 			case BlackBerryEvent.FREE_BUSY:
 				getData().free_busy = getIntField(event, id);
@@ -259,10 +258,10 @@ public class CalendarSyncData extends AbsSyncData{
 	
 	/**
 	 * export the calendar to the blackberry event
-	 * @param event
+	 * @param _item
 	 * @throws Exception
 	 */
-	public void exportData(PIMItem _item,PIMList _list)throws Exception{
+	public void exportData(PIMItem _item)throws Exception{
 		Event event = (Event)_item;
 		
 		if(getData().repeat_type.length() > 0){
@@ -285,23 +284,23 @@ public class CalendarSyncData extends AbsSyncData{
 			event.setRepeat(repeatRule);
 		}
 		
-		setStringField(_list,event, Event.SUMMARY,getData().summary);
-		setDateField(_list,event, Event.START,getData().start);
-		setDateField(_list,event, Event.END,getData().end);
+		setStringField(event, Event.SUMMARY,getData().summary);
+		setDateField(event, Event.START,getData().start);
+		setDateField(event, Event.END,getData().end);
 		
-		setStringField(_list,event, Event.LOCATION,getData().location);
-		setStringField(_list,event, Event.NOTE,getData().note);
+		setStringField(event, Event.LOCATION,getData().location);
+		setStringField(event, Event.NOTE,getData().note);
 		
 		if(getData().alarm > 0){
-			setIntField(_list,event, Event.ALARM,getData().alarm);
+			setIntField(event, Event.ALARM,getData().alarm);
 		}
 		
 		if(getData().allDay){
-			setBooleanField(_list,event, BlackBerryEvent.ALLDAY,getData().allDay);
+			setBooleanField(event, BlackBerryEvent.ALLDAY,getData().allDay);
 		}
 		
-		setStringArrayField(_list,event, BlackBerryEvent.ATTENDEES,getData().attendees);
-		setIntField(_list,event,BlackBerryEvent.FREE_BUSY,getData().free_busy);
+		setStringArrayField(event, BlackBerryEvent.ATTENDEES,getData().attendees);
+		setIntField(event,BlackBerryEvent.FREE_BUSY,getData().free_busy);
 		
 		int id = BlackBerryEvent.CLASS_PRIVATE;
 		switch(getData().event_class){
@@ -313,7 +312,7 @@ public class CalendarSyncData extends AbsSyncData{
 			break;
 		}
 		
-		setIntField(_list, event, BlackBerryEvent.CLASS, id);		
+		setIntField( event, BlackBerryEvent.CLASS, id);		
 	}
 	
 	private void parseRULE(String ruleStr,RepeatRule rule){

@@ -1,9 +1,6 @@
 package com.yuchs.yuchcaller.sync.svr.contact;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.List;
 
 import com.google.gdata.data.TextContent;
@@ -73,9 +70,7 @@ public class ContactSyncData extends GoogleAPISyncData {
 	@Override
 	public void exportGoogleData(Object g, String timeZoneID) throws Exception {
 		ContactEntry contact = (ContactEntry)g;
-		
-		
-		
+			
 		if(getData().names != null){
 			
 			Name tNames = null;
@@ -401,17 +396,4 @@ public class ContactSyncData extends GoogleAPISyncData {
 			getData().note = text.getContent().getPlainText();
 		}
 	}
-
-	@Override
-	public void input(InputStream in) throws Exception {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void output(OutputStream os, boolean outputData) throws Exception {
-		// TODO Auto-generated method stub
-
-	}
-
 }
