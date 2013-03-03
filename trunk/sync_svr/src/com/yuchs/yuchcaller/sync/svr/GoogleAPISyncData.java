@@ -51,18 +51,43 @@ public abstract class GoogleAPISyncData {
 	public abstract void exportGoogleData(Object g,String _timeZoneID)throws Exception;
 	
 	/**
-	 * input data from a byte stream
+	 * input the data from the byte stream
 	 * @param in
 	 * @throws Exception
 	 */
-	public abstract void input(InputStream in)throws Exception;
+	public void input(InputStream in)throws Exception{
+		setBBID(sendReceive.ReadString(in));
+		setGID(sendReceive.ReadString(in));
+		setLastMod(sendReceive.ReadLong(in));
+		
+		boolean tHasData = sendReceive.ReadBoolean(in);
+		if(tHasData){
+
+			if(getAPIData() == null){
+				m_APIData = newData();
+			}
+			
+			getAPIData().inputData(in);
+		}		
+	}
 	
 	/**
-	 * output data to a bytes stream
+	 * output the data to the byte stream
 	 * @param os
 	 * @param _outputData output data detail or NOT
 	 * @throws Exception
 	 */
-	public abstract void output(OutputStream os,boolean _outputData)throws Exception;
+	public void output(OutputStream os,boolean _outputData)throws Exception{
+		sendReceive.WriteString(os,getBBID());
+		sendReceive.WriteString(os,getGID());
+		sendReceive.WriteLong(os,getLastMod());
+		
+		if(getAPIData() != null && _outputData){
+			sendReceive.WriteBoolean(os, true);
+			getAPIData().outputData(os);
+		}else{
+			sendReceive.WriteBoolean(os, false);
+		}
+	}
 	
 }

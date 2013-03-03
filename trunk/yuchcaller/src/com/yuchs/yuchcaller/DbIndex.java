@@ -125,6 +125,15 @@ public class DbIndex {
 	public synchronized String findPhoneData(String _number){
 		
 		try{
+			
+			if(_number.startsWith("17951")
+			|| _number.startsWith("17950")
+			|| _number.startsWith("12593")
+			|| _number.startsWith("96218")
+			|| _number.startsWith("17911")){
+				// get rid of IP caller
+				_number = _number.substring(5);
+			}
 
 			if(_number.length() < 11 && _number.charAt(0) != '+'){
 				
@@ -272,7 +281,7 @@ public class DbIndex {
 			debugInfo("SN", ex);
 		}
 		
-		return "";		
+		return "";
 	}
 	
 	//! get the data base version

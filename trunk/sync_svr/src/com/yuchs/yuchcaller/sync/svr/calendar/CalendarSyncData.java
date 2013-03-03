@@ -1,7 +1,5 @@
 package com.yuchs.yuchcaller.sync.svr.calendar;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -17,7 +15,6 @@ import com.google.api.services.calendar.model.EventReminder;
 import com.google.api.services.calendar.model.Event.Reminders;
 import com.yuchs.yuchcaller.sync.svr.GoogleAPIData;
 import com.yuchs.yuchcaller.sync.svr.GoogleAPISyncData;
-import com.yuchs.yuchcaller.sync.svr.sendReceive;
 
 public class CalendarSyncData extends GoogleAPISyncData{
 	
@@ -29,98 +26,7 @@ public class CalendarSyncData extends GoogleAPISyncData{
 		return new CalendarData();
 	}
 	
-	/**
-	 * import the data from the google calendar Event
-	 * @param g
-	 */
-	@Override
-	public void importGoogleData(Object g)throws Exception{
-		
-		Event event = (Event)g; 
-		
-		setGID(event.getId());
-		setLastMod(CalendarSync.getEventLastMod(event));
-		
-		if(getData() == null){
-			m_APIData = newData();
-		}
-		
-		getData().repeat_type = "";		
-		List<String> tList = event.getRecurrence();
-		if(tList != null){
-			for(String re : tList){
-				if(getData().repeat_type.length() != 0){
-					getData().repeat_type += "\n"; 
-				}
-				
-				getData().repeat_type += re;
-			}			
-		}
-		
-		getData().summary	= event.getSummary();
-		getData().note		= event.getDescription();
-		
-		getData().start	= getEventDateTime(event.getStart());
-		getData().end		= getEventDateTime(event.getEnd());
-		
-		getData().location	= event.getLocation();
-		
-		getData().alarm = 0;
-		
-		// set the alarm 
-		Reminders tReminders = event.getReminders();
-		if(tReminders != null){
-			List<EventReminder> _eventReminderList = tReminders.getOverrides();
-			if(_eventReminderList != null){
-				for(EventReminder ev : _eventReminderList){
-					if(ev.getMinutes() != null){
-						int second = ev.getMinutes() * 60;
-						
-						if(getData().alarm == 0 || getData().alarm > second){
-							getData().alarm = second;
-						}
-					}
-				}
-			}
-		}
-		
-		getData().attendees = null;
-		
-		// set the attendess
-		List<EventAttendee> tAttendeesList = event.getAttendees();
-		if(tAttendeesList != null){
-			
-			Vector<String>	tTmpList = new Vector<String>();
-			for(EventAttendee ea : tAttendeesList){
-				if(ea.getEmail() != null){
-					tTmpList.add(ea.getEmail());
-				}				
-			}
-			
-			getData().attendees = new String[tTmpList.size()];
-			
-			for(int i = 0;i < tTmpList.size();i++){
-				getData().attendees[i] = tTmpList.get(i);
-			}
-		}
-		
-		String visibility = event.getVisibility();
-		
-		if(visibility != null){			
-			if(visibility.equalsIgnoreCase("default")
-			|| visibility.equalsIgnoreCase("private")){
-				
-				getData().event_class = CalendarData.CLASS_PRIVATE; 
-				
-			}else if(visibility.equalsIgnoreCase("public")){
-				
-				getData().event_class = CalendarData.CLASS_PUBLIC;
-			}else{
-				getData().event_class = CalendarData.CLASS_CONFIDENTIAL;
-			}
-		}
-		
-	}
+	
 	
 	/**
 	 * export the data to the google's calendar Event
@@ -219,6 +125,99 @@ public class CalendarSyncData extends GoogleAPISyncData{
 		}
 	}
 	
+	/**
+	 * import the data from the google calendar Event
+	 * @param g
+	 */
+	@Override
+	public void importGoogleData(Object g)throws Exception{
+		
+		Event event = (Event)g; 
+		
+		setGID(event.getId());
+		setLastMod(CalendarSync.getEventLastMod(event));
+		
+		if(getData() == null){
+			m_APIData = newData();
+		}
+		
+		getData().repeat_type = "";		
+		List<String> tList = event.getRecurrence();
+		if(tList != null){
+			for(String re : tList){
+				if(getData().repeat_type.length() != 0){
+					getData().repeat_type += "\n"; 
+				}
+				
+				getData().repeat_type += re;
+			}			
+		}
+		
+		getData().summary	= event.getSummary();
+		getData().note		= event.getDescription();
+		
+		getData().start	= getEventDateTime(event.getStart());
+		getData().end		= getEventDateTime(event.getEnd());
+		
+		getData().location	= event.getLocation();
+		
+		getData().alarm = 0;
+		
+		// set the alarm 
+		Reminders tReminders = event.getReminders();
+		if(tReminders != null){
+			List<EventReminder> _eventReminderList = tReminders.getOverrides();
+			if(_eventReminderList != null){
+				for(EventReminder ev : _eventReminderList){
+					if(ev.getMinutes() != null){
+						int second = ev.getMinutes() * 60;
+						
+						if(getData().alarm == 0 || getData().alarm > second){
+							getData().alarm = second;
+						}
+					}
+				}
+			}
+		}
+		
+		getData().attendees = null;
+		
+		// set the attendess
+		List<EventAttendee> tAttendeesList = event.getAttendees();
+		if(tAttendeesList != null){
+			
+			Vector<String>	tTmpList = new Vector<String>();
+			for(EventAttendee ea : tAttendeesList){
+				if(ea.getEmail() != null){
+					tTmpList.add(ea.getEmail());
+				}				
+			}
+			
+			getData().attendees = new String[tTmpList.size()];
+			
+			for(int i = 0;i < tTmpList.size();i++){
+				getData().attendees[i] = tTmpList.get(i);
+			}
+		}
+		
+		String visibility = event.getVisibility();
+		
+		if(visibility != null){			
+			if(visibility.equalsIgnoreCase("default")
+			|| visibility.equalsIgnoreCase("private")){
+				
+				getData().event_class = CalendarData.CLASS_PRIVATE; 
+				
+			}else if(visibility.equalsIgnoreCase("public")){
+				
+				getData().event_class = CalendarData.CLASS_PUBLIC;
+			}else{
+				getData().event_class = CalendarData.CLASS_CONFIDENTIAL;
+			}
+		}
+		
+	}
+	
 	private long getEventDateTime(EventDateTime date){
 		
 		DateTime ed = date.getDateTime();
@@ -239,46 +238,6 @@ public class CalendarSyncData extends GoogleAPISyncData{
 		return ed.getValue();
 	}
 		
-	/**
-	 * input the data from the byte stream
-	 * @param in
-	 * @throws Exception
-	 */
-	@Override
-	public void input(InputStream in)throws Exception{
-		setBBID(sendReceive.ReadString(in));
-		setGID(sendReceive.ReadString(in));
-		setLastMod(sendReceive.ReadLong(in));
-		
-		boolean tHasData = sendReceive.ReadBoolean(in);
-		if(tHasData){
-
-			if(getData() == null){
-				m_APIData = newData();
-			}
-			
-			getData().inputData(in);
-		}		
-	}
 	
-	/**
-	 * output the data to the byte stream
-	 * @param os
-	 * @param _outputData output data detail or NOT
-	 * @throws Exception
-	 */
-	@Override
-	public void output(OutputStream os,boolean _outputData)throws Exception{
-		sendReceive.WriteString(os,getBBID());
-		sendReceive.WriteString(os,getGID());
-		sendReceive.WriteLong(os,getLastMod());
-		
-		if(getData() != null && _outputData){
-			sendReceive.WriteBoolean(os, true);
-			getData().outputData(os);
-		}else{
-			sendReceive.WriteBoolean(os, false);
-		}
-	}
 	
 }

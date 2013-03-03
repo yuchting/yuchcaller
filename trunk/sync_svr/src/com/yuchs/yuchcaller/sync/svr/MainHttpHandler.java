@@ -58,6 +58,7 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.yuchs.yuchcaller.sync.svr.calendar.CalendarSync;
+import com.yuchs.yuchcaller.sync.svr.contact.ContactSync;
 
 
 public class MainHttpHandler extends SimpleChannelUpstreamHandler {
@@ -209,6 +210,8 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 				
 				if(tType.equals("calendar")){
 					tSync = new CalendarSync(in,mLogger);
+				}else if(tType.equals("contact")){
+					tSync = new ContactSync(in,mLogger);
 				}else{
 					throw new Exception("Error Type");
 				}

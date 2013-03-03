@@ -67,7 +67,7 @@ public class Main {
 	 */
 	public static void main(String[] args) throws Exception {		
 		
-		//(new Main()).startNetty(6029);
+		(new Main()).startNetty(6029);
 		
 		//System.getProperties().put("socksProxySet","true");
 		//System.getProperties().put("socksProxyHost","127.0.0.1");
@@ -75,11 +75,11 @@ public class Main {
 				
 	    // The clientId and clientSecret are copied from the API Access tab on
 	    // the Google APIs Console
-	    String clientId = GoogleAPISync.getGoogleAPIClientId();
-	    String clientSecret = GoogleAPISync.getGoogleAPIClientSecret();
-	    
-	    NetHttpTransport httpTransport = new NetHttpTransport();
-	    JacksonFactory jsonFactory = new JacksonFactory();
+//	    String clientId = GoogleAPISync.getGoogleAPIClientId();
+//	    String clientSecret = GoogleAPISync.getGoogleAPIClientSecret();
+//	    
+//	    NetHttpTransport httpTransport = new NetHttpTransport();
+//	    JacksonFactory jsonFactory = new JacksonFactory();
 //
 //	    // Or your redirect URL for web based applications.
 //	    String redirectUrl = "urn:ietf:wg:oauth:2.0:oob";
@@ -113,58 +113,58 @@ public class Main {
 //	    // End of Step 2 <--
 	    
 		
-		GoogleCredential cd = new GoogleCredential.Builder()
-								    .setClientSecrets(clientId, clientSecret)
-								    .setJsonFactory(jsonFactory).setTransport(httpTransport).build()
-								    .setRefreshToken("1/e1F3-Cdrgb47ZQrivinMcbc07ChiyT6tKwBv3EgfDcI")
-								    .setAccessToken("ya29.AHES6ZTls-yP-AgPCPkg_VpF4b4fHVzzjzb6Vt3nawLVwn_AJE0-cA");
-		
-		ContactsService service = new ContactsService("YuchCaller");
-		service.setOAuth2Credentials(cd);
-		
-		
-		
-		URL feedUrl = new URL("https://www.google.com/m8/feeds/contacts/default/full");
-		Query myQuery = new Query(feedUrl);
-		myQuery.setMaxResults(999999);
-		myQuery.setStringCustomParameter("orderby","lastmodified");
-		ContactFeed resultFeed;
-		
-		try{
-			//resultFeed = service.query(myQuery, ContactFeed.class);
-			
-			ContactEntry cc = service.getEntry(new URL("https://www.google.com/m8/feeds/contacts/default/full/52656a38a8499d2"), ContactEntry.class);
-			System.out.println("" + cc.getName().getFullName());
-			System.out.println("" + cc.getName().getNamePrefix());
-			
-		}catch(NullPointerException e){
-			if(e.getMessage().startsWith("No authentication header information")){
-				cd.refreshToken();
-				//resultFeed = service.query(myQuery, ContactFeed.class);
-				
-				ContactEntry cc = service.getEntry(new URL("https://www.google.com/m8/feeds/contacts/default/full/52656a38a8499d2"), ContactEntry.class);
-				System.out.println("" + cc.getName().getFullName());
-				System.out.println("" + cc.getName().getNamePrefix());
-				
-				List<PhoneNumber> tList = cc.getPhoneNumbers();
-				List<StructuredPostalAddress> tList1 = cc.getStructuredPostalAddresses();
-				//Occupation op = cc.getOccupation();
-				List<Organization> tList2 = cc.getOrganizations();
-				Organization org = tList2.get(0);
-				System.out.println(org.getOrgName());
-				System.out.println(org.getOrgTitle());
-				
-				Birthday b = cc.getBirthday();
-				System.out.println(b.getValue());
-				System.out.println(b.getWhen());
-				
-				//System.out.println(op.getValue());
-				System.out.println(tList);
-				
-			}else{
-				throw e;
-			}
-		}
+//		GoogleCredential cd = new GoogleCredential.Builder()
+//								    .setClientSecrets(clientId, clientSecret)
+//								    .setJsonFactory(jsonFactory).setTransport(httpTransport).build()
+//								    .setRefreshToken("1/e1F3-Cdrgb47ZQrivinMcbc07ChiyT6tKwBv3EgfDcI")
+//								    .setAccessToken("ya29.AHES6ZTls-yP-AgPCPkg_VpF4b4fHVzzjzb6Vt3nawLVwn_AJE0-cA");
+//		
+//		ContactsService service = new ContactsService("YuchCaller");
+//		service.setOAuth2Credentials(cd);
+//		
+//		
+//		
+//		URL feedUrl = new URL("https://www.google.com/m8/feeds/contacts/default/full");
+//		Query myQuery = new Query(feedUrl);
+//		myQuery.setMaxResults(999999);
+//		myQuery.setStringCustomParameter("orderby","lastmodified");
+//		ContactFeed resultFeed;
+//		
+//		try{
+//			//resultFeed = service.query(myQuery, ContactFeed.class);
+//			
+//			ContactEntry cc = service.getEntry(new URL("https://www.google.com/m8/feeds/contacts/default/full/52656a38a8499d2"), ContactEntry.class);
+//			System.out.println("" + cc.getName().getFullName());
+//			System.out.println("" + cc.getName().getNamePrefix());
+//			
+//		}catch(NullPointerException e){
+//			if(e.getMessage().startsWith("No authentication header information")){
+//				cd.refreshToken();
+//				//resultFeed = service.query(myQuery, ContactFeed.class);
+//				
+//				ContactEntry cc = service.getEntry(new URL("https://www.google.com/m8/feeds/contacts/default/full/52656a38a8499d2"), ContactEntry.class);
+//				System.out.println("" + cc.getName().getFullName());
+//				System.out.println("" + cc.getName().getNamePrefix());
+//				
+//				List<PhoneNumber> tList = cc.getPhoneNumbers();
+//				List<StructuredPostalAddress> tList1 = cc.getStructuredPostalAddresses();
+//				//Occupation op = cc.getOccupation();
+//				List<Organization> tList2 = cc.getOrganizations();
+//				Organization org = tList2.get(0);
+//				System.out.println(org.getOrgName());
+//				System.out.println(org.getOrgTitle());
+//				
+//				Birthday b = cc.getBirthday();
+//				System.out.println(b.getValue());
+//				System.out.println(b.getWhen());
+//				
+//				//System.out.println(op.getValue());
+//				System.out.println(tList);
+//				
+//			}else{
+//				throw e;
+//			}
+//		}
 		
 //		System.out.println("Contacts size:" + resultFeed.getEntries().size());
 //		

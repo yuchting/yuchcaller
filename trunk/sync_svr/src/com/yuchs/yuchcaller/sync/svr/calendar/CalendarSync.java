@@ -84,7 +84,7 @@ public class CalendarSync extends GoogleAPISync{
 
 		Events events = tList.execute();
 			   
-		while (true) {
+		while (events != null && events.getItems() != null) {
 			
 			// insert and sort the event list by the last modification time
 			for (Event event : events.getItems()) {
@@ -210,11 +210,10 @@ public class CalendarSync extends GoogleAPISync{
 		data.exportGoogleData(tEvent,mTimeZoneID);
 		
 		// TODO: delete follow code
-		tEvent.setId("" + new Random().nextInt());
-		tEvent.setUpdated(new DateTime(new Date()));
-		mSvrSyncDataList.add(tEvent);
-				
-		//tEvent = mService.events().insert("primary", tEvent).execute();
+		//tEvent.setId("" + new Random().nextInt());
+		//tEvent.setUpdated(new DateTime(new Date()));
+						
+		tEvent = mService.events().insert("primary", tEvent).execute();
 		data.setGID(tEvent.getId());
 		data.setLastMod(getEventLastMod(tEvent));
 		
@@ -235,10 +234,10 @@ public class CalendarSync extends GoogleAPISync{
 		data.exportGoogleData(tEvent,mTimeZoneID);
 		
 		// TODO: delete follow code
-		tEvent.setId("" + new Random().nextInt());
-		tEvent.setUpdated(new DateTime(new Date()));
+		//tEvent.setId("" + new Random().nextInt());
+		//tEvent.setUpdated(new DateTime(new Date()));
 		
-		//tEvent = mService.events().update("primary", data.getGID(),tEvent).execute();
+		tEvent = mService.events().update("primary", data.getGID(),tEvent).execute();
 		data.setGID(tEvent.getId());
 		data.setLastMod(getEventLastMod(tEvent));		
 		
@@ -254,9 +253,8 @@ public class CalendarSync extends GoogleAPISync{
 	 */
 	@Override
 	protected void deleteGoogleData(GoogleAPISyncData data)throws Exception{
-		try{
-			// TODO delete follow code 
-			//mService.events().delete("primary", data.getGID()).execute();
+		try{ 
+			mService.events().delete("primary", data.getGID()).execute();
 			
 			mLogger.LogOut(mYuchAcc + " deleteEvent:" + data.getBBID());
 		}catch(Exception e){

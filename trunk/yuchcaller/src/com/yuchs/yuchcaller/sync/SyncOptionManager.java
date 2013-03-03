@@ -29,12 +29,7 @@ package com.yuchs.yuchcaller.sync;
 
 import java.util.Vector;
 
-import javax.microedition.pim.PIM;
-import javax.microedition.pim.PIMItem;
-
 import local.yuchcallerlocalResource;
-import net.rim.blackberry.api.pdap.BlackBerryPIMList;
-import net.rim.blackberry.api.pdap.PIMListListener;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
@@ -52,7 +47,6 @@ import net.rim.device.api.ui.container.VerticalFieldManager;
 
 import com.yuchs.yuchcaller.YuchCaller;
 import com.yuchs.yuchcaller.YuchCallerProp;
-import com.yuchs.yuchcaller.sync.contact.ContactSyncData;
 
 /**
  * this class will display and manager sync data to the sync.yuchs.com server  
@@ -240,38 +234,37 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 		if(context != FieldChangeListener.PROGRAMMATIC){
 			
 			if(field == mLoginBtn){
-				try{
-					BlackBerryPIMList list = (BlackBerryPIMList)PIM.getInstance().openPIMList(PIM.CONTACT_LIST, PIM.READ_WRITE);
-					
-					
-					list.addListener(new PIMListListener() {
-						
-						public void itemUpdated(PIMItem oldItem, PIMItem newItem) {
-							try{
-								ContactSyncData d = new ContactSyncData(); 
-								
-								//BlackBerryPIMList l = (BlackBerryPIMList)PIM.getInstance().openPIMList(PIM.CONTACT_LIST, PIM.READ_ONLY);
-								
-								d.importData(newItem, oldItem.getPIMList());
-								//l.close();	
-								
-							}catch(Exception e){
-								System.out.println(e.getMessage());
-							}
-							
-						}
-						
-						public void itemRemoved(PIMItem paramPIMItem) {
-							// TODO Auto-generated method stub
-							
-						}
-						
-						public void itemAdded(PIMItem paramPIMItem) {
-							// TODO Auto-generated method stub
-							
-						}
-					});
-					
+//				try{
+//					BlackBerryPIMList list = (BlackBerryPIMList)PIM.getInstance().openPIMList(PIM.CONTACT_LIST, PIM.READ_WRITE);
+//										
+//					list.addListener(new PIMListListener() {
+//						
+//						public void itemUpdated(PIMItem oldItem, PIMItem newItem) {
+//							try{
+//								ContactSyncData d = new ContactSyncData(); 
+//								
+//								//BlackBerryPIMList l = (BlackBerryPIMList)PIM.getInstance().openPIMList(PIM.CONTACT_LIST, PIM.READ_ONLY);
+//								
+//								d.importData(newItem, oldItem.getPIMList());
+//								//l.close();	
+//								
+//							}catch(Exception e){
+//								System.out.println(e.getMessage());
+//							}
+//							
+//						}
+//						
+//						public void itemRemoved(PIMItem paramPIMItem) {
+//							
+//							
+//						}
+//						
+//						public void itemAdded(PIMItem paramPIMItem) {
+//							
+//							
+//						}
+//					});
+//					list.close();
 //					Contact c = list.createContact();
 //					String[] arr = new String[ContactData.NAME_SIZE];
 //					for(int i = 0 ;i < arr.length;i++){
@@ -280,51 +273,46 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 //					
 //					c.addStringArray(Contact.NAME,Contact.ATTR_NONE , arr);
 //					
-//					c.commit();
-					
-					
-					
-					list.close();
-					
-				}catch(Exception e){
-					System.out.println("");
-				}
-				
-//				if(isValidateEmail(mYuchAccount.getText())
-//				&& isValidateUserPass(mYuchPass.getText())){
-//
-//					synchronized(this){
-//						
-//						if(mReadYuchAccThread == null){
-//
-//							YuchCallerProp tProp = mMainApp.getProperties();
-//							tProp.setYuchAccount(mYuchAccount.getText());
-//							tProp.setYuchPass(mYuchPass.getText());
-//							
-//							tProp.save();
-//														
-//							mReadYuchAccThread = new Thread(){
-//								public void run(){
-//									readYuchAccount();
-//								}
-//							};
-//							
-//							// start on YuchCaller context
-//							Application.getApplication().invokeLater(new Runnable() {
-//								
-//								public void run() {
-//									mReadYuchAccThread.start();
-//								}
-//							});
-//							
-//						}
-//					}
-//					
-//					
-//				}else{
-//					
-//					mMainApp.DialogAlert("Please Enter right yuch account and pass!");
+//					c.commit();					
+//				}catch(Exception e){
+//					System.out.println("");
 //				}
+				
+				if(isValidateEmail(mYuchAccount.getText())
+				&& isValidateUserPass(mYuchPass.getText())){
+
+					synchronized(this){
+						
+						if(mReadYuchAccThread == null){
+
+							YuchCallerProp tProp = mMainApp.getProperties();
+							tProp.setYuchAccount(mYuchAccount.getText());
+							tProp.setYuchPass(mYuchPass.getText());
+							
+							tProp.save();
+														
+							mReadYuchAccThread = new Thread(){
+								public void run(){
+									readYuchAccount();
+								}
+							};
+							
+							// start on YuchCaller context
+							Application.getApplication().invokeLater(new Runnable() {
+								
+								public void run() {
+									mReadYuchAccThread.start();
+								}
+							});
+							
+						}
+					}
+					
+					
+				}else{
+					
+					mMainApp.DialogAlert("Please Enter right yuch account and pass!");
+				}
 				
 			}else if(field == mSigninBtn){
 				
@@ -343,6 +331,9 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 					
 					prepareAccountMgr();
 					replace(mConfigMgr, mConfigMgrNull);
+					
+					// delete all sync data file
+					mMainApp.getSyncMain().destroySyncData();
 				}
 			}
 		}
@@ -423,8 +414,8 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 				
 				// request the yuch server
 				
-				String url = "http://192.168.100.116:8888/f/login/" + YuchCaller.getHTTPAppendString();
-				//String url = "http://192.168.10.4:8888/f/login/" + YuchCaller.getHTTPAppendString();
+				//String url = "http://192.168.100.116:8888/f/login/" + YuchCaller.getHTTPAppendString();
+				String url = "http://192.168.10.7:8888/f/login/" + YuchCaller.getHTTPAppendString();
 				//String url = "http://www.yuchs.com/f/login/" + YuchCaller.getHTTPAppendString();
 							
 				String[] tParamName = {

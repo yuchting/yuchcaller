@@ -4,9 +4,11 @@ import java.io.InputStream;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Random;
 
 import com.google.gdata.client.Query;
 import com.google.gdata.client.contacts.ContactsService;
+import com.google.gdata.data.DateTime;
 import com.google.gdata.data.TextContent;
 import com.google.gdata.data.contacts.ContactEntry;
 import com.google.gdata.data.contacts.ContactFeed;
@@ -76,14 +78,17 @@ public class ContactSync extends GoogleAPISync {
 		}
 		
 		StringBuffer sb = new StringBuffer();
-		for(ContactEntry entry : resultFeed.getEntries()){
-			if(entry.hasName()){
-				// must has name
-				//
-				mSvrSyncDataList.add(entry);
-				sb.append(entry.getEdited().getValue());
+		
+		if(resultFeed != null && resultFeed.getEntries() != null){	
+			for(ContactEntry entry : resultFeed.getEntries()){
+				if(entry.hasName()){
+					// must has name
+					//
+					mSvrSyncDataList.add(entry);
+					sb.append(entry.getEdited().getValue());
+				}
 			}
-		}
+		}		
 		
 		mAllSvrSyncDataMD5 = getMD5(sb.toString());
 		
@@ -380,7 +385,10 @@ public class ContactSync extends GoogleAPISync {
 		
 		ContactEntry contact = myService.getEntry(getContactURL(g.getGID()), ContactEntry.class);
 		if(contact != null){
-			contact.delete();			
+			// TODO
+			//contact.delete();
+			
+			mLogger.LogOut(mYuchAcc + " deleteContact:" + g.getBBID());
 		}		
 	}
 
@@ -391,11 +399,16 @@ public class ContactSync extends GoogleAPISync {
 			
 			g.exportGoogleData(contact, mTimeZoneID);
 			
-			URL editUrl = new URL(contact.getEditLink().getHref());
-			contact = myService.update(editUrl, contact);
+			// TODO delete follow test code
+			contact.setUpdated(new DateTime(System.currentTimeMillis()));
+			
+			//URL editUrl = new URL(contact.getEditLink().getHref());
+			//contact = myService.update(editUrl, contact);
 			
 			g.setGID(contact.getId());
 			g.setLastMod(contact.getUpdated().getValue());
+			
+			mLogger.LogOut(mYuchAcc + " updateContact:" + g.getBBID());
 		}
 		
 		return contact;
@@ -406,10 +419,16 @@ public class ContactSync extends GoogleAPISync {
 		ContactEntry contact = new ContactEntry();
 		g.exportGoogleData(contact, mTimeZoneID);
 		
-		contact = myService.insert(getContactURL(""), contact);
+		// TODO delete follow test code
+		contact.setId(Integer.toString((new Random().nextInt(9999999))));
+		contact.setUpdated(new DateTime(System.currentTimeMillis()));
+		
+		//contact = myService.insert(getContactURL(""), contact);
 		
 		g.setGID(contact.getId());
 		g.setLastMod(contact.getUpdated().getValue());
+		
+		mLogger.LogOut(mYuchAcc + " uploadContact:" + g.getBBID());
 		
 		return contact;
 	}

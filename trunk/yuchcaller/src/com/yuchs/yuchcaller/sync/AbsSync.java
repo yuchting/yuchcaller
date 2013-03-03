@@ -157,7 +157,7 @@ public abstract class AbsSync implements PIMListListener{
 			    	PIMItem item = (PIMItem)t_eventList.elementAt(i);
 			    	
 			    	AbsSyncData syncData = newSyncData();
-			    	syncData.importData(item,tPIMList);
+			    	syncData.importData(item);
 			    					    	
 			    	mSyncDataList.addElement(syncData);
 			    }			    
@@ -219,7 +219,7 @@ public abstract class AbsSync implements PIMListListener{
 					CalendarSyncData d = (CalendarSyncData)_addList.elementAt(i);
 					
 					Event e = tEvents.createEvent();
-					d.exportData(e,tEvents);
+					d.exportData(e);
 					
 					e.commit();
 					d.setBBID(AbsSyncData.getStringField(e, Event.UID));
@@ -337,7 +337,7 @@ public abstract class AbsSync implements PIMListListener{
 						Event e = (Event)t_eventList.elementAt(idx);
 						
 						if(update.getBBID().equals(AbsSyncData.getStringField(e, Event.UID))){
-							update.exportData(e,tEvents);
+							update.exportData(e);
 							e.commit();
 						}
 					}
@@ -804,16 +804,12 @@ public abstract class AbsSync implements PIMListListener{
 	public void itemAdded(PIMItem item) {
 		
 		try{
-			PIMList tEventList = (PIMList)PIM.getInstance().openPIMList(getSyncPIMListType(),PIM.READ_ONLY);
-			try{
-				AbsSyncData syncData = newSyncData();
-		    	syncData.importData((Event)item,tEventList);
-		    				    	
-		    	mSyncDataList.addElement(syncData);
-			}finally{
-				tEventList.close();
-				tEventList = null;
-			}
+			
+			AbsSyncData syncData = newSyncData();
+	    	syncData.importData((Event)item);
+	    				    	
+	    	mSyncDataList.addElement(syncData);
+		
 		}catch(Exception e){
 			mSyncMain.m_mainApp.SetErrorString("CSIA", e);
 		}
@@ -867,27 +863,21 @@ public abstract class AbsSync implements PIMListListener{
 			try{
 				String bid = AbsSyncData.getStringField(oldItem, getUIDId());
 				
-				PIMList tPIMList = (PIMList)PIM.getInstance().openPIMList(getSyncPIMListType(),PIM.READ_ONLY);
-				
-				try{
-					synchronized(mSyncDataList){
-						for(int i = 0;i < mSyncDataList.size();i++){
-							AbsSyncData d = (AbsSyncData)mSyncDataList.elementAt(i);
-							if(d.getBBID().equals(bid)){
-								
-								d.importData(newItem, tPIMList);
-								d.setLastMod(System.currentTimeMillis());
-																
-								readWriteSyncFile(false);
-								
-								break;
-							}
+				synchronized(mSyncDataList){
+					for(int i = 0;i < mSyncDataList.size();i++){
+						AbsSyncData d = (AbsSyncData)mSyncDataList.elementAt(i);
+						if(d.getBBID().equals(bid)){
+							
+							d.importData(newItem);
+							d.setLastMod(System.currentTimeMillis());
+															
+							readWriteSyncFile(false);
+							
+							break;
 						}
 					}
-				}finally{
-					tPIMList.close();
-					tPIMList = null;
 				}
+				
 			}catch(Exception e){
 				mSyncMain.m_mainApp.SetErrorString("CSIA", e);
 			}
