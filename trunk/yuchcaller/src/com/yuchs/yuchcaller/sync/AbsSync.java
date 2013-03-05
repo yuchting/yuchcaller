@@ -75,6 +75,11 @@ public abstract class AbsSync implements PIMListListener{
 	//! sync main class
 	final protected SyncMain	mSyncMain;
 	
+	/**
+	 * whether is modified by programmely PIMListListener callback 
+	 */
+	private boolean mModifiedProgrammely = false;
+	
 	public AbsSync(SyncMain _syncMain){
 		mSyncMain = _syncMain;
 		
@@ -221,7 +226,10 @@ public abstract class AbsSync implements PIMListListener{
 					Event e = tEvents.createEvent();
 					d.exportData(e);
 					
+					mModifiedProgrammely = true;
 					e.commit();
+					mModifiedProgrammely = false;
+					
 					d.setBBID(AbsSyncData.getStringField(e, Event.UID));
 					
 					// added to main list
@@ -278,7 +286,10 @@ public abstract class AbsSync implements PIMListListener{
 																
 								if(d.getBBID().equals(AbsSyncData.getStringField(e, Event.UID))){
 									
+									mModifiedProgrammely = true;
 									tEvents.removeEvent(e);
+									mModifiedProgrammely = false;
+									
 									t_eventList.removeElement(e);
 									
 									break;
@@ -330,7 +341,7 @@ public abstract class AbsSync implements PIMListListener{
 					// remove sync data first
 					removeSyncData(update.getBBID());
 					
-					// add data  
+					// add data again
 					mSyncDataList.addElement(update);
 					
 					for(int idx = 0;idx < t_eventList.size();idx++){
@@ -338,7 +349,10 @@ public abstract class AbsSync implements PIMListListener{
 						
 						if(update.getBBID().equals(AbsSyncData.getStringField(e, Event.UID))){
 							update.exportData(e);
+							
+							mModifiedProgrammely = true;
 							e.commit();
+							mModifiedProgrammely = false;
 						}
 					}
 				}
@@ -803,6 +817,11 @@ public abstract class AbsSync implements PIMListListener{
 	//{{ PIMListListener
 	public void itemAdded(PIMItem item) {
 		
+		if(mModifiedProgrammely){
+			mModifiedProgrammely = false;
+			return;
+		}
+		
 		try{
 			
 			AbsSyncData syncData = newSyncData();
@@ -813,25 +832,14 @@ public abstract class AbsSync implements PIMListListener{
 		}catch(Exception e){
 			mSyncMain.m_mainApp.SetErrorString("CSIA", e);
 		}
-		
 	}
 
-	/**
-	 * get the UID Id
-	 * @return
-	 */
-	private int getUIDId(){
-		switch(getSyncPIMListType()){
-		case PIM.EVENT_LIST:
-			return Event.UID;
-		case PIM.CONTACT_LIST:
-			return Contact.UID;
-		default:
-			return ToDo.UID;
-		}
-	}
-	
 	public void itemRemoved(PIMItem item) {
+		
+		if(mModifiedProgrammely){
+			mModifiedProgrammely = false;
+			return;
+		}
 		
 		if(item != null){
 			
@@ -857,6 +865,11 @@ public abstract class AbsSync implements PIMListListener{
 	}
 
 	public void itemUpdated(PIMItem oldItem, PIMItem newItem) {
+		
+		if(mModifiedProgrammely){
+			mModifiedProgrammely = false;
+			return;
+		}
 		
 		if(oldItem != null && newItem != null){
 			
@@ -884,6 +897,21 @@ public abstract class AbsSync implements PIMListListener{
 		}
 	}
 	//}}
+	
+	/**
+	 * get the UID Id
+	 * @return
+	 */
+	private int getUIDId(){
+		switch(getSyncPIMListType()){
+		case PIM.EVENT_LIST:
+			return Event.UID;
+		case PIM.CONTACT_LIST:
+			return Contact.UID;
+		default:
+			return ToDo.UID;
+		}
+	}
 	
 	/**
 	 * get the 0-base index of report by SyncPIMListType

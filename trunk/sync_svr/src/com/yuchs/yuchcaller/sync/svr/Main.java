@@ -28,8 +28,6 @@
 package com.yuchs.yuchcaller.sync.svr;
 
 import java.net.InetSocketAddress;
-import java.net.URL;
-import java.util.List;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -42,19 +40,6 @@ import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
 import org.jboss.netty.handler.timeout.ReadTimeoutHandler;
 import org.jboss.netty.util.HashedWheelTimer;
 import org.jboss.netty.util.Timer;
-
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.gdata.client.Query;
-import com.google.gdata.client.contacts.ContactsService;
-import com.google.gdata.data.contacts.Birthday;
-import com.google.gdata.data.contacts.ContactEntry;
-import com.google.gdata.data.contacts.ContactFeed;
-import com.google.gdata.data.contacts.Occupation;
-import com.google.gdata.data.extensions.Organization;
-import com.google.gdata.data.extensions.PhoneNumber;
-import com.google.gdata.data.extensions.StructuredPostalAddress;
 
 
 
@@ -88,7 +73,7 @@ public class Main {
 //	    
 //	    
 //	    // Step 1: Authorize -->
-//	    String authorizationUrl = new GoogleAuthorizationCodeRequestUrl(clientId, redirectUrl,scope).setAccessType("offline").build();
+//	    String authorizationUrl = new GoogleAuthorizationCodeRequestUrl(GoogleAPISync.getGoogleAPIClientId(), redirectUrl,scope).setAccessType("offline").build();
 //
 //	    // Point or redirect your user to the authorizationUrl.
 //	    System.out.println("Go to the following link in your browser:");
@@ -101,9 +86,8 @@ public class Main {
 //	    // End of Step 1 <--
 //		
 //	    // Step 2: Exchange -->
-//	    HttpTransport httpTransport = new NetHttpTransport();
-//		JacksonFactory jsonFactory = new JacksonFactory();
-//	    GoogleAuthorizationCodeTokenRequest request = new GoogleAuthorizationCodeTokenRequest(httpTransport, jsonFactory,clientId, clientSecret, code, redirectUrl);
+//	    GoogleAuthorizationCodeTokenRequest request = new GoogleAuthorizationCodeTokenRequest(httpTransport, jsonFactory,GoogleAPISync.getGoogleAPIClientId(), 
+//	    																						GoogleAPISync.getGoogleAPIClientSecret(), code, redirectUrl);
 //	    GoogleTokenResponse token = request.execute();
 //	    //token.setExpiresInSeconds(3600l*24l*365l*100L);
 //	    System.out.println("Expire time:" + token.getExpiresInSeconds());
@@ -114,11 +98,11 @@ public class Main {
 	    
 		
 //		GoogleCredential cd = new GoogleCredential.Builder()
-//								    .setClientSecrets(clientId, clientSecret)
+//								    .setClientSecrets(GoogleAPISync.getGoogleAPIClientId(), GoogleAPISync.getGoogleAPIClientSecret())
 //								    .setJsonFactory(jsonFactory).setTransport(httpTransport).build()
-//								    .setRefreshToken("1/e1F3-Cdrgb47ZQrivinMcbc07ChiyT6tKwBv3EgfDcI")
-//								    .setAccessToken("ya29.AHES6ZTls-yP-AgPCPkg_VpF4b4fHVzzjzb6Vt3nawLVwn_AJE0-cA");
-//		
+//								    .setRefreshToken("1/0COUtW0S_cagTrdEYNexehMpx2TLrfQfAhGZv8rcZ6g")
+//								    .setAccessToken("ya29.AHES6ZSAtKhBhABFO7kA4Bx8fTPCTnJzPqgHBJMe4UL3smY");
+		
 //		ContactsService service = new ContactsService("YuchCaller");
 //		service.setOAuth2Credentials(cd);
 //		
@@ -294,8 +278,10 @@ public class Main {
 //		    System.out.println();
 //		  }
 
+		
 //		
 //	    Calendar service = new Calendar(httpTransport, jsonFactory,cd);
+//    
 //	    	    
 //	    com.google.api.services.calendar.Calendar.Events.List cList = service.events().list("primary");
 //	    
@@ -389,12 +375,12 @@ public class Main {
 			public ChannelPipeline getPipeline() throws Exception {
 								 
 				// Create a default pipeline implementation.
-				ChannelPipeline pipeline = Channels.pipeline(new ReadTimeoutHandler(mReadTimeOutTimer, 20));
+				ChannelPipeline pipeline = Channels.pipeline(new ReadTimeoutHandler(mReadTimeOutTimer, 30));
 				
 				pipeline.addLast("decoder", new HttpRequestDecoder());
 				pipeline.addLast("encoder", new HttpResponseEncoder());
 								
-				pipeline.addLast("handler", new MainHttpHandler(mMainLogger));			
+				pipeline.addLast("handler", new MainHttpHandler(mMainLogger));
 				return pipeline;
 			}
 		});

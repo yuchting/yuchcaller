@@ -30,13 +30,13 @@ package com.yuchs.yuchcaller.sync.svr.calendar;
 import java.io.InputStream;
 import java.util.Date;
 import java.util.List;
-import java.util.Random;
 import java.util.TimeZone;
 import java.util.Vector;
 
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.Event;
+import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
 import com.yuchs.yuchcaller.sync.svr.GoogleAPISync;
 import com.yuchs.yuchcaller.sync.svr.GoogleAPISyncData;
@@ -206,9 +206,23 @@ public class CalendarSync extends GoogleAPISync{
 	@Override
 	protected Object uploadGoogleData(GoogleAPISyncData data)throws Exception{
 		
+//		Event event = new Event();
+//
+//		event.setSummary("Appointment");
+//		event.setLocation("Somewhere");
+//
+//
+//		Date startDate = new Date();
+//		Date endDate = new Date(startDate.getTime() + 3600000);
+//		DateTime start = new DateTime(startDate, TimeZone.getTimeZone("UTC"));
+//		event.setStart(new EventDateTime().setDateTime(start));
+//		DateTime end = new DateTime(endDate, TimeZone.getTimeZone("UTC"));
+//		event.setEnd(new EventDateTime().setDateTime(end));
+
+		
 		Event tEvent = new Event();
 		data.exportGoogleData(tEvent,mTimeZoneID);
-		
+				
 		// TODO: delete follow code
 		//tEvent.setId("" + new Random().nextInt());
 		//tEvent.setUpdated(new DateTime(new Date()));

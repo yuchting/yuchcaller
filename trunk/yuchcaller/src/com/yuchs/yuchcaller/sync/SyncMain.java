@@ -258,31 +258,6 @@ public class SyncMain {
 	}
 	
 	/**
-	 * destroy sync data
-	 */
-	public void destroySyncData(){
-		
-		for(int i = 0;i < AbsSync.fsm_syncTypeString.length;i++){
-			
-			String tFilename = YuchCallerProp.fsm_rootPath_back + "YuchCaller/" + AbsSync.fsm_syncTypeString[i] + ".data";
-			try{
-				FileConnection fc = (FileConnection) Connector.open(tFilename,Connector.READ_WRITE);
-				try{
-					if(fc.exists()){
-						fc.delete();
-					}
-				}finally{
-					fc.close();
-					fc = null;
-				}
-			}catch(Exception e){
-				m_mainApp.SetErrorString("DSD", e);
-			}
-		}
-		 	
-	}
-	
-	/**
 	 * request the url via POST
 	 * @param _url
 	 * @param _paramsName

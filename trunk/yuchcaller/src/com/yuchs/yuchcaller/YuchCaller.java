@@ -35,6 +35,7 @@ import java.util.Vector;
 
 import javax.microedition.io.Connector;
 import javax.microedition.io.HttpConnection;
+import javax.microedition.io.file.FileConnection;
 import javax.microedition.pim.Contact;
 
 import local.yuchcallerlocalResource;
@@ -83,6 +84,7 @@ import net.rim.device.api.ui.container.PopupScreen;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 
 import com.flurry.blackberry.FlurryAgent;
+import com.yuchs.yuchcaller.sync.AbsSync;
 import com.yuchs.yuchcaller.sync.SyncMain;
 
 public class YuchCaller extends Application implements OptionsProvider,PhoneListener,DbIndex.DbIndexDebugOut{
@@ -458,6 +460,31 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	 */
 	public SyncMain getSyncMain(){
 		return m_syncMain;
+	}
+	
+	/**
+	 * destroy sync data
+	 */
+	public void destroySyncData(){
+		
+		for(int i = 0;i < AbsSync.fsm_syncTypeString.length;i++){
+			
+			String tFilename = YuchCallerProp.fsm_rootPath_back + "YuchCaller/" + AbsSync.fsm_syncTypeString[i] + ".data";
+			try{
+				FileConnection fc = (FileConnection) Connector.open(tFilename,Connector.READ_WRITE);
+				try{
+					if(fc.exists()){
+						fc.delete();
+					}
+				}finally{
+					fc.close();
+					fc = null;
+				}
+			}catch(Exception e){
+				SetErrorString("DSD", e);
+			}
+		}
+		 	
 	}
 		
 	/**

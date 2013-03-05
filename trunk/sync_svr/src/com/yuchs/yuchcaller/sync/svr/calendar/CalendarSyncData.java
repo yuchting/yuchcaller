@@ -14,6 +14,7 @@ import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.EventReminder;
 import com.google.api.services.calendar.model.Event.Reminders;
 import com.yuchs.yuchcaller.sync.svr.GoogleAPIData;
+import com.yuchs.yuchcaller.sync.svr.GoogleAPISync;
 import com.yuchs.yuchcaller.sync.svr.GoogleAPISyncData;
 
 public class CalendarSyncData extends GoogleAPISyncData{
@@ -25,9 +26,7 @@ public class CalendarSyncData extends GoogleAPISyncData{
 	protected GoogleAPIData newData() {
 		return new CalendarData();
 	}
-	
-	
-	
+		
 	/**
 	 * export the data to the google's calendar Event
 	 * @param g
@@ -43,26 +42,38 @@ public class CalendarSyncData extends GoogleAPISyncData{
 			
 			SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 			
-			DateTime startTime = DateTime.parseRfc3339(format.format(new Date(getData().start)));
-			event.setStart(new EventDateTime().setDateTime(startTime).setTimeZone(_timeZoneID));
+			Date tDate = new Date(getData().start - (getData().start % (24 * 3600000) ));
+			DateTime startTime = new DateTime(format.format(tDate)); 
 			
-			startTime = DateTime.parseRfc3339(format.format(new Date(getData().start + 24 * 3600 * 1000)));
-			event.setEnd(new EventDateTime().setDateTime(startTime).setTimeZone(_timeZoneID));
+			event.setStart(new EventDateTime().setDate(startTime).setTimeZone(_timeZoneID));
+			
+			tDate = new Date(tDate.getTime() + 24 * 3600000);
+			DateTime endTime = new DateTime(format.format(tDate)); 
+			
+			event.setEnd(new EventDateTime().setDate(endTime).setTimeZone(_timeZoneID));
 			
 		}else{
 
 			Date tDate = new Date(getData().start);
-			event.setStart(new EventDateTime().setDate(new DateTime(tDate,TimeZone.getTimeZone(_timeZoneID))));
 			
-			tDate	= new Date(getData().end);
-			event.setEnd(new EventDateTime().setDate(new DateTime(tDate,TimeZone.getTimeZone(_timeZoneID))));
+			DateTime start = new DateTime(tDate, TimeZone.getTimeZone(_timeZoneID));
+			event.setStart(new EventDateTime().setDateTime(start).setTimeZone(_timeZoneID));
 			
-			event.setLocation(getData().location);
+			tDate = new Date(getData().end);
+			DateTime end = new DateTime(tDate, TimeZone.getTimeZone(_timeZoneID));
+			event.setEnd(new EventDateTime().setDateTime(end).setTimeZone(_timeZoneID));
 		}
+		
+		event.setLocation(getData().location);
 		
 		if(getData().alarm > 0){
 
 			Reminders tReminders = new Reminders();
+			
+			// don't use the calendar default reminders
+			// otherwise bad request
+			tReminders.setUseDefault(false);
+						
 			List<EventReminder> tRemindersList = new ArrayList<EventReminder>();
 			
 			EventReminder re = new EventReminder();
@@ -76,7 +87,7 @@ public class CalendarSyncData extends GoogleAPISyncData{
 			event.setReminders(tReminders);
 		}
 		
-		event.setDescription(getData().note);
+		event.setDescription(getData().note);				
 		
 		// the attendees
 		//
@@ -84,11 +95,14 @@ public class CalendarSyncData extends GoogleAPISyncData{
 			
 			List<EventAttendee> tAttendeesList = new ArrayList<EventAttendee>();
 			for(String email : getData().attendees){
-				EventAttendee eventAtt = new EventAttendee();
-				eventAtt.setEmail(email);
-				eventAtt.setDisplayName(email);
+				if(GoogleAPISync.isValidEmail(email)){
 				
-				tAttendeesList.add(eventAtt);
+					EventAttendee eventAtt = new EventAttendee();
+					eventAtt.setEmail(email);
+					eventAtt.setDisplayName(email);
+					
+					tAttendeesList.add(eventAtt);
+				}				
 			}
 			
 			event.setAttendees(tAttendeesList);
@@ -156,7 +170,7 @@ public class CalendarSyncData extends GoogleAPISyncData{
 		getData().summary	= event.getSummary();
 		getData().note		= event.getDescription();
 		
-		getData().start	= getEventDateTime(event.getStart());
+		getData().start		= getEventDateTime(event.getStart());
 		getData().end		= getEventDateTime(event.getEnd());
 		
 		getData().location	= event.getLocation();
@@ -167,13 +181,22 @@ public class CalendarSyncData extends GoogleAPISyncData{
 		Reminders tReminders = event.getReminders();
 		if(tReminders != null){
 			List<EventReminder> _eventReminderList = tReminders.getOverrides();
-			if(_eventReminderList != null){
-				for(EventReminder ev : _eventReminderList){
-					if(ev.getMinutes() != null){
-						int second = ev.getMinutes() * 60;
-						
-						if(getData().alarm == 0 || getData().alarm > second){
-							getData().alarm = second;
+			
+			if(tReminders.getUseDefault() != null 
+			&& tReminders.getUseDefault() == true){
+				
+				getData().alarm = 15 * 60;
+				
+			}else{
+
+				if(_eventReminderList != null){
+					for(EventReminder ev : _eventReminderList){
+						if(ev.getMinutes() != null){
+							int second = ev.getMinutes() * 60;
+							
+							if(getData().alarm == 0 || getData().alarm > second){
+								getData().alarm = second;
+							}
 						}
 					}
 				}
@@ -220,19 +243,21 @@ public class CalendarSyncData extends GoogleAPISyncData{
 	
 	private long getEventDateTime(EventDateTime date){
 		
-		DateTime ed = date.getDateTime();
-		if(ed == null){
-			ed = date.getDate();
-		}
-		
-		if(date == null || ed == null){
+		if(date == null){
 			return 0;
 		}
 		
-		if(ed.toStringRfc3339().length() <= 11){
-			// yyyy-mm-dd 
-			//
-			getData().allDay = true;
+		DateTime ed = date.getDateTime();
+		if(ed == null){
+			ed = date.getDate();
+			
+			if(ed != null){
+				// yyyy-mm-dd 
+				//
+				getData().allDay = true;
+			}else{
+				return 0;
+			}
 		}
 		
 		return ed.getValue();

@@ -64,6 +64,15 @@ public abstract class GoogleAPISync {
 		}
 	}
 	
+	/**
+	 * whether is valid email
+	 * @param _email
+	 * @return
+	 */
+	public static boolean isValidEmail(String _email){
+		return _email.matches("^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$");
+	}
+	
 
 	/**
 	 * buffered Hash map for reduce Google API refresh
