@@ -333,7 +333,7 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 					replace(mConfigMgr, mConfigMgrNull);
 					
 					// delete all sync data file
-					mMainApp.getSyncMain().destroySyncData();
+					mMainApp.destroySyncData();
 				}
 			}
 		}
@@ -414,8 +414,8 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 				
 				// request the yuch server
 				
-				//String url = "http://192.168.100.116:8888/f/login/" + YuchCaller.getHTTPAppendString();
-				String url = "http://192.168.10.7:8888/f/login/" + YuchCaller.getHTTPAppendString();
+				String url = "http://192.168.100.116:8888/f/login/" + YuchCaller.getHTTPAppendString();
+				//String url = "http://192.168.10.7:8888/f/login/" + YuchCaller.getHTTPAppendString();
 				//String url = "http://www.yuchs.com/f/login/" + YuchCaller.getHTTPAppendString();
 							
 				String[] tParamName = {
