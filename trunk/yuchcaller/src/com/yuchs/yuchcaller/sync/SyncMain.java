@@ -36,7 +36,6 @@ import java.util.Vector;
 
 import javax.microedition.io.Connector;
 import javax.microedition.io.HttpConnection;
-import javax.microedition.io.file.FileConnection;
 
 import net.rim.device.api.compress.GZIPInputStream;
 import net.rim.device.api.compress.GZIPOutputStream;
@@ -45,7 +44,6 @@ import net.rim.device.api.io.http.HttpProtocolConstants;
 
 import com.yuchs.yuchcaller.ConnectorHelper;
 import com.yuchs.yuchcaller.YuchCaller;
-import com.yuchs.yuchcaller.YuchCallerProp;
 import com.yuchs.yuchcaller.sync.calendar.CalendarSync;
 import com.yuchs.yuchcaller.sync.contact.ContactSync;
 
@@ -73,11 +71,37 @@ public class SyncMain {
 	
 	// contact sync
 	private final ContactSync mContactSync;
-		
+
+	// calendar re-load thread
+	private Thread mReadBbCalendarThread = null;
+	
 	public SyncMain(YuchCaller _mainApp){
 		m_mainApp		= _mainApp;		
 		mCalendarSync	= new CalendarSync(this);
 		mContactSync	= new ContactSync(this);
+	}
+	
+	/**
+	 * read bb calendar event data if former days changed
+	 */
+	public void readBBCalendarAgain(){
+		
+		if(mCalendarSync != null && mReadBbCalendarThread == null){
+			
+			synchronized(this){
+				mReadBbCalendarThread = (new Thread(){
+					public void run(){
+						mCalendarSync.readBBSyncData();
+						
+						synchronized(SyncMain.this){
+							mReadBbCalendarThread = null;
+						}
+					}
+				});
+				
+				mReadBbCalendarThread.start();				
+			}
+		}
 	}
 	
 	/**
@@ -204,9 +228,9 @@ public class SyncMain {
 		
 		clearReport();
 		
-		mCalendarSync.startSync();
+		//mCalendarSync.startSync();
 		
-		//mContactSync.startSync();
+		mContactSync.startSync();
 	}
 	
 	//! report error

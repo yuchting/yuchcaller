@@ -38,7 +38,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
-import com.yuchs.yuchcaller.sync.svr.calendar.CalendarSyncData;
 
 public abstract class GoogleAPISync {
 
@@ -229,10 +228,11 @@ public abstract class GoogleAPISync {
 	
 	/**
 	 * update the google data to google servers
+	 * @param o
 	 * @param g
 	 * @throws Exception
 	 */
-	protected abstract Object updateGoogleData(GoogleAPISyncData g)throws Exception;
+	protected abstract Object updateGoogleData(Object o,GoogleAPISyncData g)throws Exception;
 	
 	/**
 	 * delegate the goole data from google server
@@ -286,7 +286,7 @@ public abstract class GoogleAPISync {
 			int num = sendReceive.ReadInt(in);
 			
 			for(int i = 0;i < num;i++){
-				CalendarSyncData data	= new CalendarSyncData();
+				GoogleAPISyncData data	= newSyncData();
 				data.input(in);
 				mClientSyncDataList.add(data);
 			}
@@ -540,7 +540,7 @@ public abstract class GoogleAPISync {
 						if(client.getGID().equals(getGoogleDataId(svr))){
 							
 							mSvrSyncDataList.remove(svr);
-							mSvrSyncDataList.add(updateGoogleData(client));
+							mSvrSyncDataList.add(updateGoogleData(svr,client));
 							
 							sendReceive.WriteString(os, client.getBBID());
 							sendReceive.WriteLong(os,client.getLastMod());

@@ -140,7 +140,7 @@ public abstract class AbsSync implements PIMListListener{
 	/**
 	 * read the calendar information from bb calendar
 	 */
-	private void readBBSyncData(){
+	public void readBBSyncData(){
 				
 		try{
 			
@@ -155,17 +155,20 @@ public abstract class AbsSync implements PIMListListener{
 				    	t_eventList.addElement(t_allItems.nextElement());
 				    }
 			    }
-			    			    
-			    mSyncDataList.removeAllElements();
-			    for(int i = 0;i < t_eventList.size();i++){
-			    	
-			    	PIMItem item = (PIMItem)t_eventList.elementAt(i);
-			    	
-			    	AbsSyncData syncData = newSyncData();
-			    	syncData.importData(item);
-			    					    	
-			    	mSyncDataList.addElement(syncData);
-			    }			    
+			    
+			    synchronized(mSyncDataList){
+			    	mSyncDataList.removeAllElements();
+				    for(int i = 0;i < t_eventList.size();i++){
+				    	
+				    	PIMItem item = (PIMItem)t_eventList.elementAt(i);
+				    	
+				    	AbsSyncData syncData = newSyncData();
+				    	syncData.importData(item);
+				    					    	
+				    	mSyncDataList.addElement(syncData);
+				    }	
+			    }
+			   		    
 			    
 			}finally{
 				tPIMList.close();

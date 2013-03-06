@@ -28,6 +28,7 @@
 package com.yuchs.yuchcaller.sync.svr.calendar;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
@@ -36,6 +37,7 @@ import java.util.Vector;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.Event;
+import com.google.api.services.calendar.model.EventAttendee;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
 import com.yuchs.yuchcaller.sync.svr.GoogleAPISync;
@@ -89,9 +91,14 @@ public class CalendarSync extends GoogleAPISync{
 			// insert and sort the event list by the last modification time
 			for (Event event : events.getItems()) {
 				
+				long mod = getEventLastMod(event);
+				if(mod == 0){
+					continue;
+				}
+				
 				for(int i = 0;i < mSvrSyncDataList.size();i++){
 					Event e = (Event)mSvrSyncDataList.get(i);
-					if(getEventLastMod(event) > getEventLastMod(e)){
+					if(mod > getEventLastMod(e)){
 										
 						mSvrSyncDataList.insertElementAt(event, i);
 						
@@ -127,7 +134,7 @@ public class CalendarSync extends GoogleAPISync{
 		
 		mAllSvrSyncDataMD5 = getMD5(sb.toString());
 		
-		System.out.println(debug.toString());
+		mLogger.LogOut(debug.toString());
 		
 		storeFormerEvent();
 	}
@@ -222,40 +229,45 @@ public class CalendarSync extends GoogleAPISync{
 		
 		Event tEvent = new Event();
 		data.exportGoogleData(tEvent,mTimeZoneID);
-				
-		// TODO: delete follow code
-		//tEvent.setId("" + new Random().nextInt());
-		//tEvent.setUpdated(new DateTime(new Date()));
 						
 		tEvent = mService.events().insert("primary", tEvent).execute();
 		data.setGID(tEvent.getId());
 		data.setLastMod(getEventLastMod(tEvent));
 		
-		mLogger.LogOut(mYuchAcc + " uploadEvent:" + data.getBBID());
+		// ouput debug info
+		String tDebugInfo = mYuchAcc + " uploadEvent:" + data.getBBID();
+		if(data.getAPIData() != null){
+			CalendarData cd = (CalendarData)data.getAPIData();
+			tDebugInfo += " " + cd.summary;
+		}
+		mLogger.LogOut(tDebugInfo);
 		
 		return tEvent;
 	}
 	
 	/**
-	 * update the google calendar event 
+	 * update the google calendar event
+	 * @param o 
 	 * @param data
 	 * @throws Exception
 	 */
 	@Override
-	protected Object updateGoogleData(GoogleAPISyncData data)throws Exception{
-		
-		Event tEvent = new Event();
+	protected Object updateGoogleData(Object o,GoogleAPISyncData data)throws Exception{
+			
+		Event tEvent = (Event)o;
 		data.exportGoogleData(tEvent,mTimeZoneID);
-		
-		// TODO: delete follow code
-		//tEvent.setId("" + new Random().nextInt());
-		//tEvent.setUpdated(new DateTime(new Date()));
 		
 		tEvent = mService.events().update("primary", data.getGID(),tEvent).execute();
 		data.setGID(tEvent.getId());
 		data.setLastMod(getEventLastMod(tEvent));		
 		
-		mLogger.LogOut(mYuchAcc + " updateEvent:" + data.getBBID());
+		// ouput debug info
+		String tDebugInfo = mYuchAcc + " updateEvent:" + data.getBBID();
+		if(data.getAPIData() != null){
+			CalendarData cd = (CalendarData)data.getAPIData();
+			tDebugInfo += " " + cd.summary;
+		}
+		mLogger.LogOut(tDebugInfo);
 		
 		return tEvent;
 	}
@@ -268,9 +280,18 @@ public class CalendarSync extends GoogleAPISync{
 	@Override
 	protected void deleteGoogleData(GoogleAPISyncData data)throws Exception{
 		try{ 
+			
 			mService.events().delete("primary", data.getGID()).execute();
 			
-			mLogger.LogOut(mYuchAcc + " deleteEvent:" + data.getBBID());
+			// ouput debug info
+			String tDebugInfo = mYuchAcc + " deleteEvent:" + data.getBBID();
+			if(data.getAPIData() != null){
+				CalendarData cd = (CalendarData)data.getAPIData();
+				tDebugInfo += " " + cd.summary;
+			}
+			
+			mLogger.LogOut(tDebugInfo);
+			
 		}catch(Exception e){
 			mLogger.PrinterException(mYuchAcc,e);
 		}
@@ -283,10 +304,13 @@ public class CalendarSync extends GoogleAPISync{
 	 */
 	public static long getEventLastMod(Event event){
 		
-		long tLastMod;
+		long tLastMod = 0;
+		
 		if(event.getUpdated() != null){
 			tLastMod = event.getUpdated().getValue();
-		}else{
+			
+		}else if(event.getCreated() != null){
+			
 			tLastMod = event.getCreated().getValue();
 		}
 		

@@ -282,6 +282,8 @@ public class CalendarSyncData extends AbsSyncData{
 			} 
 			
 			event.setRepeat(repeatRule);
+		}else{
+			event.setRepeat(null);
 		}
 		
 		setStringField(event, Event.SUMMARY,getData().summary);
