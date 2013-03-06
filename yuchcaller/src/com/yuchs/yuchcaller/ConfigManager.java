@@ -529,7 +529,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			
 			
 			if(mSyncField != null && mSyncField.isDirty()){
-				mSyncField.fetchSyncProp();
+				mSyncField.fetchSyncProp(false);
 			}
 			
 			tProp.save();

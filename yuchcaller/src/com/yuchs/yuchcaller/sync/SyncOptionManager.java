@@ -211,16 +211,26 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 
 	/**
 	 * fetch sync prop to YuchCallerProp
+	 * @param writeFile whether write data to file
 	 */
-	public void fetchSyncProp(){
+	public void fetchSyncProp(boolean writeFile){
 		if(mAutoManualList != null){
 
 			YuchCallerProp tProp = mMainApp.getProperties();
 			
 			tProp.setSyncAutoOrManual(mAutoManualList.getSelectedIndex() == 0);
 			
+			int tFormerDays = tProp.getSyncFormerDays();
 			int tDays = Integer.parseInt(YuchCallerProp.fsm_formerDaysList[mFormerDaysList.getSelectedIndex()]); 
 			tProp.setSyncFormerDays(tDays);
+			
+			if(tFormerDays != tDays){
+				mMainApp.getSyncMain().readBBCalendarAgain();
+			}
+			
+			if(writeFile){
+				tProp.save();
+			}
 		}
 	}
 
@@ -317,6 +327,11 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 			}else if(field == mSigninBtn){
 				
 			}else if(field == mSyncBtn){
+				
+				if(isDirty()){
+					fetchSyncProp(true);					
+					setDirty(false);
+				}
 				
 				mMainApp.startSync();
 				

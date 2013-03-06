@@ -3,11 +3,17 @@ package com.yuchs.yuchcaller.sync.svr.contact;
 import java.io.InputStream;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.Vector;
+
+import sun.security.action.GetLongAction;
 
 import com.google.gdata.client.Query;
 import com.google.gdata.client.contacts.ContactsService;
+import com.google.gdata.data.Category;
 import com.google.gdata.data.DateTime;
 import com.google.gdata.data.TextContent;
 import com.google.gdata.data.contacts.ContactEntry;
@@ -20,6 +26,7 @@ import com.google.gdata.data.extensions.StructuredPostalAddress;
 import com.yuchs.yuchcaller.sync.svr.GoogleAPISync;
 import com.yuchs.yuchcaller.sync.svr.GoogleAPISyncData;
 import com.yuchs.yuchcaller.sync.svr.Logger;
+import com.yuchs.yuchcaller.sync.svr.calendar.CalendarData;
 
 public class ContactSync extends GoogleAPISync {
 	
@@ -60,7 +67,11 @@ public class ContactSync extends GoogleAPISync {
 			return ;
 		}
 		
-		URL feedUrl = new URL("https://www.google.com/m8/feeds/contacts/default/full");
+		if(mSvrSyncDataList == null){
+			mSvrSyncDataList = new Vector<Object>();
+		}
+		
+		URL feedUrl = getContactURL("");
 		Query myQuery = new Query(feedUrl);
 		myQuery.setMaxResults(999999);
 		myQuery.setStringCustomParameter("orderby","lastmodified");
@@ -78,19 +89,25 @@ public class ContactSync extends GoogleAPISync {
 		}
 		
 		StringBuffer sb = new StringBuffer();
+		StringBuffer debug = new StringBuffer();
 		
 		if(resultFeed != null && resultFeed.getEntries() != null){	
-			for(ContactEntry entry : resultFeed.getEntries()){
-				if(entry.hasName()){
+			for(ContactEntry e : resultFeed.getEntries()){
+				if(e.hasName()){
+
 					// must has name
 					//
-					mSvrSyncDataList.add(entry);
-					sb.append(entry.getEdited().getValue());
+					mSvrSyncDataList.add(e);
+					sb.append(e.getEdited().getValue());
+					
+					debug.append(e.getUpdated().getValue()).append(":").append(e.getId()).append("-").append(e.getName().getFullName()).append("\n");
 				}
 			}
 		}		
 		
 		mAllSvrSyncDataMD5 = getMD5(sb.toString());
+		
+		mLogger.LogOut(debug.toString());
 		
 		storeFormerEvent();
 	}
@@ -385,30 +402,69 @@ public class ContactSync extends GoogleAPISync {
 		
 		ContactEntry contact = myService.getEntry(getContactURL(g.getGID()), ContactEntry.class);
 		if(contact != null){
-			// TODO
-			//contact.delete();
 			
-			mLogger.LogOut(mYuchAcc + " deleteContact:" + g.getBBID());
+			
+			// delete contact
+			try{
+				contact.delete();
+			}catch(NullPointerException e){
+				if(e.getMessage().startsWith("No authentication header information")){
+					
+					mGoogleCredential.refreshToken();
+					
+					contact.delete();
+					
+				}else{
+					throw e;
+				}
+			}
+			
+			
+			// ouput debug info
+			String tDebugInfo = mYuchAcc + " deleteContact:" + g.getBBID();
+			if(g.getAPIData() != null){
+				ContactData cd = (ContactData)g.getAPIData();
+				tDebugInfo += " " + cd.names[ContactData.NAME_GIVEN] + cd.names[ContactData.NAME_GIVEN];
+			}
+			mLogger.LogOut(tDebugInfo);
 		}		
 	}
 
 	@Override
-	protected Object updateGoogleData(GoogleAPISyncData g) throws Exception {
-		ContactEntry contact = myService.getEntry(getContactURL(g.getGID()), ContactEntry.class);
+	protected Object updateGoogleData(Object o,GoogleAPISyncData g) throws Exception {
+		ContactEntry contact = (ContactEntry)o;
 		if(contact != null){
 			
 			g.exportGoogleData(contact, mTimeZoneID);
 			
-			// TODO delete follow test code
-			contact.setUpdated(new DateTime(System.currentTimeMillis()));
+			URL editUrl = new URL(contact.getEditLink().getHref());
+			try{
+				
+				contact = myService.update(editUrl, contact);
+				
+			}catch(NullPointerException e){
+				if(e.getMessage().startsWith("No authentication header information")){
+					
+					mGoogleCredential.refreshToken();
+					
+					contact = myService.update(editUrl, contact);
+					
+				}else{
+					throw e;
+				}
+			}
 			
-			//URL editUrl = new URL(contact.getEditLink().getHref());
-			//contact = myService.update(editUrl, contact);
 			
 			g.setGID(contact.getId());
 			g.setLastMod(contact.getUpdated().getValue());
 			
-			mLogger.LogOut(mYuchAcc + " updateContact:" + g.getBBID());
+			// ouput debug info
+			String tDebugInfo = mYuchAcc + " updateContact:" + g.getBBID();
+			if(g.getAPIData() != null){
+				ContactData cd = (ContactData)g.getAPIData();
+				tDebugInfo += " " + cd.names[ContactData.NAME_GIVEN] + cd.names[ContactData.NAME_GIVEN];
+			}
+			mLogger.LogOut(tDebugInfo);
 		}
 		
 		return contact;
@@ -416,19 +472,37 @@ public class ContactSync extends GoogleAPISync {
 
 	@Override
 	protected Object uploadGoogleData(GoogleAPISyncData g) throws Exception {
+		
 		ContactEntry contact = new ContactEntry();
 		g.exportGoogleData(contact, mTimeZoneID);
 		
-		// TODO delete follow test code
-		contact.setId(Integer.toString((new Random().nextInt(9999999))));
-		contact.setUpdated(new DateTime(System.currentTimeMillis()));
+		try{
+			
+			contact = myService.insert(getContactURL(""), contact);
+			
+		}catch(NullPointerException e){
+			if(e.getMessage().startsWith("No authentication header information")){
+				
+				mGoogleCredential.refreshToken();
+				
+				contact = myService.insert(getContactURL(""), contact);
+				
+			}else{
+				throw e;
+			}
+		}
 		
-		//contact = myService.insert(getContactURL(""), contact);
 		
 		g.setGID(contact.getId());
 		g.setLastMod(contact.getUpdated().getValue());
 		
-		mLogger.LogOut(mYuchAcc + " uploadContact:" + g.getBBID());
+		// ouput debug info
+		String tDebugInfo = mYuchAcc + " uploadContact:" + g.getBBID();
+		if(g.getAPIData() != null){
+			ContactData cd = (ContactData)g.getAPIData();
+			tDebugInfo += " " + cd.names[ContactData.NAME_GIVEN] + cd.names[ContactData.NAME_GIVEN];
+		}
+		mLogger.LogOut(tDebugInfo);
 		
 		return contact;
 	}

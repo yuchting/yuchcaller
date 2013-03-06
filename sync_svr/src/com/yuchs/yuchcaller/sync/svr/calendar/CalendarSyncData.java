@@ -67,13 +67,7 @@ public class CalendarSyncData extends GoogleAPISyncData{
 		event.setLocation(getData().location);
 		
 		if(getData().alarm > 0){
-
-			Reminders tReminders = new Reminders();
 			
-			// don't use the calendar default reminders
-			// otherwise bad request
-			tReminders.setUseDefault(false);
-						
 			List<EventReminder> tRemindersList = new ArrayList<EventReminder>();
 			
 			EventReminder re = new EventReminder();
@@ -83,7 +77,14 @@ public class CalendarSyncData extends GoogleAPISyncData{
 			
 			tRemindersList.add(re);
 			
+			Reminders tReminders = new Reminders();
+			
+			// don't use the calendar default reminders
+			// otherwise bad request response
+			//
+			tReminders.setUseDefault(false);
 			tReminders.setOverrides(tRemindersList);
+			
 			event.setReminders(tReminders);
 		}
 		
@@ -91,15 +92,31 @@ public class CalendarSyncData extends GoogleAPISyncData{
 		
 		// the attendees
 		//
-		if(getData().attendees != null){
+		if(getData().attendees != null){			
 			
 			List<EventAttendee> tAttendeesList = new ArrayList<EventAttendee>();
 			for(String email : getData().attendees){
+				
 				if(GoogleAPISync.isValidEmail(email)){
 				
-					EventAttendee eventAtt = new EventAttendee();
-					eventAtt.setEmail(email);
-					eventAtt.setDisplayName(email);
+					EventAttendee eventAtt = null;
+					
+					if(event.getAttendees() != null){
+						// search the attendee in already in attendees
+						//
+						List<EventAttendee> tSearchList = event.getAttendees();
+						for(EventAttendee dee : tSearchList){
+							if(dee.getEmail().equalsIgnoreCase(email)){
+								eventAtt = dee;
+								break;
+							}
+						}
+					}
+					
+					if(eventAtt == null){
+						eventAtt = new EventAttendee();
+						eventAtt.setEmail(email);
+					}
 					
 					tAttendeesList.add(eventAtt);
 				}				
