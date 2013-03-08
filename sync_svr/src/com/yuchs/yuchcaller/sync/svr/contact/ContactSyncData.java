@@ -65,7 +65,7 @@ public class ContactSyncData extends GoogleAPISyncData {
 	protected GoogleAPIData newData() {
 		return new ContactData();
 	}
-
+	
 	
 	@Override
 	public void exportGoogleData(Object g, String timeZoneID) throws Exception {
@@ -84,19 +84,29 @@ public class ContactSyncData extends GoogleAPISyncData {
 				String n = getData().names[i];
 				switch(i){
 				case ContactData.NAME_FAMILY:
-					tNames.setFamilyName(n == null ? null : new FamilyName(n, null));
+					if(n != null && n.length() > 0){
+						tNames.setFamilyName(new FamilyName(n, null));
+					}
 					break;
 				case ContactData.NAME_GIVEN:
-					tNames.setGivenName(n == null ? null : new GivenName(n, null));
+					if(n != null && n.length() > 0){
+						tNames.setGivenName(new GivenName(n, null));
+					}					
 					break;
 				case ContactData.NAME_OTHER:
-					tNames.setAdditionalName(n == null ? null : new AdditionalName(n, null));
+					if(n != null && n.length() > 0){
+						tNames.setAdditionalName(new AdditionalName(n, null));
+					}
 					break;
 				case ContactData.NAME_PREFIX:
-					tNames.setNamePrefix(n == null ? null : new NamePrefix(n));
+					if(n != null && n.length() > 0){
+						tNames.setNamePrefix(new NamePrefix(n));
+					}
 					break;
 				case ContactData.NAME_SUFFIX:
-					tNames.setNameSuffix(n == null ? null : new NameSuffix(n));
+					if(n != null && n.length() > 0){
+						tNames.setNameSuffix(new NameSuffix(n));
+					}
 					break;				
 				}
 			}
@@ -164,13 +174,13 @@ public class ContactSyncData extends GoogleAPISyncData {
 				}
 				
 				if(addNumber != null){
-					if(number == null){
+					if(number == null || number.length() <= 0){
 						tList.remove(addNumber);
 					}else{
 						addNumber.setPhoneNumber(number);
 					}
 				}else{
-					if(number != null){
+					if(number != null && number.length() > 0){
 						
 						addNumber = new PhoneNumber();
 						
@@ -184,11 +194,12 @@ public class ContactSyncData extends GoogleAPISyncData {
 						
 						tList.add(addNumber);
 					}
-				}				
+				}	
+							
 			}
 		}
 		
-		if(getData().org != null || getData().title != null){
+		if((getData().org != null && getData().org.length() > 0) || (getData().title != null && getData().title.length() >0)){
 			
 			Organization org = null;
 			if(contact.hasOrganizations()){
@@ -197,12 +208,11 @@ public class ContactSyncData extends GoogleAPISyncData {
 				org = new Organization();
 				contact.addOrganization(org);
 			}
-			
-			if(getData().org != null){
-				org.setOrgName(new OrgName(getData().org));
-			}else{
-				org.setOrgTitle(new OrgTitle(getData().title));
-			}
+						
+			org.setOrgName(new OrgName(getData().org == null ? "" : getData().org));
+			org.setOrgTitle(new OrgTitle(getData().title == null ? "" : getData().title));
+			org.setLabel("Work");
+			org.setRel("http://schemas.google.com/g/2005#work");
 		}
 		
 		if(getData().email != null){
@@ -212,7 +222,11 @@ public class ContactSyncData extends GoogleAPISyncData {
 			for(int i = 0;i < getData().email.length;i++){
 				for(Email email : tList){
 					if((email.getRel() != null && email.getRel().endsWith(GoogleEmailType[i]))){
-						email.setAddress(getData().email[i]);
+						
+						if(getData().email[i] != null && getData().email[i].length() >0){
+							email.setAddress(getData().email[i]);
+						}
+						
 						break;
 					}
 				}
@@ -241,24 +255,37 @@ public class ContactSyncData extends GoogleAPISyncData {
 				
 				switch(i){
 				case ContactData.ADDR_POBOX:
-					addr.setPobox(d == null ? null : new PoBox(d));
+					if(d != null && d.length() > 0){
+						addr.setPobox(new PoBox(d));
+					}
+					
 					break;
 				case ContactData.ADDR_EXTRA:
 					break;
 				case ContactData.ADDR_STREET:
-					addr.setStreet(d == null ? null : new Street(d));
+					if(d != null && d.length() > 0){
+						addr.setStreet(new Street(d));
+					}
 					break;
 				case ContactData.ADDR_LOCALITY:
-					addr.setCity(d == null ? null : new City(d));
+					if(d != null && d.length() > 0){
+						addr.setCity(new City(d));
+					}
 					break;
 				case ContactData.ADDR_REGION:
-					addr.setRegion(d == null ? null : new Region(d));
+					if(d != null && d.length() > 0){
+						addr.setRegion(new Region(d));
+					}
 					break;
 				case ContactData.ADDR_POSTALCODE:
-					addr.setPostcode(d == null ? null : new PostCode(d));
+					if(d != null && d.length() > 0){
+						addr.setPostcode(new PostCode(d));
+					}
 					break;
 				case ContactData.ADDR_COUNTRY:
-					addr.setPobox(d == null ? null : new PoBox(d));
+					if(d != null && d.length() > 0){
+						addr.setPobox(new PoBox(d));
+					}
 					break;
 				}
 			}
@@ -395,5 +422,141 @@ public class ContactSyncData extends GoogleAPISyncData {
 			TextContent text = (TextContent)contact.getContent();
 			getData().note = text.getContent().getPlainText();
 		}
+	}
+	
+
+	/**
+	 * compare to ContactSyncData
+	 */
+	@Override
+	public boolean equals(Object o){
+		
+		if(o instanceof ContactSyncData){
+			
+			ContactSyncData cmp = (ContactSyncData)o;
+			if(cmp.getAPIData() == null || getAPIData() == null){
+				return false;
+			}
+			
+			ContactData ownData 	= getData();
+			ContactData cmpData 	= cmp.getData();
+			
+			if(!cmpNameString(cmpData.title,ownData.title)){
+				return false;
+			}
+
+			if(!cmpNameStringArr(cmpData.names,ownData.names)){
+				return false;
+			}
+			
+			if(!cmpNameString(cmpData.nickname,ownData.nickname)){
+				return false;
+			}
+			
+			if(!cmpNameStringArr(cmpData.addr_work,ownData.addr_work)){
+				return false;
+			}
+			
+			if(!cmpNameStringArr(cmpData.addr_home,ownData.addr_home)){
+				return false;
+			}
+			
+			if(!cmpNameStringArr(cmpData.tel,ownData.tel)){
+				return false;
+			}
+			
+			if(!cmpNameStringArr(cmpData.email,ownData.email)){
+				return false;
+			}
+			
+			if(!cmpNameString(cmpData.org,ownData.org)){
+				return false;
+			}
+			
+			if(!cmpNameString(cmpData.note,ownData.note)){
+				return false;
+			}
+			
+			if(cmpData.birthday != ownData.birthday){
+				return false;
+			}
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * compare the string array 
+	 * @param a
+	 * @param b
+	 * @return
+	 */
+	private static boolean cmpNameStringArr(String[] a,String[] b){
+		if(a == null && b == null){
+			return true;
+		}
+		
+		if(a == null || b == null){
+			return false;
+		}
+		
+		if(a.length != b.length){
+			return false;
+		}
+		
+		for(int i = 0;i < a.length;i++){
+			if(!cmpNameString(a[i], b[i])){
+				return false;
+			}
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * compare the string whether equal
+	 * @param a
+	 * @param b
+	 * @return
+	 */
+	private static boolean cmpNameString(String a,String b){
+
+		if(a != null){
+			
+			if(a.length() == 0 && b == null){
+				return true;
+			}
+
+			return a.equals(b);
+			
+		}else{
+			
+			return (b == null || b.length() == 0);
+		}
+	}
+	
+	/**
+	 * is null array
+	 * @param arr
+	 * @return
+	 */
+	private static boolean isNullArr(String[] arr){
+		for(String s : arr){
+			if(s != null && s.length() > 0){
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	/**
+	 * 
+	 * @param s
+	 * @return
+	 */
+	private static boolean isNullString(String s){
+		return s == null || s.length() == 0;
 	}
 }

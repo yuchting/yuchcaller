@@ -3,18 +3,14 @@ package com.yuchs.yuchcaller.sync.svr.contact;
 import java.io.InputStream;
 import java.net.URL;
 import java.text.SimpleDateFormat;
-import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
+import java.util.Set;
 import java.util.Vector;
-
-import sun.security.action.GetLongAction;
 
 import com.google.gdata.client.Query;
 import com.google.gdata.client.contacts.ContactsService;
 import com.google.gdata.data.Category;
-import com.google.gdata.data.DateTime;
 import com.google.gdata.data.TextContent;
 import com.google.gdata.data.contacts.ContactEntry;
 import com.google.gdata.data.contacts.ContactFeed;
@@ -26,13 +22,10 @@ import com.google.gdata.data.extensions.StructuredPostalAddress;
 import com.yuchs.yuchcaller.sync.svr.GoogleAPISync;
 import com.yuchs.yuchcaller.sync.svr.GoogleAPISyncData;
 import com.yuchs.yuchcaller.sync.svr.Logger;
-import com.yuchs.yuchcaller.sync.svr.calendar.CalendarData;
 
 public class ContactSync extends GoogleAPISync {
 	
 	private ContactsService myService = new ContactsService("YuchCaller");
-	
-	
 	
 	public ContactSync(InputStream in, Logger logger) throws Exception {
 		super(in, logger);
@@ -89,25 +82,21 @@ public class ContactSync extends GoogleAPISync {
 		}
 		
 		StringBuffer sb = new StringBuffer();
-		StringBuffer debug = new StringBuffer();
 		
 		if(resultFeed != null && resultFeed.getEntries() != null){	
 			for(ContactEntry e : resultFeed.getEntries()){
 				if(e.hasName()){
-
 					// must has name
 					//
 					mSvrSyncDataList.add(e);
 					sb.append(e.getEdited().getValue());
-					
-					debug.append(e.getUpdated().getValue()).append(":").append(e.getId()).append("-").append(e.getName().getFullName()).append("\n");
 				}
 			}
 		}		
 		
 		mAllSvrSyncDataMD5 = getMD5(sb.toString());
 		
-		mLogger.LogOut(debug.toString());
+		mLogger.LogOut(mYuchAcc + " Load Contact Number:" + mSvrSyncDataList.size());
 		
 		storeFormerEvent();
 	}
@@ -127,270 +116,12 @@ public class ContactSync extends GoogleAPISync {
 
 	@Override
 	protected boolean isFristSyncSameData(Object o, GoogleAPISyncData g)throws Exception {
-		ContactEntry 		contact = (ContactEntry)o;
-		ContactSyncData		c		= (ContactSyncData)g;
 		
-		ContactData			cd		= c.getData();
-				
-		// names compare
-		if(contact.hasName()){
-			
-			Name tName = contact.getName();
-			
-			String[] gdNames = new String[]{
-				tName.getFamilyName() 		!= null ? tName.getFamilyName().getValue():null,
-				tName.getGivenName() 		!= null ? tName.getGivenName().getValue():null,
-				tName.getAdditionalName() 	!= null ? tName.getAdditionalName().getValue():null,
-				tName.getNamePrefix() 		!= null ? tName.getNamePrefix().getValue():null,
-				tName.getNameSuffix() 		!= null ? tName.getNameSuffix().getValue():null,
-			};
-			
-			for(int i = 0 ;i < gdNames.length;i++){
-				if(!cmpNameString(gdNames[i],cd.names[i])){
-					return false;
-				}
-			}
-			
-		}else{
-			return false;
-		}
+		ContactSyncData		cmp = new ContactSyncData();
+		cmp.importGoogleData((ContactEntry)o);
 		
-		// address compared
-		//
-		if(contact.hasStructuredPostalAddresses()){
-
-			List<StructuredPostalAddress> tList = contact.getStructuredPostalAddresses();
-			
-			String[] gdHomeAddr = new String[ContactData.ADDR_SiZE];
-			String[] gdWorkAddr = new String[ContactData.ADDR_SiZE];
-			
-			for(int i = 0;i < tList.size();i++){
-				StructuredPostalAddress addr = tList.get(i);
-				if(addr.getRel() != null){
-					
-					String[] gdAddr = null;
-					if(addr.getRel().endsWith("home")){
-						gdAddr = gdHomeAddr;
-					}else if(addr.getRel().endsWith("work")){
-						gdAddr = gdWorkAddr;
-					}
-					
-					if(gdAddr != null){
-						gdAddr[ContactData.ADDR_POBOX] 		= addr.getPobox()	!= null ? addr.getPobox().getValue() : null;
-						gdAddr[ContactData.ADDR_EXTRA] 		= null;
-						gdAddr[ContactData.ADDR_STREET] 	= addr.getStreet()	!= null ? addr.getStreet().getValue() : null;
-						gdAddr[ContactData.ADDR_LOCALITY]	= addr.getCity()	!= null ? addr.getCity().getValue() : null;
-						gdAddr[ContactData.ADDR_REGION]		= addr.getRegion()	!= null ? addr.getRegion().getValue() : null;
-						gdAddr[ContactData.ADDR_POSTALCODE]	= addr.getPostcode()!= null ? addr.getPostcode().getValue() : null;
-						gdAddr[ContactData.ADDR_COUNTRY]	= addr.getCountry()!= null ? addr.getCountry().getValue() : null;
-					}					
-				}
-			}
-			
-			for(int i = 0;i < gdHomeAddr.length;i++){
-				if(!cmpNameString(gdWorkAddr[i],cd.addr_work[i]) || !cmpNameString(gdHomeAddr[i],cd.addr_home[i])){
-					return false;
-				}
-			}
-			
-		}else{
-			if(!isNullArr(cd.addr_work) || !isNullArr(cd.addr_home)){
-				return false;
-			}
-		}
-		
-		if(contact.hasPhoneNumbers()){
-			
-			String[] gdTel = new String[ContactData.TEL_SIZE];
-			
-			List<PhoneNumber> tList = contact.getPhoneNumbers();
-			
-			for(PhoneNumber p : tList){
-				if(p.getRel() != null){
-					
-					if(p.getRel().endsWith("work")){
-						
-						gdTel[ContactData.TEL_WORK] = p.getPhoneNumber();
-						
-					}else if(p.getRel().endsWith("home")){
-						
-						gdTel[ContactData.TEL_HOME] = p.getPhoneNumber();
-						
-					}else if(p.getRel().endsWith("mobile")){
-						
-						gdTel[ContactData.TEL_MOBILE] = p.getPhoneNumber();
-						
-					}else if(p.getRel().endsWith("pager")){
-						
-						gdTel[ContactData.TEL_PAGER] = p.getPhoneNumber();
-						
-					}else if(p.getRel().endsWith("work_fax")){
-						
-						gdTel[ContactData.TEL_FAX] = p.getPhoneNumber();
-					}
-					
-				}else if(p.getLabel() != null){
-					
-					if(p.getLabel().startsWith("work2")){
-						
-						gdTel[ContactData.TEL_WORK2] = p.getPhoneNumber();
-						
-					}else if(p.getLabel().startsWith("home2")){
-						
-						gdTel[ContactData.TEL_HOME2] = p.getPhoneNumber();
-						
-					}else if(p.getLabel().startsWith("mobile2")){
-						
-						gdTel[ContactData.TEL_MOBILE2] = p.getPhoneNumber();
-						
-					}else{
-						
-						gdTel[ContactData.TEL_OTHER] = p.getPhoneNumber();
-					}
-				}
-			}
-			
-			for(int i = 0 ;i < gdTel.length;i++){
-				if(!cmpNameString(gdTel[i],cd.tel[i])){
-					return false;
-				}
-			}
-		}else{
-			if(!isNullArr(cd.tel)){
-				return false;
-			}
-		}
-		
-		// compare the organization (company and job title)
-		if(contact.hasOrganizations()){
-			
-			List<Organization> tList = contact.getOrganizations();
-			
-			Organization organization = tList.get(0);
-			String org 		= organization.hasOrgName() ? organization.getOrgName().getValue() : null;
-			String title 	= organization.hasOrgTitle() ? organization.getOrgTitle().getValue() : null;
-			
-			if(!cmpNameString(org,cd.org) || !cmpNameString(title,cd.title)){
-				return false;
-			}
-			
-		}else{
-			if(!isNullString(cd.org) || !isNullString(cd.title)){
-				return false;
-			}
-		}
-		
-		// compare the email address
-		if(contact.hasEmailAddresses()){
-			
-			String[] gdemails = new String[ContactData.EMAIL_SIZE];
-			
-			List<Email> tList = contact.getEmailAddresses();
-			for(Email email : tList){
-				String e = email.getAddress();
-				
-				if(email.getRel() != null){
-					if(email.getRel().endsWith("work")){
-						gdemails[ContactData.EMAIL_WORK] = e;
-					}else if(email.getRel().endsWith("home")){
-						gdemails[ContactData.EMAIL_HOME] = e;
-					}
-				}else{
-					if(email.getLabel() != null){
-						gdemails[ContactData.EMAIL_OTHER] = e;
-					}
-				}
-			}
-			
-			for(int i = 0 ;i < gdemails.length;i++){
-				if(!cmpNameString(gdemails[i],cd.email[i])){
-					return false;
-				}
-			}			
-		}else{
-			if(!isNullArr(cd.email)){
-				return false;
-			}
-		}
-		
-		// compare the birthday
-		//
-		if(contact.hasBirthday()){
-			String dateStr = contact.getBirthday().getWhen();
-			if(dateStr.startsWith("00")){
-				dateStr = dateStr.replace("00", "19");
-			}
-			
-			SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-			if(format.parse(dateStr).getTime() != cd.birthday){
-				return false;
-			}
-		}else{
-			if(cd.birthday != 0){
-				return false;
-			}
-		}
-		
-		// compare the note
-		if(contact.getContent() instanceof TextContent){
-			TextContent text = (TextContent)contact.getContent();
-			if(cmpNameString(text.getContent().getPlainText(), cd.note)){
-				return false;
-			}
-		}else{
-			if(!isNullString(cd.note)){
-				return false;
-			}
-		}
-		
-		return true;
-	}
-	
-	/**
-	 * compare the string whether equal
-	 * @param a
-	 * @param b
-	 * @return
-	 */
-	private static boolean cmpNameString(String a,String b){
-
-		if(a != null){
-			
-			if(a.length() == 0 && b == null){
-				return true;
-			}
-
-			return a.equals(b);
-			
-		}else{
-			
-			return (b == null || b.length() == 0);
-		}
-	}
-	
-	/**
-	 * is null array
-	 * @param arr
-	 * @return
-	 */
-	private static boolean isNullArr(String[] arr){
-		for(String s : arr){
-			if(s != null && s.length() > 0){
-				return false;
-			}
-		}
-		return true;
-	}
-	
-	/**
-	 * 
-	 * @param s
-	 * @return
-	 */
-	private static boolean isNullString(String s){
-		return s == null || s.length() == 0;
-	}
-	
+		return cmp.equals(g);
+	}	
 
 	@Override
 	protected GoogleAPISyncData newSyncData() {

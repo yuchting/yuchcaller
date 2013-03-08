@@ -137,6 +137,8 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 		
 		if(mReceiveBuffer.writerIndex() >= mContentLength){
 			
+			mLogger.LogOut("recv Content length:" + mContentLength);
+			
 			byte[] tContentBytes;
 			
 			if(mContentEncoded){
@@ -179,6 +181,8 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 	 * trigger process
 	 */
 	private void triggerProcess(byte[] _bytes,MessageEvent e)throws Exception{
+		
+		mLogger.LogOut("triggerProcess length:" + _bytes.length);
 		
 		// attempt to zip the data
 		boolean zip = false;
