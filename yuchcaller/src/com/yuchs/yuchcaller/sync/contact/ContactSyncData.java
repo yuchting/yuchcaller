@@ -1,3 +1,30 @@
+/**
+ *  Dear developer:
+ *  
+ *   If you want to modify this file of project and re-publish this please visit:
+ *  
+ *     http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *     
+ *   to check your responsibility and my humble proposal. Thanks!
+ *   
+ *  -- 
+ *  Yuchs' Developer    
+ *  
+ *  
+ *  
+ *  
+ *  尊敬的开发者：
+ *   
+ *    如果你想要修改这个项目中的文件，同时重新发布项目程序，请访问一下：
+ *    
+ *      http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *      
+ *    了解你的责任，还有我卑微的建议。 谢谢！
+ *   
+ *  -- 
+ *  语盒开发者
+ *  
+ */
 package com.yuchs.yuchcaller.sync.contact;
 
 import javax.microedition.pim.Contact;
@@ -31,12 +58,13 @@ public class ContactSyncData extends AbsSyncData {
 		
 		Contact contact = (Contact)item;
 		
-		setStringArrayField( contact, Contact.NAME,getRightSizeArr(getData().names,contact.getPIMList().stringArraySize(Contact.NAME)));
+		setStringArrayField( contact, Contact.NAME,makeRightSizeArr(getData().names,contact.getPIMList().stringArraySize(Contact.NAME)));
 		
-		setStringArrayField( contact, Contact.ADDR,Contact.ATTR_HOME,getRightSizeArr(getData().addr_home,contact.getPIMList().stringArraySize(Contact.ADDR)));
-		setStringArrayField( contact, Contact.ADDR,Contact.ATTR_WORK,getRightSizeArr(getData().addr_work,contact.getPIMList().stringArraySize(Contact.ADDR)));
+		setStringArrayField( contact, Contact.ADDR,Contact.ATTR_WORK,makeRightSizeArr(getData().addr_work,contact.getPIMList().stringArraySize(Contact.ADDR)));
+		setStringArrayField( contact, Contact.ADDR,Contact.ATTR_HOME,makeRightSizeArr(getData().addr_home,contact.getPIMList().stringArraySize(Contact.ADDR)));		
 		
 		if(getData().tel != null){
+
 			for(int i = 0;i < getData().tel.length;i++){
 				String telNum = getData().tel[i];
 				switch(i){
@@ -70,26 +98,29 @@ public class ContactSyncData extends AbsSyncData {
 				}
 			}
 		}
-		
+			
 		if(getData().email != null){
 			
-			for(int i = 0;i < getData().tel.length;i++){
-				String email = getData().tel[i];
-				
+			clearPIMItemFields(item, Contact.EMAIL);
+			
+			for(int i = 0;i < getData().email.length;i++){
+				String email = getData().email[i];
+								
 				switch(i){
+				case ContactData.EMAIL_OTHER:
+					setStringField( contact, Contact.EMAIL, Contact.ATTR_OTHER,i,email);
+					break;	
 				case ContactData.EMAIL_WORK:
-					setStringField( contact, Contact.EMAIL, Contact.ATTR_WORK,email);
+					setStringField( contact, Contact.EMAIL, Contact.ATTR_WORK,i,email);
 					break;
 				case ContactData.EMAIL_HOME:
-					setStringField( contact, Contact.EMAIL, Contact.ATTR_HOME,email);
-					break;				
-				case ContactData.EMAIL_OTHER:
-					setStringField( contact, Contact.EMAIL, Contact.ATTR_OTHER,email);
-					break;					
+					setStringField( contact, Contact.EMAIL, Contact.ATTR_HOME,i,email);
+					break;
+								
 				}
 			}
 		}
-		
+
 		setStringField(contact,Contact.ORG,getData().org);
 		setStringField(contact,Contact.NOTE,getData().note);
 		setDateField(contact,Contact.BIRTHDAY,getData().birthday);
@@ -102,7 +133,7 @@ public class ContactSyncData extends AbsSyncData {
 	 * @param rightSize
 	 * @return
 	 */
-	private String[] getRightSizeArr(String[] arr,int rightSize){
+	private String[] makeRightSizeArr(String[] arr,int rightSize){
 		
 		if(arr != null){
 			if(arr.length != rightSize){
@@ -130,6 +161,7 @@ public class ContactSyncData extends AbsSyncData {
 				
 		int[] fieldIds = contact.getFields();
 		int id;
+		int count;
 		for(int i = 0;i < fieldIds.length;i++){
 			id = fieldIds[i];
 			
@@ -144,17 +176,17 @@ public class ContactSyncData extends AbsSyncData {
 				getData().nickname = getStringField(contact,id);
 				break;
 			case Contact.ADDR:
-				getData().addr_work = getStringArrayField(contact, id,0);
-				getData().addr_home = getStringArrayField(contact, id,1);
+				getData().addr_work = getStringArrayField(contact, id,Contact.ATTR_WORK);
+				getData().addr_home = getStringArrayField(contact, id,Contact.ATTR_HOME);
 				break;
 			case Contact.TEL:
-				getData().tel = new String[contact.getPIMList().maxValues(id)];
-				int count = contact.countValues(id);
+				getData().tel = new String[ContactData.TEL_SIZE];
+				count = contact.countValues(id);
 				for(int c = 0;c < count;c++){
 					
 					int attr		= contact.getAttributes(id, c);
 					String value	= contact.getString(id, c);
-					
+
 					switch(attr){
 					case Contact.ATTR_WORK:
 						getData().tel[ContactData.TEL_WORK] = value;
@@ -181,6 +213,7 @@ public class ContactSyncData extends AbsSyncData {
 						getData().tel[ContactData.TEL_FAX] = value;
 						break;
 					case Contact.ATTR_OTHER:
+					case Contact.ATTR_NONE:
 						getData().tel[ContactData.TEL_OTHER] = value;
 						break;
 					}
@@ -190,21 +223,28 @@ public class ContactSyncData extends AbsSyncData {
 				
 			case Contact.EMAIL:
 				getData().email = new String[ContactData.EMAIL_SIZE];
-				int num = contact.countValues(id);
-				for(int c = 0;c < num;c++){
+				count = contact.countValues(id);
+				
+				for(int c = 0;c < count;c++){
 					int attr		= contact.getAttributes(id, c);
 					String value	= contact.getString(id, c);
-					switch(attr){
-					case Contact.ATTR_WORK:
-						getData().tel[ContactData.EMAIL_WORK] = value;
-						break;
-					case Contact.ATTR_HOME:
-						getData().tel[ContactData.EMAIL_HOME] = value;
-						break;
-					case Contact.ATTR_OTHER:
-						getData().tel[ContactData.EMAIL_OTHER] = value;
-						break;
-					}					
+					
+					if(attr == Contact.ATTR_NONE){
+						getData().email[c] = value;
+					}else{
+						switch(attr){
+						case Contact.ATTR_OTHER:
+							getData().email[ContactData.EMAIL_OTHER] = value;
+							break;
+						case Contact.ATTR_WORK:
+							getData().email[ContactData.EMAIL_WORK] = value;
+							break;
+						case Contact.ATTR_HOME:
+							getData().email[ContactData.EMAIL_HOME] = value;
+							break;						
+						}
+					}
+										
 				}
 				break;
 			case Contact.ORG:

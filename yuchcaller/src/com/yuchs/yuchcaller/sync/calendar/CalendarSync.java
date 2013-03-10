@@ -27,7 +27,11 @@
  */
 package com.yuchs.yuchcaller.sync.calendar;
 
+import javax.microedition.pim.Event;
+import javax.microedition.pim.EventList;
 import javax.microedition.pim.PIM;
+import javax.microedition.pim.PIMItem;
+import javax.microedition.pim.PIMList;
 
 import net.rim.blackberry.api.pdap.PIMListListener;
 
@@ -62,6 +66,39 @@ public class CalendarSync extends AbsSync implements PIMListListener{
 		return new CalendarSyncData();
 	}
 		
+	/**
+	 * get the PIMItem UID
+	 * @param item
+	 * @return
+	 */
+	protected String getPIMItemUID(PIMItem item){
+		return AbsSyncData.getStringField((PIMItem)item, Event.UID);
+	}
+	
+	/**
+	 * add PIMItem to bb system
+	 * @param itemList
+	 * @param d
+	 * @throws Exception
+	 */
+	protected void addPIMItemImpl(PIMList itemList,AbsSyncData d)throws Exception{
+		
+		Event e = ((EventList)itemList).createEvent();
+		d.exportData(e);
+		
+		e.commit();				
+		d.setBBID(getPIMItemUID(e));
+	}
+
+	
+	/**
+	 * delete the PIM item from BB system
+	 * @param item
+	 * @throws Exception
+	 */
+	protected void deletePIMItemImpl(PIMItem item)throws Exception{
+		((EventList)item.getPIMList()).removeEvent((Event)item);
+	}
 	
 	
 

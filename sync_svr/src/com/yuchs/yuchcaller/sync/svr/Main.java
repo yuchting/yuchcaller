@@ -375,7 +375,7 @@ public class Main {
 			public ChannelPipeline getPipeline() throws Exception {
 								 
 				// Create a default pipeline implementation.
-				ChannelPipeline pipeline = Channels.pipeline(new ReadTimeoutHandler(mReadTimeOutTimer, 30));
+				ChannelPipeline pipeline = Channels.pipeline(new ReadTimeoutHandler(mReadTimeOutTimer, 180));
 				
 				pipeline.addLast("decoder", new HttpRequestDecoder());
 				pipeline.addLast("encoder", new HttpResponseEncoder());

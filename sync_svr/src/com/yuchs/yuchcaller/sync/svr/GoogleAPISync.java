@@ -38,6 +38,9 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.gdata.data.contacts.ContactEntry;
+import com.google.gdata.data.extensions.Name;
+import com.yuchs.yuchcaller.sync.svr.contact.ContactSyncData;
 
 public abstract class GoogleAPISync {
 
@@ -313,6 +316,27 @@ public abstract class GoogleAPISync {
 			
 			for(GoogleAPISyncData d : mClientSyncDataList){
 				
+//				Name tName = ((ContactEntry)g).getName();
+//				
+//				String[] names = new String[]{
+//					tName.hasFamilyName() 	? tName.getFamilyName().getValue():null,
+//					tName.hasGivenName() 	? tName.getGivenName().getValue():null,
+//					tName.hasAdditionalName()? tName.getAdditionalName().getValue():null,
+//					tName.hasNamePrefix() 	? tName.getNamePrefix().getValue():null,
+//					tName.hasNameSuffix() 	? tName.getNameSuffix().getValue():null,
+//				};
+//				
+//				test_flag:
+//				for(String s : names){
+//					ContactSyncData cc = (ContactSyncData)d;
+//					
+//					for(String s1 : cc.getData().names){
+//						if(s != null && s1 != null && s.equals(s1) && s.equals("rihui")){
+//							break test_flag;
+//						}
+//					}
+//				}
+				
 				if(d.getGID().isEmpty() && d.getAPIData() != null
 				&& isFristSyncSameData(g,d)){
 						
@@ -349,7 +373,7 @@ public abstract class GoogleAPISync {
 			
 			GoogleAPISyncData data = newSyncData();
 			data.importGoogleData(g);
-
+			
 			tAddList.add(data);
 		}
 		

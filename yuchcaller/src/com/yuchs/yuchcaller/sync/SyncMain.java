@@ -360,6 +360,7 @@ public class SyncMain {
 		HttpConnection conn = (HttpConnection)ConnectorHelper.open(_url,Connector.READ_WRITE,30000);
 		try{
 			
+			
 			conn.setRequestMethod(HttpConnection.POST);
 			conn.setRequestProperty(HttpProtocolConstants.HEADER_CONTENT_LENGTH,String.valueOf(tParamByte.length));
 
