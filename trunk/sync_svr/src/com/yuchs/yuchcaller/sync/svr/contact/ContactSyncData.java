@@ -1,3 +1,30 @@
+/**
+ *  Dear developer:
+ *  
+ *   If you want to modify this file of project and re-publish this please visit:
+ *  
+ *     http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *     
+ *   to check your responsibility and my humble proposal. Thanks!
+ *   
+ *  -- 
+ *  Yuchs' Developer    
+ *  
+ *  
+ *  
+ *  
+ *  尊敬的开发者：
+ *   
+ *    如果你想要修改这个项目中的文件，同时重新发布项目程序，请访问一下：
+ *    
+ *      http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *      
+ *    了解你的责任，还有我卑微的建议。 谢谢！
+ *   
+ *  -- 
+ *  语盒开发者
+ *  
+ */
 package com.yuchs.yuchcaller.sync.svr.contact;
 
 import java.text.SimpleDateFormat;
@@ -24,6 +51,7 @@ import com.google.gdata.data.extensions.Street;
 import com.google.gdata.data.extensions.StructuredPostalAddress;
 import com.yuchs.yuchcaller.sync.svr.GoogleAPIData;
 import com.yuchs.yuchcaller.sync.svr.GoogleAPISyncData;
+import com.yuchs.yuchcaller.sync.svr.calendar.CalendarSync;
 
 public class ContactSyncData extends GoogleAPISyncData {
 	
@@ -70,7 +98,7 @@ public class ContactSyncData extends GoogleAPISyncData {
 	@Override
 	public void exportGoogleData(Object g, String timeZoneID) throws Exception {
 		ContactEntry contact = (ContactEntry)g;
-			
+		
 		if(getData().names != null){
 			
 			Name tNames = null;
@@ -81,32 +109,28 @@ public class ContactSyncData extends GoogleAPISyncData {
 			}
 
 			for(int i = 0;i < getData().names.length;i++){
+				
 				String n = getData().names[i];
+				
+				if(isNullString(n)){
+					continue;
+				}
+				
 				switch(i){
 				case ContactData.NAME_FAMILY:
-					if(n != null && n.length() > 0){
-						tNames.setFamilyName(new FamilyName(n, null));
-					}
+					tNames.setFamilyName(new FamilyName(n, null));					
 					break;
 				case ContactData.NAME_GIVEN:
-					if(n != null && n.length() > 0){
-						tNames.setGivenName(new GivenName(n, null));
-					}					
+					tNames.setGivenName(new GivenName(n, null));				
 					break;
 				case ContactData.NAME_OTHER:
-					if(n != null && n.length() > 0){
-						tNames.setAdditionalName(new AdditionalName(n, null));
-					}
+					tNames.setAdditionalName(new AdditionalName(n, null));
 					break;
 				case ContactData.NAME_PREFIX:
-					if(n != null && n.length() > 0){
-						tNames.setNamePrefix(new NamePrefix(n));
-					}
+					tNames.setNamePrefix(new NamePrefix(n));
 					break;
 				case ContactData.NAME_SUFFIX:
-					if(n != null && n.length() > 0){
-						tNames.setNameSuffix(new NameSuffix(n));
-					}
+					tNames.setNameSuffix(new NameSuffix(n));
 					break;				
 				}
 			}
@@ -140,6 +164,7 @@ public class ContactSyncData extends GoogleAPISyncData {
 					}
 				}
 			}
+			
 			String[][] arrs = {
 				getData().addr_work,
 				getData().addr_home,				
@@ -151,6 +176,8 @@ public class ContactSyncData extends GoogleAPISyncData {
 				if(addreeses[i] != null){
 					
 					addreeses[i].setRel(GoogleSchemaPrefix + GoogleAddressSchemasTypes[i]);
+					addreeses[i].setPrimary(i == 0);
+					
 					tList.add(addreeses[i]);					
 				}
 			}
@@ -164,42 +191,46 @@ public class ContactSyncData extends GoogleAPISyncData {
 				String type 	= GooglePhoneNumberType[i];
 				String number	= getData().tel[i]; 
 				
-				PhoneNumber addNumber = null;
+				boolean modified = false;
 				
 				for(PhoneNumber p : tList){
 					if( (p.getRel() != null && p.getRel().endsWith(type))
 					|| (p.getLabel() != null && p.getLabel().endsWith(type))){
-						addNumber = p;
+						
+						if(!isNullString(number)){
+							p.setPhoneNumber(number);
+						}else{
+							tList.remove(p);
+						}
+						
+						modified = true;
+
+						break;
 					}
 				}
 				
-				if(addNumber != null){
-					if(number == null || number.length() <= 0){
-						tList.remove(addNumber);
-					}else{
-						addNumber.setPhoneNumber(number);
-					}
-				}else{
-					if(number != null && number.length() > 0){
+				if(!modified){
+					if(!isNullString(number)){
 						
-						addNumber = new PhoneNumber();
+						PhoneNumber addNumber = new PhoneNumber();
 						
+						// can NOT set Rel or Label both
+						//
 						if(type.endsWith("2")){
 							addNumber.setLabel(type);
 						}else{
 							addNumber.setRel(GoogleSchemaPrefix + type);
 						}
-						
+						addNumber.setPrimary(i == 0);
 						addNumber.setPhoneNumber(number);
 						
 						tList.add(addNumber);
 					}
-				}	
-							
+				}			
 			}
 		}
 		
-		if((getData().org != null && getData().org.length() > 0) || (getData().title != null && getData().title.length() >0)){
+		if(!isNullString(getData().org) || !isNullString(getData().title)){
 			
 			Organization org = null;
 			if(contact.hasOrganizations()){
@@ -208,11 +239,16 @@ public class ContactSyncData extends GoogleAPISyncData {
 				org = new Organization();
 				contact.addOrganization(org);
 			}
-						
-			org.setOrgName(new OrgName(getData().org == null ? "" : getData().org));
-			org.setOrgTitle(new OrgTitle(getData().title == null ? "" : getData().title));
-			org.setLabel("Work");
-			org.setRel("http://schemas.google.com/g/2005#work");
+			
+			if(!isNullString(getData().org)){
+				org.setOrgName(new OrgName(getData().org));
+			}
+			
+			if(!isNullString(getData().title)){
+				org.setOrgTitle(new OrgTitle(getData().title));
+			}
+			
+			org.setRel(GoogleSchemaPrefix + "work");
 		}
 		
 		if(getData().email != null){
@@ -220,16 +256,43 @@ public class ContactSyncData extends GoogleAPISyncData {
 			List<Email> tList = contact.getEmailAddresses();
 			
 			for(int i = 0;i < getData().email.length;i++){
+				
+				String type		= GoogleEmailType[i];
+				String emailStr = getData().email[i];
+				
+				boolean modified = false;
+				
 				for(Email email : tList){
-					if((email.getRel() != null && email.getRel().endsWith(GoogleEmailType[i]))){
+					if(!isNullString(email.getRel())){
 						
-						if(getData().email[i] != null && getData().email[i].length() >0){
-							email.setAddress(getData().email[i]);
+						if(emailStr != null && emailStr.length() >0){
+							email.setAddress(emailStr);
+						}else{
+							tList.remove(email);
 						}
+						
+						modified = true;
 						
 						break;
 					}
 				}
+				
+				if(!modified){
+					
+					if(!isNullString(emailStr)){
+						// haven't added to email
+						Email email = new Email();
+						email.setRel(GoogleSchemaPrefix + type);
+						email.setAddress(emailStr);
+						
+						if(i == 0){
+							email.setPrimary(true);
+						}
+						
+						tList.add(email);
+					}					
+				}				
+				
 			}
 			
 			
@@ -252,40 +315,30 @@ public class ContactSyncData extends GoogleAPISyncData {
 			
 			for(int i = 0;i < arr.length;i++){
 				String d = arr[i];
+				if(isNullString(d)){
+					continue;
+				}
 				
 				switch(i){
 				case ContactData.ADDR_POBOX:
-					if(d != null && d.length() > 0){
-						addr.setPobox(new PoBox(d));
-					}
-					
+					addr.setPobox(new PoBox(d));
 					break;
 				case ContactData.ADDR_EXTRA:
 					break;
 				case ContactData.ADDR_STREET:
-					if(d != null && d.length() > 0){
-						addr.setStreet(new Street(d));
-					}
+					addr.setStreet(new Street(d));
 					break;
 				case ContactData.ADDR_LOCALITY:
-					if(d != null && d.length() > 0){
-						addr.setCity(new City(d));
-					}
+					addr.setCity(new City(d));
 					break;
 				case ContactData.ADDR_REGION:
-					if(d != null && d.length() > 0){
-						addr.setRegion(new Region(d));
-					}
+					addr.setRegion(new Region(d));
 					break;
 				case ContactData.ADDR_POSTALCODE:
-					if(d != null && d.length() > 0){
-						addr.setPostcode(new PostCode(d));
-					}
+					addr.setPostcode(new PostCode(d));
 					break;
 				case ContactData.ADDR_COUNTRY:
-					if(d != null && d.length() > 0){
-						addr.setPobox(new PoBox(d));
-					}
+					addr.setPobox(new PoBox(d));
 					break;
 				}
 			}
@@ -298,6 +351,9 @@ public class ContactSyncData extends GoogleAPISyncData {
 	public void importGoogleData(Object g) throws Exception {
 		
 		ContactEntry contact = (ContactEntry)g;
+		
+		setGID(getContactEntryId(contact));
+		setLastMod(contact.getUpdated().getValue());
 		
 		if(getData() == null){
 			setData(new ContactData());			
@@ -317,7 +373,7 @@ public class ContactSyncData extends GoogleAPISyncData {
 				tName.hasNamePrefix() 	? tName.getNamePrefix().getValue():null,
 				tName.hasNameSuffix() 	? tName.getNameSuffix().getValue():null,
 			};
-			
+						
 		}else{
 			throw new Exception("[YuchCaller] Contact Entry without names!");
 		}
@@ -365,12 +421,13 @@ public class ContactSyncData extends GoogleAPISyncData {
 			for(int i = 0;i < gdTel.length;i++){
 
 				for(PhoneNumber p : tList){
-					if((p.getRel() != null && p.getRel().endsWith(GooglePhoneNumberType[i]))
-					|| (p.getLabel() != null && p.getLabel().endsWith(GooglePhoneNumberType[i])) ){
-						
+					
+					String type = GooglePhoneNumberType[i];
+										
+					if(p.getRel() != null && p.getRel().endsWith(type)){
 						gdTel[i] = p.getPhoneNumber();
-						
-						break;						
+					}else if(p.getLabel() != null && p.getLabel().equals(type)){
+						gdTel[i] = p.getPhoneNumber();
 					}
 				}
 			}
@@ -399,8 +456,6 @@ public class ContactSyncData extends GoogleAPISyncData {
 				for(Email email : tList){
 					if((email.getRel() != null && email.getRel().endsWith(GoogleEmailType[i]))){
 						gdemails[i] = email.getAddress();
-					}else{
-						gdemails[ContactData.EMAIL_OTHER] = email.getAddress();
 					}
 				}
 			}
@@ -423,7 +478,6 @@ public class ContactSyncData extends GoogleAPISyncData {
 			getData().note = text.getContent().getPlainText();
 		}
 	}
-	
 
 	/**
 	 * compare to ContactSyncData
@@ -445,7 +499,8 @@ public class ContactSyncData extends GoogleAPISyncData {
 				return false;
 			}
 
-			if(!cmpNameStringArr(cmpData.names,ownData.names)){
+			// current BB system can't be store OTHER SUFFIX name
+			if(!cmpNameStringArr(cmpData.names,ownData.names,(1 << ContactData.NAME_OTHER) | (1 << ContactData.NAME_SUFFIX))){
 				return false;
 			}
 			
@@ -453,19 +508,17 @@ public class ContactSyncData extends GoogleAPISyncData {
 				return false;
 			}
 			
-			if(!cmpNameStringArr(cmpData.addr_work,ownData.addr_work)){
+			// current BB system can't be store POBOX address attribute
+			if(!cmpNameStringArr(cmpData.addr_work,ownData.addr_work,(1 << ContactData.ADDR_POBOX))
+			|| !cmpNameStringArr(cmpData.addr_home,ownData.addr_home,(1 << ContactData.ADDR_POBOX))){
+				return false;
+			}
+						
+			if(!cmpNameStringArr(cmpData.tel,ownData.tel,0)){
 				return false;
 			}
 			
-			if(!cmpNameStringArr(cmpData.addr_home,ownData.addr_home)){
-				return false;
-			}
-			
-			if(!cmpNameStringArr(cmpData.tel,ownData.tel)){
-				return false;
-			}
-			
-			if(!cmpNameStringArr(cmpData.email,ownData.email)){
+			if(!cmpNameStringArr(cmpData.email,ownData.email,0)){
 				return false;
 			}
 			
@@ -491,14 +544,24 @@ public class ContactSyncData extends GoogleAPISyncData {
 	 * compare the string array 
 	 * @param a
 	 * @param b
+	 * @param exceptMask
 	 * @return
 	 */
-	private static boolean cmpNameStringArr(String[] a,String[] b){
+	private static boolean cmpNameStringArr(String[] a,String[] b,int exceptMask){
 		if(a == null && b == null){
 			return true;
 		}
 		
 		if(a == null || b == null){
+			
+			if(a != null){
+				return isNullArr(a);
+			}
+			
+			if(b != null){
+				return isNullArr(b);
+			}
+			
 			return false;
 		}
 		
@@ -507,6 +570,11 @@ public class ContactSyncData extends GoogleAPISyncData {
 		}
 		
 		for(int i = 0;i < a.length;i++){
+			
+			if((exceptMask & (1 << i)) != 0){
+				continue;
+			}
+			
 			if(!cmpNameString(a[i], b[i])){
 				return false;
 			}
@@ -514,7 +582,7 @@ public class ContactSyncData extends GoogleAPISyncData {
 		
 		return true;
 	}
-	
+		
 	/**
 	 * compare the string whether equal
 	 * @param a
@@ -558,5 +626,20 @@ public class ContactSyncData extends GoogleAPISyncData {
 	 */
 	private static boolean isNullString(String s){
 		return s == null || s.length() == 0;
+	}
+	
+	/**
+	 * get google data ContactEntry id
+	 * @return
+	 */
+	public static String getContactEntryId(Object o){
+		ContactEntry contact = (ContactEntry)o;
+		
+		int backSlashIdx = contact.getId().lastIndexOf('/');
+		if(backSlashIdx != -1){
+			return contact.getId().substring(backSlashIdx + 1);
+		}
+		
+		return contact.getId();		
 	}
 }

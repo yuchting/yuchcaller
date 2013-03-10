@@ -38,12 +38,9 @@ import java.util.Vector;
 import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 import javax.microedition.pim.Contact;
-import javax.microedition.pim.Event;
-import javax.microedition.pim.EventList;
 import javax.microedition.pim.PIM;
 import javax.microedition.pim.PIMItem;
 import javax.microedition.pim.PIMList;
-import javax.microedition.pim.ToDo;
 
 import net.rim.blackberry.api.pdap.BlackBerryPIMList;
 import net.rim.blackberry.api.pdap.PIMListListener;
@@ -51,7 +48,8 @@ import net.rim.blackberry.api.pdap.PIMListListener;
 import com.yuchs.yuchcaller.YuchCaller;
 import com.yuchs.yuchcaller.YuchCallerProp;
 import com.yuchs.yuchcaller.sendReceive;
-import com.yuchs.yuchcaller.sync.calendar.CalendarSyncData;
+import com.yuchs.yuchcaller.sync.contact.ContactData;
+import com.yuchs.yuchcaller.sync.contact.ContactSyncData;
 
 public abstract class AbsSync implements PIMListListener{
 	
@@ -164,7 +162,23 @@ public abstract class AbsSync implements PIMListListener{
 				    	
 				    	AbsSyncData syncData = newSyncData();
 				    	syncData.importData(item);
-				    					    	
+				    	
+//				    	ContactSyncData csd = (ContactSyncData)syncData;
+//				    	if("ZHOU".equals(csd.getData().names[ContactData.NAME_GIVEN])){
+//				    					    		
+//				    		csd.getData().email = new String[ContactData.EMAIL_SIZE];
+//				    		
+//				    		for(int a = 0; a < csd.getData().email.length;a++){
+//				    			csd.getData().email[a] = Integer.toString(a) + "@test.com";
+//				    		}
+//				    		
+//				    		csd.exportData(item);
+//				    		
+//				    		item.commit();
+//				    		
+//				    		//syncData.importData(item);
+//				    	}
+				    					    					    	
 				    	mSyncDataList.addElement(syncData);
 				    }	
 			    }
@@ -176,7 +190,7 @@ public abstract class AbsSync implements PIMListListener{
 			}
 		    
 		}catch(Exception e){
-			reportError("Can not read PIMList ",e);
+			reportError("Can not read " + fsm_syncTypeString[getReportLabel()] + " PIMList:",e);
 		}
 	}
 
@@ -196,6 +210,28 @@ public abstract class AbsSync implements PIMListListener{
 	 * @return
 	 */
 	protected abstract AbsSyncData newSyncData();
+	
+	/**
+	 * get the PIMItem UID
+	 * @param item
+	 * @return
+	 */
+	protected abstract String getPIMItemUID(PIMItem item);
+	
+	/**
+	 * add PIMItem to bb system
+	 * @param item
+	 * @param d
+	 * @throws Exception
+	 */
+	protected abstract void addPIMItemImpl(PIMList item,AbsSyncData d)throws Exception;
+	
+	/**
+	 * delete the PIM item from BB system
+	 * @param item
+	 * @throws Exception
+	 */
+	protected abstract void deletePIMItemImpl(PIMItem item)throws Exception;
 		
 	/**
 	 * add a PIMItem to bb by the abs sync data (CalendarSyncData/ContactSyncData/TaskSyncData)
@@ -209,10 +245,10 @@ public abstract class AbsSync implements PIMListListener{
 		
 		try{
 						
-			EventList tEvents = (EventList)PIM.getInstance().openPIMList(PIM.EVENT_LIST,PIM.READ_WRITE);
+			PIMList tPIMList = (PIMList)PIM.getInstance().openPIMList(getSyncPIMListType(),PIM.READ_WRITE);
 			try{
 				
-				Enumeration t_allEvents = tEvents.items();
+				Enumeration t_allEvents = tPIMList.items();
 				Vector t_eventList =  new Vector();
 				
 			    if(t_allEvents != null){
@@ -224,24 +260,19 @@ public abstract class AbsSync implements PIMListListener{
 			    // add the event to bb system
 				//
 				for(int i = 0;i < _addList.size();i++){
-					CalendarSyncData d = (CalendarSyncData)_addList.elementAt(i);
-					
-					Event e = tEvents.createEvent();
-					d.exportData(e);
-					
+					AbsSyncData d = (AbsSyncData)_addList.elementAt(i);
+										
 					mModifiedProgrammely = true;
-					e.commit();
+					addPIMItemImpl(tPIMList, d);
 					mModifiedProgrammely = false;
-					
-					d.setBBID(AbsSyncData.getStringField(e, Event.UID));
 					
 					// added to main list
 					mSyncDataList.addElement(d);
 				}
 			    
 			}finally{
-				tEvents.close();
-				tEvents = null;
+				tPIMList.close();
+				tPIMList = null;
 			}
 			
 		}catch(Exception e){
@@ -261,10 +292,10 @@ public abstract class AbsSync implements PIMListListener{
 		}
 		
 		try{
-			EventList tEvents = (EventList)PIM.getInstance().openPIMList(PIM.EVENT_LIST,PIM.READ_WRITE);
+			PIMList tPIMList = (PIMList)PIM.getInstance().openPIMList(getSyncPIMListType(),PIM.READ_WRITE);
 			try{
 				
-				Enumeration t_allEvents = tEvents.items();
+				Enumeration t_allEvents = tPIMList.items();
 				Vector t_eventList =  new Vector();
 				
 			    if(t_allEvents != null){
@@ -276,7 +307,7 @@ public abstract class AbsSync implements PIMListListener{
 				for(int i = 0;i < _delList.size();i++){
 					String bid = (String)_delList.elementAt(i);
 					
-					CalendarSyncData d = (CalendarSyncData)getSyncData(bid);
+					AbsSyncData d = (AbsSyncData)getSyncData(bid);
 					if(d != null){
 						
 						if(d.getLastMod() != -1){
@@ -285,15 +316,15 @@ public abstract class AbsSync implements PIMListListener{
 							//
 							for(int idx = 0;idx < t_eventList.size();idx++){
 								
-								Event e = (Event)t_eventList.elementAt(idx);
+								PIMItem item = (PIMItem)t_eventList.elementAt(idx);
 																
-								if(d.getBBID().equals(AbsSyncData.getStringField(e, Event.UID))){
+								if(d.getBBID().equals(getPIMItemUID(item))){
 									
 									mModifiedProgrammely = true;
-									tEvents.removeEvent(e);
+									deletePIMItemImpl(item);									
 									mModifiedProgrammely = false;
 									
-									t_eventList.removeElement(e);
+									t_eventList.removeElement(item);
 									
 									break;
 								}
@@ -305,8 +336,8 @@ public abstract class AbsSync implements PIMListListener{
 				}
 			    
 			}finally{
-				tEvents.close();
-				tEvents = null;
+				tPIMList.close();
+				tPIMList = null;
 			}
 			
 		}catch(Exception e){
@@ -326,10 +357,10 @@ public abstract class AbsSync implements PIMListListener{
 		}
 		
 		try{
-			EventList tEvents = (EventList)PIM.getInstance().openPIMList(PIM.EVENT_LIST,PIM.READ_WRITE);
+			PIMList tPIMList = (PIMList)PIM.getInstance().openPIMList(getSyncPIMListType(),PIM.READ_WRITE);
 			try{
 				
-				Enumeration t_allEvents = tEvents.items();
+				Enumeration t_allEvents = tPIMList.items();
 				Vector t_eventList =  new Vector();
 				
 			    if(t_allEvents != null){
@@ -339,7 +370,7 @@ public abstract class AbsSync implements PIMListListener{
 			    }
 			    
 			    for(int i = 0;i < _updateList.size();i++){
-					CalendarSyncData update = (CalendarSyncData)_updateList.elementAt(i);
+			    	AbsSyncData update = (AbsSyncData)_updateList.elementAt(i);
 					
 					// remove sync data first
 					removeSyncData(update.getBBID());
@@ -348,21 +379,21 @@ public abstract class AbsSync implements PIMListListener{
 					mSyncDataList.addElement(update);
 					
 					for(int idx = 0;idx < t_eventList.size();idx++){
-						Event e = (Event)t_eventList.elementAt(idx);
+						PIMItem item = (PIMItem)t_eventList.elementAt(idx);
 						
-						if(update.getBBID().equals(AbsSyncData.getStringField(e, Event.UID))){
-							update.exportData(e);
+						if(update.getBBID().equals(getPIMItemUID(item))){
+							update.exportData(item);
 							
 							mModifiedProgrammely = true;
-							e.commit();
+							item.commit();
 							mModifiedProgrammely = false;
 						}
 					}
 				}
 			    
 			}finally{
-				tEvents.close();
-				tEvents = null;
+				tPIMList.close();
+				tPIMList = null;
 			}
 			
 		}catch(Exception e){
@@ -395,6 +426,8 @@ public abstract class AbsSync implements PIMListListener{
 		
 		// write the version
 		sendReceive.WriteShort(os,(short)0);
+		
+		// write the type (calendar/contact/task)
 		sendReceive.WriteString(os, fsm_syncTypeString[getReportLabel()]);
 		
 		// send the min time for sync
@@ -565,17 +598,7 @@ public abstract class AbsSync implements PIMListListener{
 					if(!fc.exists()){
 						fc.create();					
 					}
-					
-					// delete the calendar event which has been removed by client
-					//
-					for(int idx = 0;idx < mSyncDataList.size();idx++){
-						AbsSyncData syncData = (AbsSyncData)mSyncDataList.elementAt(idx);
-						if(syncData.getLastMod() == -1){
-							mSyncDataList.removeElementAt(idx);
-							idx--;
-						}
-					}
-					
+										
 					OutputStream os = fc.openOutputStream();
 					try{
 						os.write(SyncFileVersion);
@@ -828,7 +851,7 @@ public abstract class AbsSync implements PIMListListener{
 		try{
 			
 			AbsSyncData syncData = newSyncData();
-	    	syncData.importData((Event)item);
+	    	syncData.importData(item);
 	    				    	
 	    	mSyncDataList.addElement(syncData);
 		
@@ -846,7 +869,7 @@ public abstract class AbsSync implements PIMListListener{
 		
 		if(item != null){
 			
-			String bid = AbsSyncData.getStringField(item, getUIDId());
+			String bid = getPIMItemUID(item);
 			
 			synchronized(mSyncDataList){
 				for(int i = 0;i < mSyncDataList.size();i++){
@@ -859,7 +882,11 @@ public abstract class AbsSync implements PIMListListener{
 						}else{
 							// mark delete to wait sync to delete server's event
 							d.setLastMod(-1);
+						
+							// write the sync file to avoid lost data when BB system is down
+							readWriteSyncFile(false);
 						}
+						
 						break;
 					}
 				}
@@ -877,7 +904,7 @@ public abstract class AbsSync implements PIMListListener{
 		if(oldItem != null && newItem != null){
 			
 			try{
-				String bid = AbsSyncData.getStringField(oldItem, getUIDId());
+				String bid = getPIMItemUID(oldItem);
 				
 				synchronized(mSyncDataList){
 					for(int i = 0;i < mSyncDataList.size();i++){
@@ -900,22 +927,7 @@ public abstract class AbsSync implements PIMListListener{
 		}
 	}
 	//}}
-	
-	/**
-	 * get the UID Id
-	 * @return
-	 */
-	private int getUIDId(){
-		switch(getSyncPIMListType()){
-		case PIM.EVENT_LIST:
-			return Event.UID;
-		case PIM.CONTACT_LIST:
-			return Contact.UID;
-		default:
-			return ToDo.UID;
-		}
-	}
-	
+		
 	/**
 	 * get the 0-base index of report by SyncPIMListType
 	 * @return

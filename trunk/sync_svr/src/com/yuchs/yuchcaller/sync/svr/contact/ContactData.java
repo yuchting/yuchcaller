@@ -1,3 +1,30 @@
+/**
+ *  Dear developer:
+ *  
+ *   If you want to modify this file of project and re-publish this please visit:
+ *  
+ *     http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *     
+ *   to check your responsibility and my humble proposal. Thanks!
+ *   
+ *  -- 
+ *  Yuchs' Developer    
+ *  
+ *  
+ *  
+ *  
+ *  尊敬的开发者：
+ *   
+ *    如果你想要修改这个项目中的文件，同时重新发布项目程序，请访问一下：
+ *    
+ *      http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *      
+ *    了解你的责任，还有我卑微的建议。 谢谢！
+ *   
+ *  -- 
+ *  语盒开发者
+ *  
+ */
 package com.yuchs.yuchcaller.sync.svr.contact;
 
 import java.io.InputStream;
@@ -48,11 +75,11 @@ public class ContactData implements GoogleAPIData {
 	/**
 	 * email
 	 */
-	public static final int EMAIL_WORK = 0;
-	public static final int EMAIL_HOME = 1;
-	public static final int EMAIL_OTHER = 2;
+	public static final int EMAIL_OTHER = 0;
+	public static final int EMAIL_WORK = 1;
+	public static final int EMAIL_HOME = 2;	
 	
-	public static final int EMAIL_SIZE = EMAIL_OTHER + 1;
+	public static final int EMAIL_SIZE = EMAIL_HOME + 1;
 	
 	
 	/**
@@ -109,37 +136,43 @@ public class ContactData implements GoogleAPIData {
 		names = null;
 		nickname = null;
 		addr_work = null;
+		
 		addr_home = null;
 		tel = null;
 		email = null;
-		org = null;		
+		org = null;
+		
 		note = null;
 		birthday = 0;
 	}
-	
-	@Override
+
 	public void inputData(InputStream in) throws Exception {
 		title	= sendReceive.ReadString(in);
 		names	= sendReceive.ReadStringArr(in);
 		nickname	= sendReceive.ReadString(in);
 		addr_work	= sendReceive.ReadStringArr(in);
+		
 		addr_home	= sendReceive.ReadStringArr(in);
 		tel		= sendReceive.ReadStringArr(in);
 		email	= sendReceive.ReadStringArr(in);
 		org		= sendReceive.ReadString(in);
+		
+		note	= sendReceive.ReadString(in);
 		birthday= sendReceive.ReadLong(in);
 	}
 
-	@Override
 	public void outputData(OutputStream os) throws Exception {
 		sendReceive.WriteString(os,title);
 		sendReceive.WriteStringArr(os,names);
 		sendReceive.WriteString(os,nickname);
 		sendReceive.WriteStringArr(os,addr_work);
+		
 		sendReceive.WriteStringArr(os,addr_home);
 		sendReceive.WriteStringArr(os,tel);
 		sendReceive.WriteStringArr(os,email);
 		sendReceive.WriteString(os,org);
+		
+		sendReceive.WriteString(os,note);
 		sendReceive.WriteLong(os,birthday);
 	}
 

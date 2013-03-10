@@ -124,6 +124,19 @@ public abstract class AbsSyncData {
 	 */
 	public abstract void exportData(PIMItem _item)throws Exception;
 	
+	
+	/**
+	 * clear the PIM item Fields by id
+	 * @param _id
+	 * @throws Exception
+	 */
+	public static void clearPIMItemFields(PIMItem _item,int _id)throws Exception{
+		int count = _item.countValues(_id);
+		for(int i = 0;i < count ;i++){
+			_item.removeValue(_id, 0);
+		}
+	}
+	
 	/**
 	 * get the PIMItem string without index 
 	 * @param _item
@@ -161,24 +174,51 @@ public abstract class AbsSyncData {
 	}
 	
 	/**
-	 * set the event id by string
+	 * set string field by the id attribute
 	 * @param _item
 	 * @param _id
-	 * @param _index
+	 * @param _attr
 	 * @param _value
 	 */
 	public static void setStringField(PIMItem _item,int _id,int _attr,String _value){
+		setStringField(_item,_id,_attr,-1,_value);
+	}
+	
+	/**
+	 * set string field by the id,attribute,index
+	 * Contact.EMAIL can't record the attribute
+	 * @param _item
+	 * @param _id
+	 * @param _attr
+	 * @param _index
+	 * @param _value
+	 */
+	public static void setStringField(PIMItem _item,int _id,int _attr,int _index,String _value){
 		
 		if(_item.getPIMList().isSupportedField(_id)){
 			
-			if(_item.countValues(_id) > 0){
-				if(_value != null && _value.length() > 0){
-					_item.setString(_id,0,_attr,_value);
-				}else{
-					_item.removeValue(_id,0);
-				}
-			}else{
-				if(_value != null && _value.length() > 0){
+			int count = _item.countValues(_id);
+			if(count > 0){
+				
+				for(int i = 0;i < count;i++){
+					int a = _item.getAttributes(_id, i);
+					if(a == _attr || _index == i){
+						
+						if(_value != null && _value.length() > 0){
+							_item.setString(_id,i,_attr,_value);
+						}else{
+							_item.removeValue(_id,i);
+						}
+						
+						// found return
+						return;
+					}
+				}	
+			}
+			
+			if(_value != null && _value.length() > 0){
+				
+				if(_item.getPIMList().maxValues(_id) > count){
 					_item.addString(_id,_attr,_value);
 				}				
 			}
@@ -192,9 +232,12 @@ public abstract class AbsSyncData {
 	 * @return
 	 */
 	public static long getDateField(PIMItem _item,int _id){
-		int tCount = _item.countValues(_id);
-		if(tCount > 0){
-			return _item.getDate(_id, PIMItem.ATTR_NONE);
+		if(_item.getPIMList().isSupportedField(_id)){
+
+			int tCount = _item.countValues(_id);
+			if(tCount > 0){
+				return _item.getDate(_id, PIMItem.ATTR_NONE);
+			}	
 		}
 		
 		return 0;
@@ -208,7 +251,8 @@ public abstract class AbsSyncData {
 	 * @param _value
 	 */
 	public static void setDateField(PIMItem _item,int _id,long _value){
-		if(_item.getPIMList().isSupportedField(_id)){
+		if(_item.getPIMList().isSupportedField(_id) && _value > 0){
+			
 			if(_item.countValues(_id) > 0){
 				_item.setDate(_id,0,PIMItem.ATTR_NONE,_value);
 			}else{
@@ -317,26 +361,29 @@ public abstract class AbsSyncData {
 	 * @return
 	 */
 	public static String[] getStringArrayField(PIMItem _item,int _id){
-		return getStringArrayField(_item,_id,0);
+		return getStringArrayField(_item,_id,PIMItem.ATTR_NONE);
 	}
 	
 	/**
-	 * get the string array field 
+	 * get the string array field by attribute
 	 * @param _item
 	 * @param _id
-	 * @param _index
+	 * @param _attr
 	 * @return
 	 */
-	public static String[] getStringArrayField(PIMItem _item,int _id,int _index){
+	public static String[] getStringArrayField(PIMItem _item,int _id,int _attr){
 		int tCount = _item.countValues(_id);
 		if(tCount > 0){
 			if(_item.getPIMList().getFieldDataType(_id) == PIMItem.STRING_ARRAY){
 				
-				if(_index < tCount){
-					return _item.getStringArray(_id, _index);
-				}else{
-					return null;
-				}				
+				for(int i = 0; i < tCount;i++){
+					// spcific attribute
+					if(_item.getAttributes(_id, i) == _attr){
+						return _item.getStringArray(_id, i);
+					}
+				}
+				
+				return null;
 				
 			}else if(_item.getPIMList().getFieldDataType(_id) == PIMItem.STRING){
 						
@@ -377,15 +424,27 @@ public abstract class AbsSyncData {
 			if(_item.getPIMList().getFieldDataType(_id) == PIMItem.STRING_ARRAY){
 
 				if(count > 0){
-					if(_value != null && _value.length > 0){
-						_item.setStringArray(_id, 0, _attr, _value);
-					}else{
-						_item.removeValue(_id,0);
+					
+					for(int i = 0;i < count;i++){
+						int a = _item.getAttributes(_id, i);
+						if(a == _attr){
+							
+							if(_value != null && _value.length > 0){
+								_item.setStringArray(_id, i, _attr, _value);
+							}else{
+								_item.removeValue(_id,i);
+							}
+							
+							return;
+						}
 					}				
-				}else{
-					if(_value != null && _value.length > 0){
+				}
+				
+				if(_value != null && _value.length > 0){
+					if(_item.getPIMList().maxValues(_id) > count){
 						_item.addStringArray(_id, _attr, _value);
-					}				
+					}
+					
 				}
 				
 			}else if(_item.getPIMList().getFieldDataType(_id) == PIMItem.STRING){
@@ -397,7 +456,8 @@ public abstract class AbsSyncData {
 				}
 				
 				if(_value != null && _value.length > 0){
-					for(int i = 0 ;i < _value.length;i++){
+					int addCount = Math.min(_value.length,_item.getPIMList().maxValues(_id));
+					for(int i = 0 ;i < addCount;i++){
 						_item.addString(_id, _attr, _value[i]);
 					}
 				}

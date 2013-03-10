@@ -1,3 +1,30 @@
+/**
+ *  Dear developer:
+ *  
+ *   If you want to modify this file of project and re-publish this please visit:
+ *  
+ *     http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *     
+ *   to check your responsibility and my humble proposal. Thanks!
+ *   
+ *  -- 
+ *  Yuchs' Developer    
+ *  
+ *  
+ *  
+ *  
+ *  尊敬的开发者：
+ *   
+ *    如果你想要修改这个项目中的文件，同时重新发布项目程序，请访问一下：
+ *    
+ *      http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *      
+ *    了解你的责任，还有我卑微的建议。 谢谢！
+ *   
+ *  -- 
+ *  语盒开发者
+ *  
+ */
 package com.yuchs.yuchcaller.sync.contact;
 
 import java.io.InputStream;
@@ -17,6 +44,8 @@ public class ContactData implements AbsData {
 	public static final int NAME_PREFIX = 3;
 	public static final int NAME_SUFFIX = 4;
 	
+	public static final int NAME_SIZE = NAME_SUFFIX + 1;
+	
 	/**
 	 * ADDR string array index
 	 */
@@ -28,7 +57,7 @@ public class ContactData implements AbsData {
 	public static final int ADDR_POSTALCODE = 5;
 	public static final int ADDR_COUNTRY = 6;
 	
-	public static final int ADDR_SiZE = ADDR_COUNTRY + 1;
+	public static final int ADDR_SIZE = ADDR_COUNTRY + 1;
 	
 	/**
 	 * telephone number attribute
@@ -48,11 +77,11 @@ public class ContactData implements AbsData {
 	/**
 	 * email
 	 */
-	public static final int EMAIL_WORK = 0;
-	public static final int EMAIL_HOME = 1;
-	public static final int EMAIL_OTHER = 2;
+	public static final int EMAIL_OTHER = 0;
+	public static final int EMAIL_WORK = 1;
+	public static final int EMAIL_HOME = 2;	
 	
-	public static final int EMAIL_SIZE = EMAIL_OTHER + 1;
+	public static final int EMAIL_SIZE = EMAIL_HOME + 1;
 	
 	
 	/**
@@ -109,10 +138,12 @@ public class ContactData implements AbsData {
 		names = null;
 		nickname = null;
 		addr_work = null;
+		
 		addr_home = null;
 		tel = null;
 		email = null;
-		org = null;		
+		org = null;
+		
 		note = null;
 		birthday = 0;
 	}
@@ -122,10 +153,13 @@ public class ContactData implements AbsData {
 		names	= sendReceive.ReadStringArr(in);
 		nickname	= sendReceive.ReadString(in);
 		addr_work	= sendReceive.ReadStringArr(in);
+		
 		addr_home	= sendReceive.ReadStringArr(in);
 		tel		= sendReceive.ReadStringArr(in);
 		email	= sendReceive.ReadStringArr(in);
 		org		= sendReceive.ReadString(in);
+		
+		note	= sendReceive.ReadString(in);
 		birthday= sendReceive.ReadLong(in);
 	}
 
@@ -134,10 +168,13 @@ public class ContactData implements AbsData {
 		sendReceive.WriteStringArr(os,names);
 		sendReceive.WriteString(os,nickname);
 		sendReceive.WriteStringArr(os,addr_work);
+		
 		sendReceive.WriteStringArr(os,addr_home);
 		sendReceive.WriteStringArr(os,tel);
 		sendReceive.WriteStringArr(os,email);
 		sendReceive.WriteString(os,org);
+		
+		sendReceive.WriteString(os,note);
 		sendReceive.WriteLong(os,birthday);
 	}
 

@@ -28,7 +28,6 @@
 package com.yuchs.yuchcaller.sync.svr.calendar;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
@@ -37,8 +36,6 @@ import java.util.Vector;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.Event;
-import com.google.api.services.calendar.model.EventAttendee;
-import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
 import com.yuchs.yuchcaller.sync.svr.GoogleAPISync;
 import com.yuchs.yuchcaller.sync.svr.GoogleAPISyncData;
