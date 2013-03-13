@@ -31,6 +31,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.security.MessageDigest;
+import java.util.TimeZone;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -219,7 +220,7 @@ public abstract class GoogleAPISync {
 	/**
 	 * read the server google data
 	 */
-	protected abstract void readSvrGoogleData() throws Exception;
+	public abstract void readSvrGoogleData() throws Exception;
 	
 	/**
 	 * upload the google data to the google servers
@@ -331,7 +332,7 @@ public abstract class GoogleAPISync {
 //					ContactSyncData cc = (ContactSyncData)d;
 //					
 //					for(String s1 : cc.getData().names){
-//						if(s != null && s1 != null && s.equals(s1) && s.equals("rihui")){
+//						if(s != null && s1 != null && s.equals(s1) && s.equals("晓东")){
 //							break test_flag;
 //						}
 //					}
@@ -372,7 +373,7 @@ public abstract class GoogleAPISync {
 			}
 			
 			GoogleAPISyncData data = newSyncData();
-			data.importGoogleData(g);
+			data.importGoogleData(g,mTimeZoneID);
 			
 			tAddList.add(data);
 		}
@@ -406,7 +407,7 @@ public abstract class GoogleAPISync {
 								tUpdateList = new Vector<GoogleAPISyncData>();
 							}
 							
-							d.importGoogleData(g);
+							d.importGoogleData(g,mTimeZoneID);
 							tUpdateList.add(d);
 						}
 						
@@ -522,7 +523,7 @@ public abstract class GoogleAPISync {
 	 * 		succ<--------------mod time list
 	 * 
 	 */
-	protected void compareEvent()throws Exception{
+	public void compareEvent()throws Exception{
 					
 		if(mDiffType == 0){
 

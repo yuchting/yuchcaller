@@ -108,6 +108,23 @@ public class CalendarData implements GoogleAPIData{
 	public String repeat_type = "";
 	
 	/**
+	 * clear the data to initial state
+	 */
+	public void clear(){
+		summary 	= null;
+		start		= 0;
+		end			= 0;
+		location	= null;
+		alarm		= 0;
+		note		= null;
+		allDay		= false;
+		attendees	= null;
+		free_busy	= FB_FREE;
+		event_class	= CLASS_PRIVATE;
+		repeat_type	= "";
+	}
+	
+	/**
 	 * import the data from stream
 	 * @param _in
 	 */

@@ -185,10 +185,11 @@ public class CalendarSyncData extends GoogleAPISyncData{
 	
 	/**
 	 * import the data from the google calendar Event
+	 * @param timeZoneID
 	 * @param g
 	 */
 	@Override
-	public void importGoogleData(Object g)throws Exception{
+	public void importGoogleData(Object g,String timeZoneID)throws Exception{
 		
 		Event event = (Event)g; 
 		

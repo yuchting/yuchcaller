@@ -219,6 +219,9 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 				}else{
 					throw new Exception("Error Type");
 				}
+				
+				tSync.readSvrGoogleData();
+				tSync.compareEvent();				
 			
 			}finally{
 				in.close();
