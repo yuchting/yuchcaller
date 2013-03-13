@@ -49,12 +49,6 @@ public class ContactSync extends GoogleAPISync {
 
 		// set the credentials
 		myService.setOAuth2Credentials(mGoogleCredential);
-		
-		// read the svr google data
-		readSvrGoogleData();
-		
-		// compare event
-		compareEvent();
 	}
 	
 	/**
@@ -71,7 +65,7 @@ public class ContactSync extends GoogleAPISync {
 	 * read the contact data
 	 */
 	@Override
-	protected void readSvrGoogleData() throws Exception {
+	public void readSvrGoogleData() throws Exception {
 		
 		if(fetchFormerEvent()){
 			return ;
@@ -112,6 +106,11 @@ public class ContactSync extends GoogleAPISync {
 					//
 					mSvrSyncDataList.add(e);
 					sb.append(e.getUpdated().getValue());
+					
+//					if(e.getUpdated().getValue() > 1363060875000L){
+//						System.out.println("delete " + e.getName().getFullName());
+//						e.delete();						
+//					}
 				}
 			}
 		}		
@@ -139,7 +138,7 @@ public class ContactSync extends GoogleAPISync {
 	protected boolean isFristSyncSameData(Object o, GoogleAPISyncData g)throws Exception {
 		
 		ContactSyncData		cmp = new ContactSyncData();
-		cmp.importGoogleData((ContactEntry)o);
+		cmp.importGoogleData((ContactEntry)o,mTimeZoneID);
 		
 		return cmp.equals(g);
 	}	
@@ -292,8 +291,7 @@ public class ContactSync extends GoogleAPISync {
 			}else{
 				throw e;
 			}
-		}
-		
+		}		
 		
 		g.setGID(ContactSyncData.getContactEntryId(contact));
 		g.setLastMod(contact.getUpdated().getValue());

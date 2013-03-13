@@ -32,6 +32,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Vector;
 
 import javax.microedition.io.Connector;
@@ -233,11 +235,52 @@ public class SyncMain {
 		mContactSync.startSync();
 	}
 	
+	private Calendar 	m_calendar = Calendar.getInstance();
+	private Date		m_timeDate = new Date();
+	
+	private synchronized String insertTimePrompt(String type,String label,String log){
+		
+		m_timeDate.setTime(System.currentTimeMillis());
+		m_calendar.setTime(m_timeDate);
+		
+		StringBuffer sb = new StringBuffer();
+		sb.append("[").append(m_calendar.get(Calendar.YEAR)).append("-");
+		
+		int value = m_calendar.get(Calendar.MONTH) + 1;
+		if(value <= 9){
+			sb.append("0");
+		}
+		
+		sb.append(value).append("-");
+		
+		value = m_calendar.get(Calendar.DAY_OF_MONTH);
+		if(value <= 9){
+			sb.append("0");
+		}
+		sb.append(value).append(" ");
+		
+		value = m_calendar.get(Calendar.HOUR_OF_DAY);
+		if(value <= 9){
+			sb.append("0");
+		}
+		sb.append(value).append(":");
+		
+		value = m_calendar.get(Calendar.MINUTE);
+		if(value <= 9){
+			sb.append("0");
+		}
+		
+		sb.append(value).append("] ");
+		sb.append(type).append(" ").append(label).append(": ").append(log);
+		
+		return sb.toString();
+	}
+	
 	//! report error
 	public void reportError(String error,int _type){
 		
 		if(error != null && error.length() > 0){
-			error = AbsSync.fsm_syncTypeString[_type] + " Error: " + error;		
+			error = insertTimePrompt(AbsSync.fsm_syncTypeString[_type],"Error",error);		
 			m_mainApp.SetErrorString(error);
 		}
 		
@@ -249,14 +292,15 @@ public class SyncMain {
 	}
 	
 	//! report error
-	public void reportError(String errorLabel,Exception e,int _type){
+	public  void reportError(String errorLabel,Exception e,int _type){
 		reportError(errorLabel + " " + e.getMessage() + " " + e.getClass().getName(),_type);
 	}
 	
 	// report the information
 	public void reportInfo(String info,int _type){
+		
 		if(info != null && info.length() > 0){
-			info = AbsSync.fsm_syncTypeString[_type] + " Info: " + info;
+			info = insertTimePrompt(AbsSync.fsm_syncTypeString[_type],"Info",info);
 			m_mainApp.SetErrorString(info);
 		}
 		

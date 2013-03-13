@@ -53,12 +53,6 @@ public class CalendarSync extends GoogleAPISync{
 		super(in,_logger);
 		
 		mService = new Calendar(mHttpTransport, mJsonFactory,mGoogleCredential);
-		
-		// read the server calendar (or read from the BufferdEvents list)
-		readSvrGoogleData();		
-		
-		// compare the event
-		compareEvent();
 	}
 
 	/**
@@ -66,7 +60,7 @@ public class CalendarSync extends GoogleAPISync{
 	 * @throws Exception
 	 */
 	@Override
-	protected void readSvrGoogleData()throws Exception{
+	public void readSvrGoogleData()throws Exception{
 		
 		if(fetchFormerEvent()){
 			return;

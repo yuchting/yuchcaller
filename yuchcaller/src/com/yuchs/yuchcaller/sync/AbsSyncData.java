@@ -131,9 +131,11 @@ public abstract class AbsSyncData {
 	 * @throws Exception
 	 */
 	public static void clearPIMItemFields(PIMItem _item,int _id)throws Exception{
-		int count = _item.countValues(_id);
-		for(int i = 0;i < count ;i++){
-			_item.removeValue(_id, 0);
+		for(int i = 0;i < _item.countValues(_id);i++){
+			try{
+				_item.removeValue(_id, i);
+				i--;
+			}catch(Exception e){}
 		}
 	}
 	

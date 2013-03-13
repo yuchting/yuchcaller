@@ -28,18 +28,27 @@
 package com.yuchs.yuchcaller.sync.svr.contact;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
+import com.google.gdata.data.Content;
+import com.google.gdata.data.TextConstruct;
 import com.google.gdata.data.TextContent;
+import com.google.gdata.data.contacts.Birthday;
 import com.google.gdata.data.contacts.ContactEntry;
 import com.google.gdata.data.extensions.AdditionalName;
 import com.google.gdata.data.extensions.City;
+import com.google.gdata.data.extensions.Country;
 import com.google.gdata.data.extensions.Email;
 import com.google.gdata.data.extensions.FamilyName;
 import com.google.gdata.data.extensions.GivenName;
+import com.google.gdata.data.extensions.HouseName;
 import com.google.gdata.data.extensions.Name;
 import com.google.gdata.data.extensions.NamePrefix;
 import com.google.gdata.data.extensions.NameSuffix;
+import com.google.gdata.data.extensions.Neighborhood;
 import com.google.gdata.data.extensions.OrgName;
 import com.google.gdata.data.extensions.OrgTitle;
 import com.google.gdata.data.extensions.Organization;
@@ -51,7 +60,6 @@ import com.google.gdata.data.extensions.Street;
 import com.google.gdata.data.extensions.StructuredPostalAddress;
 import com.yuchs.yuchcaller.sync.svr.GoogleAPIData;
 import com.yuchs.yuchcaller.sync.svr.GoogleAPISyncData;
-import com.yuchs.yuchcaller.sync.svr.calendar.CalendarSync;
 
 public class ContactSyncData extends GoogleAPISyncData {
 	
@@ -142,7 +150,8 @@ public class ContactSyncData extends GoogleAPISyncData {
 			
 			// the tList cannot be null (check the getStructuredPostalAddresses source code for detail)
 			// 
-			List<StructuredPostalAddress> tList = contact.getStructuredPostalAddresses();					
+			List<StructuredPostalAddress> tList = contact.getStructuredPostalAddresses();
+			
 			StructuredPostalAddress[] addreeses = new StructuredPostalAddress[2];
 			
 			for(int i = 0;i < tList.size();i++){
@@ -155,7 +164,7 @@ public class ContactSyncData extends GoogleAPISyncData {
 						if(addr.getRel().endsWith(GoogleAddressSchemasTypes[j])){
 							addreeses[i] = addr;
 													
-							// remove it and add again 
+							// remove it and add again
 							tList.remove(i);
 							i--;
 							
@@ -186,7 +195,8 @@ public class ContactSyncData extends GoogleAPISyncData {
 		if(getData().tel != null){
 			
 			List<PhoneNumber> tList = contact.getPhoneNumbers();
-						
+			List<PhoneNumber> tAddList = new ArrayList<PhoneNumber>();
+			
 			for(int i = 0;i < getData().tel.length;i++){
 				String type 	= GooglePhoneNumberType[i];
 				String number	= getData().tel[i]; 
@@ -224,9 +234,14 @@ public class ContactSyncData extends GoogleAPISyncData {
 						addNumber.setPrimary(i == 0);
 						addNumber.setPhoneNumber(number);
 						
-						tList.add(addNumber);
+						tAddList.add(addNumber);
 					}
 				}			
+			}
+			
+			// add the phone to already list
+			for(PhoneNumber p : tAddList){
+				tList.add(p);
 			}
 		}
 		
@@ -254,6 +269,7 @@ public class ContactSyncData extends GoogleAPISyncData {
 		if(getData().email != null){
 			
 			List<Email> tList = contact.getEmailAddresses();
+			List<Email> tAddList = new ArrayList<Email>();
 			
 			for(int i = 0;i < getData().email.length;i++){
 				
@@ -263,9 +279,9 @@ public class ContactSyncData extends GoogleAPISyncData {
 				boolean modified = false;
 				
 				for(Email email : tList){
-					if(!isNullString(email.getRel())){
+					if(email.getRel() != null && email.getRel().endsWith(type)){
 						
-						if(emailStr != null && emailStr.length() >0){
+						if(!isNullString(emailStr)){
 							email.setAddress(emailStr);
 						}else{
 							tList.remove(email);
@@ -289,13 +305,28 @@ public class ContactSyncData extends GoogleAPISyncData {
 							email.setPrimary(true);
 						}
 						
-						tList.add(email);
+						tAddList.add(email);
 					}					
-				}				
-				
+				}
 			}
 			
-			
+			// add the addList to email address
+			for(Email e : tAddList){
+				tList.add(e);
+			}
+		}
+		
+		if(getData().birthday > 0){
+			SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+			contact.setBirthday(new Birthday(format.format(new Date(getData().birthday - TimeZone.getTimeZone(timeZoneID).getRawOffset()))));
+		}
+
+		if(!isNullString(getData().note)){
+			contact.setContent(TextConstruct.plainText(getData().note));
+		}else{
+			if(contact.getContent() instanceof TextContent){
+				contact.setContent((Content)null);
+			}
 		}
 	}
 		
@@ -324,6 +355,7 @@ public class ContactSyncData extends GoogleAPISyncData {
 					addr.setPobox(new PoBox(d));
 					break;
 				case ContactData.ADDR_EXTRA:
+					addr.setNeighborhood(new Neighborhood(d));
 					break;
 				case ContactData.ADDR_STREET:
 					addr.setStreet(new Street(d));
@@ -338,7 +370,7 @@ public class ContactSyncData extends GoogleAPISyncData {
 					addr.setPostcode(new PostCode(d));
 					break;
 				case ContactData.ADDR_COUNTRY:
-					addr.setPobox(new PoBox(d));
+					addr.setCountry(new Country("CN",d));
 					break;
 				}
 			}
@@ -348,7 +380,7 @@ public class ContactSyncData extends GoogleAPISyncData {
 	}
 
 	@Override
-	public void importGoogleData(Object g) throws Exception {
+	public void importGoogleData(Object g,String timeZoneID) throws Exception {
 		
 		ContactEntry contact = (ContactEntry)g;
 		
@@ -398,7 +430,7 @@ public class ContactSyncData extends GoogleAPISyncData {
 					
 					if(gdAddr != null){
 						gdAddr[ContactData.ADDR_POBOX] 		= addr.getPobox()	!= null ? addr.getPobox().getValue() : null;
-						gdAddr[ContactData.ADDR_EXTRA] 		= null;
+						gdAddr[ContactData.ADDR_EXTRA] 		= addr.getNeighborhood() != null ? addr.getNeighborhood().getValue() : null;
 						gdAddr[ContactData.ADDR_STREET] 	= addr.getStreet()	!= null ? addr.getStreet().getValue() : null;
 						gdAddr[ContactData.ADDR_LOCALITY]	= addr.getCity()	!= null ? addr.getCity().getValue() : null;
 						gdAddr[ContactData.ADDR_REGION]		= addr.getRegion()	!= null ? addr.getRegion().getValue() : null;
@@ -469,8 +501,8 @@ public class ContactSyncData extends GoogleAPISyncData {
 				dateStr = dateStr.replace("00", "19");
 			}
 			
-			SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-			getData().birthday = format.parse(dateStr).getTime();
+			SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");			
+			getData().birthday = format.parse(dateStr).getTime() + TimeZone.getTimeZone(timeZoneID).getRawOffset();
 		}
 		
 		if(contact.getContent() instanceof TextContent){
@@ -518,10 +550,37 @@ public class ContactSyncData extends GoogleAPISyncData {
 				return false;
 			}
 			
-			if(!cmpNameStringArr(cmpData.email,ownData.email,0)){
-				return false;
-			}
-			
+			// compare the email
+			// because the BB system can't store the attribute of email so the difference index of array has the same attribute(Contact.ATTR_NONE)
+			//
+			if(cmpData.email != null){
+				if(ownData.email != null){
+					for(String a : cmpData.email){
+						
+						boolean found = false;
+						
+						for(String b : ownData.email){
+							if(cmpNameString(a,b)){
+								found = true;
+								break;
+							}
+						}
+						
+						if(!found){
+							return false;
+						}
+					}
+				}else{
+					if(!cmpNameStringArr(cmpData.email, ownData.email, 0)){
+						return false;
+					}
+				}				
+			}else{
+				if(!cmpNameStringArr(cmpData.email, ownData.email, 0)){
+					return false;
+				}
+			}			
+						
 			if(!cmpNameString(cmpData.org,ownData.org)){
 				return false;
 			}
@@ -529,7 +588,7 @@ public class ContactSyncData extends GoogleAPISyncData {
 			if(!cmpNameString(cmpData.note,ownData.note)){
 				return false;
 			}
-			
+			 
 			if(cmpData.birthday != ownData.birthday){
 				return false;
 			}

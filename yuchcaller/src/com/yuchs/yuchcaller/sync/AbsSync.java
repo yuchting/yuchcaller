@@ -37,19 +37,19 @@ import java.util.Vector;
 
 import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
-import javax.microedition.pim.Contact;
 import javax.microedition.pim.PIM;
 import javax.microedition.pim.PIMItem;
 import javax.microedition.pim.PIMList;
 
+import local.yuchcallerlocalResource;
+
 import net.rim.blackberry.api.pdap.BlackBerryPIMList;
 import net.rim.blackberry.api.pdap.PIMListListener;
+import net.rim.device.api.util.Arrays;
 
 import com.yuchs.yuchcaller.YuchCaller;
 import com.yuchs.yuchcaller.YuchCallerProp;
 import com.yuchs.yuchcaller.sendReceive;
-import com.yuchs.yuchcaller.sync.contact.ContactData;
-import com.yuchs.yuchcaller.sync.contact.ContactSyncData;
 
 public abstract class AbsSync implements PIMListListener{
 	
@@ -78,8 +78,51 @@ public abstract class AbsSync implements PIMListListener{
 	 */
 	private boolean mModifiedProgrammely = false;
 	
+	/**
+	 * the sync modified number array
+	 */
+	private int[] mSyncModNumber = {0,0,0,0};
+	
+	/**
+	 * sync modified number name
+	 */
+	private static String[] SyncModNumberName = null;
+	
+	/**
+	 * sync requesting prompt label string
+	 */
+	private static String	SyncRequesting = null;
+	
+	/**
+	 * sync successfully
+	 */
+	private static String SyncSuccessfully = null;
+	
+	/**
+	 * sync successfully without any changed
+	 */
+	private static String SyncSuccessfullyWithoutChanged = null;
+			
+	/**
+	 * constructor of this AbsSync class
+	 * @param _syncMain
+	 */
 	public AbsSync(SyncMain _syncMain){
 		mSyncMain = _syncMain;
+		
+		if(SyncModNumberName == null){
+			
+			SyncModNumberName = new String[4];
+			
+			SyncModNumberName[0] = mSyncMain.m_mainApp.m_local.getString(yuchcallerlocalResource.SYNC_MOD_ADDED);
+			SyncModNumberName[1] = mSyncMain.m_mainApp.m_local.getString(yuchcallerlocalResource.SYNC_MOD_DELETED);
+			SyncModNumberName[2] = mSyncMain.m_mainApp.m_local.getString(yuchcallerlocalResource.SYNC_MOD_UPDATED);
+			SyncModNumberName[3] = mSyncMain.m_mainApp.m_local.getString(yuchcallerlocalResource.SYNC_MOD_UPLOADED);
+			
+			SyncRequesting					= mSyncMain.m_mainApp.m_local.getString(yuchcallerlocalResource.SYNC_REQUESTING);
+			SyncSuccessfully				= mSyncMain.m_mainApp.m_local.getString(yuchcallerlocalResource.SYNC_SUCC);
+			SyncSuccessfullyWithoutChanged	= mSyncMain.m_mainApp.m_local.getString(yuchcallerlocalResource.SYNC_SUCC_WITHOUT_ANY_CHANGED);
+		}		 
 		
 		try{
 
@@ -224,7 +267,7 @@ public abstract class AbsSync implements PIMListListener{
 	 * @param d
 	 * @throws Exception
 	 */
-	protected abstract void addPIMItemImpl(PIMList item,AbsSyncData d)throws Exception;
+	protected abstract void addPIMItemImpl(PIMList itemList,AbsSyncData d)throws Exception;
 	
 	/**
 	 * delete the PIM item from BB system
@@ -446,6 +489,11 @@ public abstract class AbsSync implements PIMListListener{
 	}
 	
 	/**
+	 * sync main URL
+	 */
+	private static String SyncMainURL = "http://sync.yuchs.com:6029";
+	
+	/**
 	 * sync request
 	 * 
 	 * work following
@@ -471,10 +519,12 @@ public abstract class AbsSync implements PIMListListener{
 		
 		try{
 
-			reportInfo("Request sync...");
+			reportInfo(SyncRequesting);
 			
 			ByteArrayOutputStream os = new ByteArrayOutputStream();
 			try{
+
+				Arrays.fill(mSyncModNumber, 0);
 				
 				long tSyncMinTime = System.currentTimeMillis() - mSyncMain.m_mainApp.getProperties().getSyncFormerDays() * 24 * 3600000L;
 				
@@ -482,16 +532,14 @@ public abstract class AbsSync implements PIMListListener{
 				
 				writeAccountInfo(os,md5,tSyncMinTime,0);
 				
-				//String url = "http://192.168.10.7:8888" + YuchCaller.getHTTPAppendString();
-				//String url = "http://192.168.100.116:8888" + YuchCaller.getHTTPAppendString();
-				String url = "http://sync.yuchs.com:6029" + YuchCaller.getHTTPAppendString();
+				String url = SyncMainURL + YuchCaller.getHTTPAppendString();
 				
 				String tResultStr = new String(SyncMain.requestPOSTHTTP(url,os.toByteArray(),true),"UTF-8");
 										
 				if(tResultStr.equals("succ")){
 					
 					// successfully!
-					reportInfo("sync without any changed successfully!");
+					reportInfo(SyncSuccessfullyWithoutChanged);
 					
 				}else if(tResultStr.equals("diff")){
 					
@@ -506,12 +554,12 @@ public abstract class AbsSync implements PIMListListener{
 							sendNeedList(tNeedList,url,md5,tSyncMinTime);
 						}
 						
-						reportInfo("sync succ!");
-												
+						reportSuccInfo();
+						
 					}finally{
 						diffIn.close();
 						diffIn = null;
-					}								
+					}
 				}					
 				
 				reportError(null);
@@ -524,7 +572,23 @@ public abstract class AbsSync implements PIMListListener{
 		}catch(Exception e){
 			// sync request failed
 			reportError("Sync Error",e);
+			reportInfo(null);
 		}
+	}
+	
+	/**
+	 * report successfully information
+	 */
+	private void reportSuccInfo(){
+		StringBuffer info = new StringBuffer(SyncSuccessfully);
+		
+		for(int i = 0;i < mSyncModNumber.length;i++){
+			if(mSyncModNumber[i] > 0){
+				info.append(SyncModNumberName[i]).append(mSyncModNumber[i]).append(" ");
+			}
+		}
+		
+		reportInfo(info.toString());
 	}
 	
 	/**
@@ -711,6 +775,8 @@ public abstract class AbsSync implements PIMListListener{
 				tAddList = new Vector();
 			}
 			tAddList.addElement(e);
+			
+			mSyncModNumber[0] = num;
 		}
 		
 		// get the delete list
@@ -723,6 +789,8 @@ public abstract class AbsSync implements PIMListListener{
 			
 			// add the BID to delete
 			tDelList.addElement(sendReceive.ReadString(in));
+			
+			mSyncModNumber[1] = num;
 		}
 		
 		// get the update list
@@ -735,6 +803,8 @@ public abstract class AbsSync implements PIMListListener{
 				tUpdateList = new Vector();
 			}
 			tUpdateList.addElement(e);
+			
+			mSyncModNumber[2] = num;
 		}
 		
 		// get the upload list
@@ -750,6 +820,8 @@ public abstract class AbsSync implements PIMListListener{
 				tUploadList = new Vector();
 			}
 			tUploadList.addElement(e);
+			
+			mSyncModNumber[3] = num;
 		}
 		
 		// get the need list
@@ -785,6 +857,8 @@ public abstract class AbsSync implements PIMListListener{
 				}
 			}
 		}
+		
+		
 		
 		if((tAddList != null || tDelList != null || tUpdateList != null || tUploadList != null) && tNeedList == null){
 			readWriteSyncFile(false);

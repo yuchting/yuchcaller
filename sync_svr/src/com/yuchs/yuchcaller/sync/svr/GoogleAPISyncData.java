@@ -65,9 +65,10 @@ public abstract class GoogleAPISyncData {
 	/**
 	 * import the Google data
 	 * @param g
+	 * @param _timeZoneID
 	 * @throws Exception
 	 */
-	public abstract void importGoogleData(Object g)throws Exception;
+	public abstract void importGoogleData(Object g,String _timeZoneID)throws Exception;
 	
 	/**
 	 * export GoogleAPI sync data to real google data
