@@ -8,6 +8,11 @@ import com.yuchs.yuchcaller.sync.svr.sendReceive;
 
 public class TaskData implements GoogleAPIData {
 
+	/**
+	 * max number task to sync
+	 */
+	public static final int	MAX_SYNC_TASK = 500;
+	
 	public static final int STATUS_NOT_STARTED = 0;
 	public static final int STATUS_IN_PROGRESS = 1;
 	public static final int STATUS_COMPLETED = 2;

@@ -7,6 +7,11 @@ import com.yuchs.yuchcaller.sendReceive;
 import com.yuchs.yuchcaller.sync.AbsData;
 
 public class TaskData implements AbsData {
+	
+	/**
+	 * max number task to sync
+	 */
+	public static final int	MAX_SYNC_TASK = 500;
 
 	public static final int STATUS_NOT_STARTED = 0;
 	public static final int STATUS_IN_PROGRESS = 1;

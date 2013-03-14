@@ -433,7 +433,10 @@ public abstract class GoogleAPISync {
 				}
 				
 				// upload event to google calendar
-				uploadGoogleData(d);
+				Object g = uploadGoogleData(d);
+				
+				d.setGID(getGoogleDataId(g));
+				d.setLastMod(getGoogleDataLastMod(g));
 				
 				tUploadList.add(d);
 			}

@@ -64,11 +64,12 @@ public abstract class AbsSyncData {
 	protected abstract AbsData newData();
 	
 	/**
-	 * need calculate md5 by minTime
+	 * need calculate md5 by minTime and by index
 	 * @param minTime
+	 * @param idx  index of current AbsSyncData
 	 * @return
 	 */
-	protected abstract boolean needCalculateMD5(long minTime);
+	protected abstract boolean needCalculateMD5(long minTime,int idx);
 	
 	/**
 	 * ouput data to the stream

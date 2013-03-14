@@ -222,8 +222,6 @@ public class CalendarSync extends GoogleAPISync{
 		data.exportGoogleData(tEvent,mTimeZoneID);
 						
 		tEvent = mService.events().insert("primary", tEvent).execute();
-		data.setGID(tEvent.getId());
-		data.setLastMod(getEventLastMod(tEvent));
 		
 		// ouput debug info
 		String tDebugInfo = mYuchAcc + " uploadEvent:" + data.getBBID();

@@ -703,11 +703,11 @@ public abstract class AbsSync implements PIMListListener{
 		Vector tRemoveList = null;
 		Vector tSortList = new Vector();
 		
-		for(int idx = 0;idx < mSyncDataList.size();idx++){
+		for(int idx = mSyncDataList.size() - 1;idx >= 0;idx--){
 
 			AbsSyncData syncData = (AbsSyncData)mSyncDataList.elementAt(idx);
 			
-			if(!syncData.needCalculateMD5(_minTime)){
+			if(!syncData.needCalculateMD5(_minTime,idx)){
 
 				if(tRemoveList == null){
 					tRemoveList = new Vector();

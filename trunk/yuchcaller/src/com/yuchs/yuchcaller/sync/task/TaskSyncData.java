@@ -30,15 +30,17 @@ public class TaskSyncData extends AbsSyncData {
 			setData(new TaskData());
 		}else{
 			getData().clear();
-		}
+		}		
 
-		
 		int[] fieldIds = todo.getFields();
 		int id;
 		for(int i = 0;i < fieldIds.length;i++){
 			id = fieldIds[i];
 			
 			switch(id){
+			case BlackBerryToDo.UID:
+				setBBID(getStringField(todo,id));
+				break;
 			case BlackBerryToDo.STATUS:
 				getData().status = getIntField(todo, id);
 				break;
@@ -55,13 +57,15 @@ public class TaskSyncData extends AbsSyncData {
 		}
 	}
 
-	protected boolean needCalculateMD5(long minTime) {
-		if(getData() != null){
-			if(getData().deadline > 0){
-				return getData().deadline > minTime;
-			}
-			
-			return true;
+	/**
+	 * need calculate md5 by minTime and by index
+	 * @param minTime
+	 * @param idx  index of current AbsSyncData
+	 * @return
+	 */
+	protected boolean needCalculateMD5(long minTime,int idx){
+		if(getData() != null){			
+			return idx < TaskData.MAX_SYNC_TASK;
 		}
 		
 		return false;
