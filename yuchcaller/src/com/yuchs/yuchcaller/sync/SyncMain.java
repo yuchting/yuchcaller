@@ -48,6 +48,7 @@ import com.yuchs.yuchcaller.ConnectorHelper;
 import com.yuchs.yuchcaller.YuchCaller;
 import com.yuchs.yuchcaller.sync.calendar.CalendarSync;
 import com.yuchs.yuchcaller.sync.contact.ContactSync;
+import com.yuchs.yuchcaller.sync.task.TaskSync;
 
 public class SyncMain {
 		
@@ -69,18 +70,22 @@ public class SyncMain {
 	private boolean	m_isSyncing = false;
 	
 	// calendar sync
-	private final CalendarSync mCalendarSync;
+	private CalendarSync mCalendarSync;
 	
 	// contact sync
-	private final ContactSync mContactSync;
+	private ContactSync mContactSync;
+	
+	// task sync
+	private TaskSync mTaskSync;
 
 	// calendar re-load thread
 	private Thread mReadBbCalendarThread = null;
 	
 	public SyncMain(YuchCaller _mainApp){
 		m_mainApp		= _mainApp;		
-		mCalendarSync	= new CalendarSync(this);
-		mContactSync	= new ContactSync(this);
+		//mCalendarSync	= new CalendarSync(this);
+		//mContactSync	= new ContactSync(this);
+		mTaskSync		= new TaskSync(this);
 	}
 	
 	/**
@@ -232,7 +237,9 @@ public class SyncMain {
 		
 		//mCalendarSync.startSync();
 		
-		mContactSync.startSync();
+		//mContactSync.startSync();
+		
+		mTaskSync.startSync();
 	}
 	
 	private Calendar 	m_calendar = Calendar.getInstance();

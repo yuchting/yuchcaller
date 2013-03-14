@@ -42,7 +42,13 @@ public class ContactSyncData extends AbsSyncData {
 	public ContactData getData(){return (ContactData)m_data;}	
 	public void setData(ContactData d){m_data = d;}
 
-	protected boolean needCalculateMD5(long minTime) {
+	/**
+	 * need calculate md5 by minTime and by index
+	 * @param minTime
+	 * @param idx  index of current AbsSyncData
+	 * @return
+	 */
+	protected boolean needCalculateMD5(long minTime,int idx){
 		// all contact need calculate MD5
 		return true;
 	}

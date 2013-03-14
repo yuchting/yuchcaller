@@ -606,7 +606,7 @@ public class ContactSyncData extends GoogleAPISyncData {
 	 * @param exceptMask
 	 * @return
 	 */
-	private static boolean cmpNameStringArr(String[] a,String[] b,int exceptMask){
+	public static boolean cmpNameStringArr(String[] a,String[] b,int exceptMask){
 		if(a == null && b == null){
 			return true;
 		}
@@ -648,7 +648,7 @@ public class ContactSyncData extends GoogleAPISyncData {
 	 * @param b
 	 * @return
 	 */
-	private static boolean cmpNameString(String a,String b){
+	public static boolean cmpNameString(String a,String b){
 
 		if(a != null){
 			
@@ -669,7 +669,7 @@ public class ContactSyncData extends GoogleAPISyncData {
 	 * @param arr
 	 * @return
 	 */
-	private static boolean isNullArr(String[] arr){
+	public static boolean isNullArr(String[] arr){
 		for(String s : arr){
 			if(s != null && s.length() > 0){
 				return false;
@@ -683,7 +683,7 @@ public class ContactSyncData extends GoogleAPISyncData {
 	 * @param s
 	 * @return
 	 */
-	private static boolean isNullString(String s){
+	public static boolean isNullString(String s){
 		return s == null || s.length() == 0;
 	}
 	

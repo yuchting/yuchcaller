@@ -60,11 +60,12 @@ public class CalendarSyncData extends AbsSyncData{
 	public CalendarData getData(){return (CalendarData)m_data;}
 	
 	/**
-	 * need calculate md5 by minTime
+	 * need calculate md5 by minTime and by index
 	 * @param minTime
+	 * @param idx  index of current AbsSyncData
 	 * @return
 	 */
-	protected boolean needCalculateMD5(long minTime){
+	protected boolean needCalculateMD5(long minTime,int idx){
 		if(getData() == null){
 			return false;
 		}
