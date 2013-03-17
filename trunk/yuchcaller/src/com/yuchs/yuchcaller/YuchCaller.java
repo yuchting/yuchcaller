@@ -144,6 +144,15 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 
 	//! sync main
 	private SyncMain		m_syncMain			= null;
+	
+	//! sync schedule (invokeLater) handler
+	private int				mSyncScheduleHandler = -1;
+	
+	//! auto sync interval 20 minutes
+	public static long		SyncAutoInterval	= 20 * 60000;
+	
+	//! former time of sync
+	private long			mSyncFormerTime		= 0;
 
 	//! ip dial menu
 	private IPDialMenu m_ipDialMenu = new IPDialMenu();
@@ -391,6 +400,45 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	}
 	
 	/**
+	 * initialize the schedule of sync
+	 */
+	public synchronized void initSyncSchedule(){
+		
+		if(getProperties().getYuchAccessToken().length() > 0
+		&& getProperties().getYuchRefreshToken().length() > 0){
+			
+			// cancel it if it has
+			if(mSyncScheduleHandler != -1){
+				cancelInvokeLater(mSyncScheduleHandler);
+				mSyncScheduleHandler = -1;
+			}
+			
+			if(mSyncScheduleHandler == -1){
+				
+				mSyncScheduleHandler = invokeLater(new Runnable() {
+					
+					public void run() {
+						if(System.currentTimeMillis() - mSyncFormerTime >= SyncAutoInterval - 1000){
+							startSync();
+						}						
+					}
+				}, SyncAutoInterval, true);
+			}
+			
+		}
+	}
+	
+	/**
+	 * destroy the sync schedule
+	 */
+	public synchronized void destroySyncSchedule(){
+		if(mSyncScheduleHandler != -1){
+			cancelInvokeLater(mSyncScheduleHandler);
+			mSyncScheduleHandler = -1;
+		}
+	}
+	
+	/**
 	 * get the db index class
 	 * @return
 	 */
@@ -449,6 +497,9 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 						m_syncMain.startSync();
 					}					
 				}
+				
+				// set the sync former time
+				mSyncFormerTime = System.currentTimeMillis();
 			}
 		});
 		
@@ -483,8 +534,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 			}catch(Exception e){
 				SetErrorString("DSD", e);
 			}
-		}
-		 	
+		}	
 	}
 		
 	/**

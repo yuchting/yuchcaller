@@ -218,6 +218,7 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 
 			YuchCallerProp tProp = mMainApp.getProperties();
 			
+			boolean tFormerSyncAutoManual = tProp.getSyncAutoOrManual();			
 			tProp.setSyncAutoOrManual(mAutoManualList.getSelectedIndex() == 0);
 			
 			int tFormerDays = tProp.getSyncFormerDays();
@@ -231,6 +232,15 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 			if(writeFile){
 				tProp.save();
 			}
+			
+			// enable/disable the auto manual schedule
+			if(tProp.getSyncAutoOrManual() != tFormerSyncAutoManual){
+				if(tProp.getSyncAutoOrManual()){
+					mMainApp.initSyncSchedule();
+				}else{
+					mMainApp.destroySyncSchedule();
+				}
+			}
 		}
 	}
 
@@ -243,51 +253,7 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 		
 		if(context != FieldChangeListener.PROGRAMMATIC){
 			
-			if(field == mLoginBtn){
-//				try{
-//					BlackBerryPIMList list = (BlackBerryPIMList)PIM.getInstance().openPIMList(PIM.CONTACT_LIST, PIM.READ_WRITE);
-//										
-//					list.addListener(new PIMListListener() {
-//						
-//						public void itemUpdated(PIMItem oldItem, PIMItem newItem) {
-//							try{
-//								ContactSyncData d = new ContactSyncData(); 
-//								
-//								//BlackBerryPIMList l = (BlackBerryPIMList)PIM.getInstance().openPIMList(PIM.CONTACT_LIST, PIM.READ_ONLY);
-//								
-//								d.importData(newItem, oldItem.getPIMList());
-//								//l.close();	
-//								
-//							}catch(Exception e){
-//								System.out.println(e.getMessage());
-//							}
-//							
-//						}
-//						
-//						public void itemRemoved(PIMItem paramPIMItem) {
-//							
-//							
-//						}
-//						
-//						public void itemAdded(PIMItem paramPIMItem) {
-//							
-//							
-//						}
-//					});
-//					list.close();
-//					Contact c = list.createContact();
-//					String[] arr = new String[ContactData.NAME_SIZE];
-//					for(int i = 0 ;i < arr.length;i++){
-//						arr[i] = "" + i;	
-//					}
-//					
-//					c.addStringArray(Contact.NAME,Contact.ATTR_NONE , arr);
-//					
-//					c.commit();					
-//				}catch(Exception e){
-//					System.out.println("");
-//				}
-				
+			if(field == mLoginBtn){			
 				if(isValidateEmail(mYuchAccount.getText())
 				&& isValidateUserPass(mYuchPass.getText())){
 
@@ -349,6 +315,9 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 					
 					// delete all sync data file
 					mMainApp.destroySyncData();
+					
+					// destroy the sync schedule
+					mMainApp.destroySyncSchedule();
 				}
 			}
 		}
@@ -458,14 +427,18 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 							tProp.setYuchAccessToken(data.elementAt(1).toString());
 							
 							tProp.save();
-							
+
+							// init sync schedule
+							mMainApp.initSyncSchedule();
+
+							// set the UI manager
 							Application.getApplication().invokeLater(new Runnable() {
 								
 								public void run() {
 									prepareConfigMgr();
 									
 									// remove the account manager
-									replace(mAccountMgr, mAccountMgrNull);							
+									replace(mAccountMgr, mAccountMgrNull);
 								}
 							});						
 							
