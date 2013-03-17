@@ -83,8 +83,8 @@ public class SyncMain {
 	
 	public SyncMain(YuchCaller _mainApp){
 		m_mainApp		= _mainApp;		
-		//mCalendarSync	= new CalendarSync(this);
-		//mContactSync	= new ContactSync(this);
+		mCalendarSync	= new CalendarSync(this);
+		mContactSync	= new ContactSync(this);
 		mTaskSync		= new TaskSync(this);
 	}
 	
@@ -235,10 +235,8 @@ public class SyncMain {
 		
 		clearReport();
 		
-		//mCalendarSync.startSync();
-		
-		//mContactSync.startSync();
-		
+		mCalendarSync.startSync();
+		mContactSync.startSync();
 		mTaskSync.startSync();
 	}
 	

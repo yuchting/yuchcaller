@@ -30,7 +30,6 @@ package com.yuchs.yuchcaller.sync.svr.task;
 import java.io.InputStream;
 import java.util.Vector;
 
-import com.google.api.services.calendar.model.Event;
 import com.google.api.services.tasks.Tasks;
 import com.google.api.services.tasks.Tasks.TasksOperations;
 import com.google.api.services.tasks.model.Task;
@@ -183,7 +182,7 @@ public class TaskSync extends GoogleAPISync {
 		String previous = null;
 		if(!mSvrSyncDataList.isEmpty()){
 			Task rearTask = (Task)mSvrSyncDataList.get(mSvrSyncDataList.size() - 1);
-			previous = rearTask.getPosition();
+			previous = rearTask.getId();
 		}
 		
 		TasksOperations.Insert insert = mService.tasks().insert("@default", task);

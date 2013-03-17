@@ -295,7 +295,7 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 		HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
 		
 		response.setHeader(HTTP_CONTENT_TYPE, "text/plain; charset=UTF-8");		
-		response.setContent(ChannelBuffers.copiedBuffer("Failure: " + status.toString() + "\r\n", CharsetUtil.UTF_8));
+		response.setContent(ChannelBuffers.copiedBuffer("Failure: " + status.toString() + "\r\n" + e.getCause().getMessage(), CharsetUtil.UTF_8));
 
 		Channel ch = ctx.getChannel();
 		if(ch.isWritable()){
