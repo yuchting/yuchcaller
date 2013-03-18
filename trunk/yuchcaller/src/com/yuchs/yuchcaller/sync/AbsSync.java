@@ -79,9 +79,29 @@ public abstract class AbsSync implements PIMListListener{
 	private boolean mModifiedProgrammely = false;
 	
 	/**
+	 * syncing state 
+	 */
+	private boolean mSyncing		= false;
+	
+	/**
 	 * the sync modified number array
 	 */
 	private int[] mSyncModNumber = {0,0,0,0};
+	
+	/**
+	 * add data when sync
+	 */
+	private Vector mAddDataWhenSync = new Vector();
+	
+	/**
+	 * remove data when sync
+	 */
+	private Vector mDelDataWhenSync = new Vector();
+	
+	/**
+	 * modified data when sync
+	 */
+	private Vector mModDataWhenSync = new Vector();
 	
 	/**
 	 * sync modified number name
@@ -450,9 +470,68 @@ public abstract class AbsSync implements PIMListListener{
 	 * start sync, main proccess function
 	 */
 	public void startSync(){
-						
+		
+		mSyncing = true;
+		
 		// just call sync request
 		syncRequest();
+		
+		mSyncing = false;
+		
+		
+		// process the buffer data when syncing
+		//
+		
+		// get the status whether write sync file 
+		boolean writeSyncFile = !mDelDataWhenSync.isEmpty() || !mModDataWhenSync.isEmpty();
+
+		
+		// add data
+		synchronized(mAddDataWhenSync){
+			for(int i = 0;i < mAddDataWhenSync.size();i++){
+				AbsSyncData syncData = (AbsSyncData)mAddDataWhenSync.elementAt(i);
+				mSyncDataList.addElement(syncData);
+			}
+			
+			mAddDataWhenSync.removeAllElements();
+		}		
+		
+		// delete
+		synchronized(mDelDataWhenSync){
+			for(int i = 0;i < mDelDataWhenSync.size();i++){
+				String bid = (String)mDelDataWhenSync.elementAt(i);
+				itemRemovedImpl(bid,false);
+			}
+						
+			mDelDataWhenSync.removeAllElements();
+		}
+		
+		
+		// modified
+		synchronized(mModDataWhenSync){
+			for(int i = 0;i < mModDataWhenSync.size();i++){
+				ModSyncData mod = (ModSyncData)mModDataWhenSync.elementAt(i);
+				
+				synchronized(mSyncDataList){
+					for(int idx = 0;idx < mSyncDataList.size();i++){
+						AbsSyncData d = (AbsSyncData)mSyncDataList.elementAt(i);
+						if(d.getBBID().equals(mod.oldBid)){
+							
+							mSyncDataList.removeElementAt(i);
+							mSyncDataList.addElement(mod.newData);
+							
+							break;
+						}
+					}
+				}
+			}
+			
+			mModDataWhenSync.removeAllElements();
+		}
+	
+		if(writeSyncFile){
+			readWriteSyncFile(false);
+		}
 	}
 	
 	/**
@@ -922,11 +1001,18 @@ public abstract class AbsSync implements PIMListListener{
 			return;
 		}
 		
+		
 		try{
 			
 			AbsSyncData syncData = newSyncData();
 	    	syncData.importData(item);
 	    				    	
+	    	if(mSyncing){
+	    		// buffered it when syncing
+				mAddDataWhenSync.addElement(syncData);
+				return;
+			}
+				    	
 	    	mSyncDataList.addElement(syncData);
 		
 		}catch(Exception e){
@@ -940,29 +1026,45 @@ public abstract class AbsSync implements PIMListListener{
 			mModifiedProgrammely = false;
 			return;
 		}
-		
+				
 		if(item != null){
 			
 			String bid = getPIMItemUID(item);
 			
-			synchronized(mSyncDataList){
-				for(int i = 0;i < mSyncDataList.size();i++){
-					AbsSyncData d = (AbsSyncData)mSyncDataList.elementAt(i);
-					if(d.getBBID().equals(bid)){
+			if(mSyncing){
+				mDelDataWhenSync.addElement(bid);
+				return;
+			}
 						
-						if(d.getGID() == null){
-							// remove directly
-							mSyncDataList.removeElementAt(i);
-						}else{
-							// mark delete to wait sync to delete server's event
-							d.setLastMod(-1);
-						
+			itemRemovedImpl(bid,true);
+		}
+	}
+	
+	/**
+	 * item removed impl for sync data list
+	 * @param bid
+	 */
+	public void itemRemovedImpl(String bid,boolean writeFile){
+		
+		synchronized(mSyncDataList){
+			for(int i = 0;i < mSyncDataList.size();i++){
+				AbsSyncData d = (AbsSyncData)mSyncDataList.elementAt(i);
+				if(d.getBBID().equals(bid)){
+					
+					if(d.getGID() == null){
+						// remove directly
+						mSyncDataList.removeElementAt(i);
+					}else{
+						// mark delete to wait sync to delete server's event
+						d.setLastMod(-1);
+					
+						if(writeFile){
 							// write the sync file to avoid lost data when BB system is down
 							readWriteSyncFile(false);
 						}
-						
-						break;
 					}
+					
+					break;
 				}
 			}
 		}
@@ -973,12 +1075,24 @@ public abstract class AbsSync implements PIMListListener{
 		if(mModifiedProgrammely){
 			mModifiedProgrammely = false;
 			return;
-		}
+		}	
 		
 		if(oldItem != null && newItem != null){
 			
 			try{
 				String bid = getPIMItemUID(oldItem);
+				
+				if(mSyncing){
+					ModSyncData d = new ModSyncData();
+					d.oldBid	= bid;
+					d.newData	= newSyncData();
+					
+					d.newData.importData(newItem);
+					d.newData.setLastMod(System.currentTimeMillis());
+					
+					mModDataWhenSync.addElement(d);
+					return;
+				}
 				
 				synchronized(mSyncDataList){
 					for(int i = 0;i < mSyncDataList.size();i++){
@@ -999,7 +1113,7 @@ public abstract class AbsSync implements PIMListListener{
 				mSyncMain.m_mainApp.SetErrorString("CSIA", e);
 			}
 		}
-	}
+	} 
 	//}}
 		
 	/**
@@ -1036,4 +1150,14 @@ public abstract class AbsSync implements PIMListListener{
 		mSyncMain.reportInfo(info,getReportLabel());
 	}
 	
+	
+	/**
+	 * data class for itemUpdate when syncing
+	 * @author tzz
+	 *
+	 */
+	class ModSyncData{
+		public String 		oldBid;
+		public AbsSyncData newData;
+	}
 }
