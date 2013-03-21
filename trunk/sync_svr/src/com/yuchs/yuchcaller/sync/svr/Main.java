@@ -366,7 +366,7 @@ public class Main {
 	private void startNetty(int _port){
 		
 		mMainLogger = new Logger("");
-		mMainLogger.EnabelSystemOut(true);
+		mMainLogger.EnabelSystemOut(false);
 				
 		ServerBootstrap bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
 		bootstrap.setPipelineFactory(new ChannelPipelineFactory(){

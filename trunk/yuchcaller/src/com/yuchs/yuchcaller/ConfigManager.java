@@ -116,6 +116,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	
 	private EditField 		m_IPDialPrefix			= null;
 	private CheckboxField	m_showSystemMenu		= null;
+	private CheckboxField	mEnableCaller			= null;
 	
 	private ColorSampleField m_locationTextColorSample = null;
 	
@@ -349,6 +350,9 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			m_showSystemMenu	= new CheckboxField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SHOW_SYSTEM_MENU), m_mainApp.getProperties().showSystemMenu());
 			m_advanceManager.add(m_showSystemMenu);
 			
+			mEnableCaller		= new CheckboxField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_ENABLE_CALLER), m_mainApp.getProperties().isEnableCaller());
+			m_advanceManager.add(mEnableCaller);			
+			
 			m_showDebugScreenBtn	= new ButtonField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SHOW_DEBUG),
 														ButtonField.CONSUME_CLICK | ButtonField.NEVER_DIRTY);
 			m_advanceManager.add(m_showDebugScreenBtn);
@@ -509,6 +513,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 				tProp.setLocationHeight(MathUtilities.clamp(20, getTextFieldNum(m_locationInfoHeight), YuchCallerProp.fsm_maxFontHeight));
 				
 				tProp.setBoldFont(m_locationBoldFont.getChecked());
+				tProp.setEnableCaller(mEnableCaller.getChecked());
 				
 				boolean t_initMenu = false;
 				

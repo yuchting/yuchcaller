@@ -111,22 +111,16 @@ public class CalendarSync extends GoogleAPISync{
 		    }
 		}
 		
-		StringBuffer sb = new StringBuffer();
-		StringBuffer debug = new StringBuffer();
-		
+		StringBuffer sb = new StringBuffer();		
 		for(int i = 0;i < mSvrSyncDataList.size();i++){
 			Event e = (Event)mSvrSyncDataList.get(i);
 			
 			long tLastMod = getEventLastMod(e);
 			sb.append(tLastMod);
-			
-			debug.append(tLastMod).append(":").append(e.getId()).append("-").append(e.getSummary()).append("\n");
 		}
 		
 		mAllSvrSyncDataMD5 = getMD5(sb.toString());
-		
-		mLogger.LogOut(debug.toString());
-		
+				
 		storeFormerEvent();
 	}
 	

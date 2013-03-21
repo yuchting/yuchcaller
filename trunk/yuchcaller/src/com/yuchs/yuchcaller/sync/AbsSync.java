@@ -55,8 +55,8 @@ public abstract class AbsSync implements PIMListListener{
 	
 	public static final String[] fsm_syncTypeString =
 	{
-		"calendar",
 		"contact",
+		"calendar",
 		"task",
 	};
 	
@@ -468,13 +468,15 @@ public abstract class AbsSync implements PIMListListener{
 	
 	/**
 	 * start sync, main proccess function
+	 * 
+	 * @return change sync entry number
 	 */
-	public void startSync(){
+	public int startSync(){
 		
 		mSyncing = true;
 		
 		// just call sync request
-		syncRequest();
+		int changeNumber = syncRequest();
 		
 		mSyncing = false;
 		
@@ -532,6 +534,8 @@ public abstract class AbsSync implements PIMListListener{
 		if(writeSyncFile){
 			readWriteSyncFile(false);
 		}
+		
+		return changeNumber;
 	}
 	
 	/**
@@ -593,8 +597,11 @@ public abstract class AbsSync implements PIMListListener{
 	 * 		|					|
 	 * 		succ<--------------mod time list
 	 * 
+	 * @return changed number
 	 */
-	protected void syncRequest(){
+	protected int syncRequest(){
+
+		Arrays.fill(mSyncModNumber, 0);
 		
 		try{
 
@@ -602,8 +609,6 @@ public abstract class AbsSync implements PIMListListener{
 			
 			ByteArrayOutputStream os = new ByteArrayOutputStream();
 			try{
-
-				Arrays.fill(mSyncModNumber, 0);
 				
 				long tSyncMinTime = System.currentTimeMillis() - mSyncMain.m_mainApp.getProperties().getSyncFormerDays() * 24 * 3600000L;
 				
@@ -653,6 +658,13 @@ public abstract class AbsSync implements PIMListListener{
 			reportError("Sync Error",e);
 			reportInfo(null);
 		}
+		
+		int changedNum = 0;
+		for(int i = 0;i < mSyncModNumber.length;i++){
+			changedNum += mSyncModNumber[i];
+		}
+		
+		return changedNum;
 	}
 	
 	/**
@@ -1122,10 +1134,10 @@ public abstract class AbsSync implements PIMListListener{
 	 */
 	private final int getReportLabel(){
 		switch(getSyncPIMListType()){
-		case PIM.EVENT_LIST:
-			return 0;
 		case PIM.CONTACT_LIST:
-			return 1;
+			return 0;
+		case PIM.EVENT_LIST:
+			return 1;		
 		default:
 			return 2;
 		}

@@ -31,7 +31,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.security.MessageDigest;
-import java.util.TimeZone;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -39,9 +38,8 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.gdata.data.contacts.ContactEntry;
-import com.google.gdata.data.extensions.Name;
-import com.yuchs.yuchcaller.sync.svr.contact.ContactSyncData;
+import com.google.api.services.tasks.model.Task;
+import com.yuchs.yuchcaller.sync.svr.task.TaskSyncData;
 
 public abstract class GoogleAPISync {
 
@@ -335,6 +333,15 @@ public abstract class GoogleAPISync {
 //						if(s != null && s1 != null && s.equals(s1) && s.equals("晓东")){
 //							break test_flag;
 //						}
+//					}
+//				}
+				
+//				if(d instanceof TaskSyncData){
+//					Task task = (Task)g;
+//					TaskSyncData dd = (TaskSyncData)d;
+//					
+//					if(task.getTitle().startsWith("再次新建") && dd.getData().summary.startsWith("再次新建")){
+//						System.out.println();
 //					}
 //				}
 				

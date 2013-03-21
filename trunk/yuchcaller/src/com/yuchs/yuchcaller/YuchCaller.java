@@ -30,6 +30,7 @@ package com.yuchs.yuchcaller;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.Date;
+import java.util.Hashtable;
 import java.util.Random;
 import java.util.Vector;
 
@@ -149,7 +150,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	private int				mSyncScheduleHandler = -1;
 	
 	//! auto sync interval 20 minutes
-	public static long		SyncAutoInterval	= 20 * 60000;
+	public static long		SyncAutoInterval	= 30 * 60000;
 	
 	//! former time of sync
 	private long			mSyncFormerTime		= 0;
@@ -239,6 +240,15 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		initMenus(true);
 		
 		// initialize the bitmap of replace incoming call screen
+		init45OSIncomingCall();
+		
+		// init sync schedule
+		initSyncSchedule();
+	}
+	
+	//! initialize the bitmap of replace incoming call screen
+	private void init45OSIncomingCall(){
+		
 		(new Thread(){
 			public void run(){
 				try{
@@ -404,14 +414,11 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	 */
 	public synchronized void initSyncSchedule(){
 		
+		destroySyncSchedule();
+		
 		if(getProperties().getYuchAccessToken().length() > 0
-		&& getProperties().getYuchRefreshToken().length() > 0){
-			
-			// cancel it if it has
-			if(mSyncScheduleHandler != -1){
-				cancelInvokeLater(mSyncScheduleHandler);
-				mSyncScheduleHandler = -1;
-			}
+		&& getProperties().getYuchRefreshToken().length() > 0
+		&& getProperties().getSyncAutoOrManual()){
 			
 			if(mSyncScheduleHandler == -1){
 				
@@ -684,6 +691,11 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	public void callHeld(int callId) {}
 	public void callIncoming(int callId) {
 			
+		if(!getProperties().isEnableCaller()){
+			m_replaceIncomingCallScreen = null;
+			return;
+		}
+		
 		if(fsm_OS_version.startsWith("4.5") && m_replaceIncomingCallScreen == null){
 			PhoneCall t_call = Phone.getCall(callId);			
 			m_replaceIncomingCallScreen = new ReplaceIncomingCallScreen(parsePhoneNumber(t_call.getDisplayPhoneNumber()),this);
@@ -699,9 +711,11 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		}
 		
 	}
+	
 	public void callInitiated(int callId) {
 		replaceActivePhoneCallManager(callId);
-	}	
+	}
+	
 	public void callRemoved(int callId) {}
 	public void callResumed(int callId) {}
 	public void callWaiting(int callid) {}
@@ -738,6 +752,29 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	 * @param callId
 	 */
 	private void replaceActivePhoneCallManager_impl(int callId){
+		
+		if(!getProperties().isEnableCaller()){
+			// disable the caller
+			//
+			if(m_activePhoneCallManager != null){
+				try{
+					Screen t_screen = UiApplication.getUiApplication().getActiveScreen();
+					
+					Field tOrg = m_activePhoneCallManager.getField(0);
+					m_activePhoneCallManager.deleteAll();
+					t_screen.deleteAll();
+					t_screen.add(tOrg);
+					
+				}catch(Exception ex){
+					SetErrorString("RAPCM0", ex);
+				}
+				
+				
+				m_activePhoneCallManager = null;
+			}
+			
+			return;
+		}
 
 		if(m_activePhoneCallManager == null){
 			try{
@@ -752,7 +789,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 				t_screen.add(m_activePhoneCallManager);
 					
 			}catch(Exception ex){
-				SetErrorString("RAPCM", ex);
+				SetErrorString("RAPCM1", ex);
 			}
 		}
 		
@@ -1026,6 +1063,31 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		}
 	
 		return t_info;
+	}
+	
+	//! sync done flurry statistics
+	public void syncDoneFlurryStat(final int contact,final int calendar,final int task){
+		
+		// event for flurry agent
+		// invoke later to make sure flurry run in YuchCaller context
+		invokeLater(new Runnable() {
+			public void run() {
+				Hashtable table = new Hashtable();
+				if(contact != 0){
+					table.put("contact", new Integer(contact));
+				}
+				
+				if(calendar != 0){
+					table.put("calendar", new Integer(calendar));
+				}
+				
+				if(task != 0){
+					table.put("task", new Integer(task));
+				}
+				
+				FlurryAgent.onEvent("Validate_Sync",table);				
+			}
+		});
 	}
 	
 	public synchronized String GetAllErrorString(){

@@ -35,8 +35,10 @@ import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.component.ButtonField;
+import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.EmailAddressEditField;
+import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.NullField;
 import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.PasswordEditField;
@@ -87,6 +89,10 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 	private ObjectChoiceField			mAutoManualList = null;
 	private ObjectChoiceField			mFormerDaysList = null;
 	
+	private CheckboxField				mSyncContact	= null;
+	private CheckboxField				mSyncCalendar	= null;
+	private CheckboxField				mSyncTask	= null;
+	
 	private ButtonField					mSyncBtn	= null;
 	private ButtonField					mLogoutBtn	= null;
 	
@@ -105,12 +111,12 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 	}
 	
 	/**
-	 * this manager field is dirty 
+	 * this manager field is dirty
 	 */
 	public boolean isDirty(){
 		
-		if(mAutoManualList != null){
-			return mAutoManualList.isDirty() || mFormerDaysList.isDirty();
+		if(mConfigMgr != null){
+			return mConfigMgr.isDirty();
 		}
 		
 		return false;		
@@ -185,7 +191,26 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 			mFormerDaysList		= new ObjectChoiceField(mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_FORMER_DAYS), 
 										YuchCallerProp.fsm_formerDaysList,tProp.getSyncFormerDaysIndex());
 			
-			mConfigMgr.add(mFormerDaysList);			
+			mConfigMgr.add(mFormerDaysList);
+			
+			HorizontalFieldManager tSyncTypeMgr = new HorizontalFieldManager();
+			tSyncTypeMgr.add(new LabelField(mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_TYPE_LABEL)));
+			
+			mSyncContact = new CheckboxField(mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_TYPE_CONTACT), 
+											(tProp.getSyncTypeMask() & YuchCallerProp.SYNC_MASK_CONTACT) != 0);
+			
+			mSyncCalendar = new CheckboxField(mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_TYPE_CALENDAR), 
+											(tProp.getSyncTypeMask() & YuchCallerProp.SYNC_MASK_CALENDAR) != 0);
+			
+			mSyncTask = new CheckboxField(mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_TYPE_TASK), 
+											(tProp.getSyncTypeMask() & YuchCallerProp.SYNC_MASK_TASK) != 0);
+			
+			tSyncTypeMgr.add(mSyncContact);
+			tSyncTypeMgr.add(mSyncCalendar);
+			tSyncTypeMgr.add(mSyncTask);
+			
+			mConfigMgr.add(tSyncTypeMgr);
+			
 			
 			HorizontalFieldManager btnMgr = new HorizontalFieldManager();
 			mSyncBtn	= new ButtonField(mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_SYNC_BTN),
@@ -214,7 +239,7 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 	 * @param writeFile whether write data to file
 	 */
 	public void fetchSyncProp(boolean writeFile){
-		if(mAutoManualList != null){
+		if(mConfigMgr != null){
 
 			YuchCallerProp tProp = mMainApp.getProperties();
 			
@@ -228,6 +253,19 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 			if(tFormerDays != tDays){
 				mMainApp.getSyncMain().readBBCalendarAgain();
 			}
+						
+			int tSyncMask = 0;
+			if(mSyncContact.getChecked()){
+				tSyncMask |= YuchCallerProp.SYNC_MASK_CONTACT;
+			}
+			if(mSyncCalendar.getChecked()){
+				tSyncMask |= YuchCallerProp.SYNC_MASK_CALENDAR;
+			}
+			if(mSyncTask.getChecked()){
+				tSyncMask |= YuchCallerProp.SYNC_MASK_TASK;
+			}
+			
+			tProp.setSyncTypeMask(tSyncMask);
 			
 			if(writeFile){
 				tProp.save();
@@ -398,9 +436,9 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 				
 				// request the yuch server
 				
-				String url = "http://192.168.100.116:8888/f/login/" + YuchCaller.getHTTPAppendString();
+				//String url = "http://192.168.100.116:8888/f/login/" + YuchCaller.getHTTPAppendString();
 				//String url = "http://192.168.10.7:8888/f/login/" + YuchCaller.getHTTPAppendString();
-				//String url = "http://www.yuchs.com/f/login/" + YuchCaller.getHTTPAppendString();
+				String url = "http://www.yuchs.com/f/login/" + YuchCaller.getHTTPAppendString();
 							
 				String[] tParamName = {
 					"acc",	"pass",	"type",

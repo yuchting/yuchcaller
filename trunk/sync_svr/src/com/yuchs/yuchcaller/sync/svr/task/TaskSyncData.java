@@ -113,6 +113,8 @@ public class TaskSyncData extends GoogleAPISyncData {
 			if(cmp.status == TaskData.STATUS_COMPLETED && own.status != TaskData.STATUS_COMPLETED){
 				return false;
 			}
+			
+			return true;
 		}
 		
 		return false;

@@ -46,6 +46,7 @@ import net.rim.device.api.io.http.HttpProtocolConstants;
 
 import com.yuchs.yuchcaller.ConnectorHelper;
 import com.yuchs.yuchcaller.YuchCaller;
+import com.yuchs.yuchcaller.YuchCallerProp;
 import com.yuchs.yuchcaller.sync.calendar.CalendarSync;
 import com.yuchs.yuchcaller.sync.contact.ContactSync;
 import com.yuchs.yuchcaller.sync.task.TaskSync;
@@ -218,6 +219,12 @@ public class SyncMain {
 					return;
 				}
 				
+				while(YuchCaller.canNotConnectNetwork()){
+					try{
+						sleep(30000);
+					}catch(Exception e){}					
+				}
+				
 				synchronized(SyncMain.this){
 					m_isSyncing = true;
 				}
@@ -235,9 +242,25 @@ public class SyncMain {
 		
 		clearReport();
 		
-		mCalendarSync.startSync();
-		mContactSync.startSync();
-		mTaskSync.startSync();
+		int contactChangeNum = 0;
+		int calendarChangeNum = 0;
+		int taskChangeNum = 0;
+		
+		int tMask = m_mainApp.getProperties().getSyncTypeMask();
+		
+		if((tMask & YuchCallerProp.SYNC_MASK_CONTACT) != 0){
+			contactChangeNum = mContactSync.startSync();
+		}
+		
+		if((tMask & YuchCallerProp.SYNC_MASK_CALENDAR) != 0){
+			calendarChangeNum = mCalendarSync.startSync();
+		}
+		
+		if((tMask & YuchCallerProp.SYNC_MASK_TASK) != 0){
+			taskChangeNum = mTaskSync.startSync();
+		}
+		
+		m_mainApp.syncDoneFlurryStat(contactChangeNum, calendarChangeNum, taskChangeNum);
 	}
 	
 	private Calendar 	m_calendar = Calendar.getInstance();
