@@ -454,10 +454,7 @@ public class SyncMain {
 			}
 			
 			int rc = conn.getResponseCode();
-		    if(rc != HttpConnection.HTTP_OK){
-		    	throw new IOException("HTTP response code: " + rc);
-		    }
-		    
+			
 		    InputStream in = conn.openInputStream();
 		    try{
 		    	int length = (int)conn.getLength();
@@ -511,6 +508,10 @@ public class SyncMain {
 						gin.close();
 					}
 		        }
+		    	
+		    	if(rc != HttpConnection.HTTP_OK){
+			    	throw new IOException("HTTP response code: " + rc + " msg:" + result);
+			    }
 		    	
 		    	return result;
 

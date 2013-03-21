@@ -1,3 +1,30 @@
+/**
+ *  Dear developer:
+ *  
+ *   If you want to modify this file of project and re-publish this please visit:
+ *  
+ *     http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *     
+ *   to check your responsibility and my humble proposal. Thanks!
+ *   
+ *  -- 
+ *  Yuchs' Developer    
+ *  
+ *  
+ *  
+ *  
+ *  尊敬的开发者：
+ *   
+ *    如果你想要修改这个项目中的文件，同时重新发布项目程序，请访问一下：
+ *    
+ *      http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *      
+ *    了解你的责任，还有我卑微的建议。 谢谢！
+ *   
+ *  -- 
+ *  语盒开发者
+ *  
+ */
 package com.yuchs.yuchcaller;
 
 import java.io.ByteArrayInputStream;
@@ -98,6 +125,15 @@ public class DbIndex {
 	public synchronized String findPhoneData(String _number){
 		
 		try{
+			
+			if(_number.startsWith("17951")
+			|| _number.startsWith("17950")
+			|| _number.startsWith("12593")
+			|| _number.startsWith("96218")
+			|| _number.startsWith("17911")){
+				// get rid of IP caller
+				_number = _number.substring(5);
+			}
 
 			if(_number.length() < 11 && _number.charAt(0) != '+'){
 				
@@ -245,7 +281,7 @@ public class DbIndex {
 			debugInfo("SN", ex);
 		}
 		
-		return "";		
+		return "";
 	}
 	
 	//! get the data base version
