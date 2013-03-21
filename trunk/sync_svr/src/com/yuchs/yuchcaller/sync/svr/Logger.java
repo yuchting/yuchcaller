@@ -104,7 +104,7 @@ public class Logger{
 		}
 	}
 	
-	public synchronized void PrinterException(Exception _e){
+	public synchronized void PrinterException(Throwable _e){
 		
 		if(m_disable ){
 			return ;

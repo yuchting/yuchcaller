@@ -52,7 +52,7 @@ public class Main {
 	 */
 	public static void main(String[] args) throws Exception {		
 		
-		(new Main()).startNetty(6029);
+		(new Main()).startNetty(80);
 		
 		//System.getProperties().put("socksProxySet","true");
 		//System.getProperties().put("socksProxyHost","127.0.0.1");

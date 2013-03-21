@@ -1,3 +1,30 @@
+/**
+ *  Dear developer:
+ *  
+ *   If you want to modify this file of project and re-publish this please visit:
+ *  
+ *     http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *     
+ *   to check your responsibility and my humble proposal. Thanks!
+ *   
+ *  -- 
+ *  Yuchs' Developer    
+ *  
+ *  
+ *  
+ *  
+ *  尊敬的开发者：
+ *   
+ *    如果你想要修改这个项目中的文件，同时重新发布项目程序，请访问一下：
+ *    
+ *      http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *      
+ *    了解你的责任，还有我卑微的建议。 谢谢！
+ *   
+ *  -- 
+ *  语盒开发者
+ *  
+ */
 package com.yuchs.yuchcaller;
 
 import java.io.InputStream;
@@ -15,6 +42,17 @@ public class YuchCallerProp {
 	
 	//  the max font height
 	public final static int		fsm_maxFontHeight		= 50;
+	
+
+	/**
+	 * sync bit mask 
+	 */
+	public static final int	SYNC_MASK_CONTACT	= 1;
+	public static final int	SYNC_MASK_CALENDAR	= 2;
+	public static final int	SYNC_MASK_TASK		= 4;
+	
+	//! whether is enable caller
+	private boolean mEnableCaller			= true;	
     		
 	//! receive phone vibration time
 	private int m_receivePhoneVibrationTime = 100;
@@ -55,8 +93,22 @@ public class YuchCallerProp {
 	//! the yuch account google api access token; 
 	private String mAccessToken				= "";
 	
+	//! sync former days list string
+	public final static String[] fsm_formerDaysList = new String[]{
+		"30",
+		"60",
+		"90",
+		"120",
+	};
+	
 	//! the sync former days
 	private int mSyncFormerDays		 	= 60;
+	
+	//! sync automaticly or manually 
+	private boolean mSyncAutoOrManual		= true;
+	
+	// sync type mask
+	private int mSyncTypeMask				= SYNC_MASK_CONTACT | SYNC_MASK_CALENDAR | SYNC_MASK_TASK;
 	
 	final private YuchCaller	m_mainApp;
 	
@@ -95,26 +147,29 @@ public class YuchCallerProp {
 		m_hangupPhoneVibrationTime = _time;
 	}
 	
+	public boolean isEnableCaller(){return mEnableCaller;}
+	public void setEnableCaller(boolean _enabled){mEnableCaller = _enabled;}
+	
 	public int getLocationPosition_x(){return m_locationInfoPosition_x;}
-	public void setLocationPosition_x(int _x){m_locationInfoPosition_x = _x;}
+	public synchronized void setLocationPosition_x(int _x){m_locationInfoPosition_x = _x;}
 	
 	public int getLocationPosition_y(){return m_locationInfoPosition_y;}
-	public void setLocationPosition_y(int _y){m_locationInfoPosition_y = _y;}
+	public synchronized void setLocationPosition_y(int _y){m_locationInfoPosition_y = _y;}
 	
 	public int getLocationColor(){return m_locationInfoColor;}
-	public void setLocationColor(int _color){m_locationInfoColor = _color;}
+	public synchronized void setLocationColor(int _color){m_locationInfoColor = _color;}
 	
 	public int getLocationHeight(){return m_locationInfoHeight;}
-	public void setLocationHeight(int _height){m_locationInfoHeight = _height;}
+	public synchronized void setLocationHeight(int _height){m_locationInfoHeight = _height;}
 	
 	public boolean showSystemMenu(){return m_showSystemMenu;}
-	public void setShowSystemMenu(boolean _show){m_showSystemMenu = _show;}
+	public synchronized void setShowSystemMenu(boolean _show){m_showSystemMenu = _show;}
 	
 	public boolean isBoldFont(){return m_locationBoldFont;}
-	public void setBoldFont(boolean _bold){m_locationBoldFont = _bold;}
+	public synchronized void setBoldFont(boolean _bold){m_locationBoldFont = _bold;}
 	
 	public String getIPDialNumber(){return m_IPDialPrefix;}
-	public void setIPDialNumber(String _prefix){m_IPDialPrefix = _prefix;}
+	public synchronized void setIPDialNumber(String _prefix){m_IPDialPrefix = _prefix;}
 	
 	public String getYuchAccount(){return mYuchAcc;}
 	public synchronized void setYuchAccount(String _acc){mYuchAcc = _acc;}
@@ -126,10 +181,30 @@ public class YuchCallerProp {
 	public synchronized void setYuchRefreshToken(String _token){mRefreshToken = _token;}
 	
 	public String getYuchAccessToken(){return mAccessToken;}
-	public synchronized void setYuchAccessToken(String _token){mYuchAcc = _token;}
+	public synchronized void setYuchAccessToken(String _token){mAccessToken = _token;}
 	
 	public int getSyncFormerDays(){return mSyncFormerDays;}
-	public void setSyncFormerDays(int _days){mSyncFormerDays = _days;}
+	public synchronized void setSyncFormerDays(int _days){mSyncFormerDays = _days;}
+	
+	public int getSyncTypeMask(){return mSyncTypeMask;}
+	public void setSyncTypeMask(int _mask){mSyncTypeMask = _mask;}
+	
+	/**
+	 * get the index of sync former days in list
+	 * @return
+	 */
+	public int getSyncFormerDaysIndex(){
+		for(int i = 0;i < fsm_formerDaysList.length;i++){
+			if(Integer.parseInt(fsm_formerDaysList[i]) == mSyncFormerDays){
+				return i;
+			}
+		}
+		
+		return 0;
+	}
+	
+	public boolean getSyncAutoOrManual(){return mSyncAutoOrManual;}
+	public synchronized void setSyncAutoOrManual(boolean _autoOrManual){mSyncAutoOrManual = _autoOrManual;}
 	
     //Retrieves a copy of the effective properties set from storage.
     public void save(){
@@ -291,6 +366,9 @@ public class YuchCallerProp {
 				    			mRefreshToken	= sendReceive.ReadString(in);
 				    			mAccessToken	= sendReceive.ReadString(in);
 				    			mSyncFormerDays	= sendReceive.ReadInt(in);
+				    			mSyncAutoOrManual= sendReceive.ReadBoolean(in);
+				    			mSyncTypeMask	= sendReceive.ReadInt(in);
+				    			mEnableCaller	= sendReceive.ReadBoolean(in);
 				    		}
 				    
 			    			if(t_currVer == 0 && !YuchCaller.fsm_OS_version.startsWith("4.")){
@@ -332,6 +410,9 @@ public class YuchCallerProp {
 						sendReceive.WriteString(os, mRefreshToken);
 						sendReceive.WriteString(os, mAccessToken);
 						sendReceive.WriteInt(os,mSyncFormerDays);
+						sendReceive.WriteBoolean(os, mSyncAutoOrManual);
+						sendReceive.WriteInt(os, mSyncTypeMask);
+						sendReceive.WriteBoolean(os, mEnableCaller);
 						
 					}finally{
 						os.close();

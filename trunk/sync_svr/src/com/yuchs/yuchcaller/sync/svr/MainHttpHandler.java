@@ -68,9 +68,6 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 	public static final String		HTTP_CONTENT_LENGTH = "Content-Length";
 	public static final String		HTTP_CONTENT_ENCODING = "Content-Encoding";
 	
-	
-	
-	
 	// the logger
 	private final Logger	mLogger;
 	
@@ -220,7 +217,7 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 				}else if(tType.equals("task")){
 					tSync = new TaskSync(in,mLogger);
 				}else{
-					throw new Exception("Error Type");
+					throw new Exception("Error Type : " + tType);
 				}
 				
 				tSync.readSvrGoogleData();
@@ -232,25 +229,25 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 			
 			tResultBytes = tSync.getResult();
 			
-			if(tResultBytes.length != 0){
-				ByteArrayOutputStream os = new ByteArrayOutputStream();
-				try{
-					GZIPOutputStream zos = new GZIPOutputStream(os,6);
-					try{
-						zos.write(tResultBytes);				
-					}finally{
-						zos.close();
-					}
-					
-					byte[] zipBytes = os.toByteArray();
-					if(zipBytes.length < tResultBytes.length){
-						tResultBytes = zipBytes;
-						zip = true;
-					}
-				}finally{
-					os.close();
-				}
-			}
+//			if(tResultBytes.length != 0){
+//				ByteArrayOutputStream os = new ByteArrayOutputStream();
+//				try{
+//					GZIPOutputStream zos = new GZIPOutputStream(os,6);
+//					try{
+//						zos.write(tResultBytes);				
+//					}finally{
+//						zos.close();
+//					}
+//					
+//					byte[] zipBytes = os.toByteArray();
+//					if(zipBytes.length < tResultBytes.length){
+//						tResultBytes = zipBytes;
+//						zip = true;
+//					}
+//				}finally{
+//					os.close();
+//				}
+//			}
 		}
 		
 		// write the response 
@@ -263,6 +260,7 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 		if(zip){
 			response.setHeader(HTTP_CONTENT_ENCODING, "gzip");
 		}
+		mLogger.LogOut("WriteBack Result Length:" + response.getContent().writerIndex() + " with zip " + zip);
 		
 		Channel ch = e.getChannel();
 		
@@ -303,5 +301,7 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 			ch.write(response);
 			ch.close();
 		}
+		
+		mLogger.PrinterException(e.getCause());
 	}
 }

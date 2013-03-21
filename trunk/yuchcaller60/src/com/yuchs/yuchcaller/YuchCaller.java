@@ -1,13 +1,42 @@
+/**
+ *  Dear developer:
+ *  
+ *   If you want to modify this file of project and re-publish this please visit:
+ *  
+ *     http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *     
+ *   to check your responsibility and my humble proposal. Thanks!
+ *   
+ *  -- 
+ *  Yuchs' Developer    
+ *  
+ *  
+ *  
+ *  
+ *  尊敬的开发者：
+ *   
+ *    如果你想要修改这个项目中的文件，同时重新发布项目程序，请访问一下：
+ *    
+ *      http://code.google.com/p/yuchberry/wiki/Project_files_header
+ *      
+ *    了解你的责任，还有我卑微的建议。 谢谢！
+ *   
+ *  -- 
+ *  语盒开发者
+ *  
+ */
 package com.yuchs.yuchcaller;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.Date;
+import java.util.Hashtable;
 import java.util.Random;
 import java.util.Vector;
 
 import javax.microedition.io.Connector;
 import javax.microedition.io.HttpConnection;
+import javax.microedition.io.file.FileConnection;
 import javax.microedition.pim.Contact;
 
 import local.yuchcallerlocalResource;
@@ -56,6 +85,7 @@ import net.rim.device.api.ui.container.PopupScreen;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 
 import com.flurry.blackberry.FlurryAgent;
+import com.yuchs.yuchcaller.sync.AbsSync;
 import com.yuchs.yuchcaller.sync.SyncMain;
 
 public class YuchCaller extends Application implements OptionsProvider,PhoneListener,DbIndex.DbIndexDebugOut{
@@ -114,7 +144,16 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	private SearchLocationMenu m_addrSearchMenu = new SearchLocationMenu();
 
 	//! sync main
-	public SyncMain		m_syncMain			= new SyncMain(this);
+	private SyncMain		m_syncMain			= null;
+	
+	//! sync schedule (invokeLater) handler
+	private int				mSyncScheduleHandler = -1;
+	
+	//! auto sync interval 20 minutes
+	public static long		SyncAutoInterval	= 30 * 60000;
+	
+	//! former time of sync
+	private long			mSyncFormerTime		= 0;
 
 	//! ip dial menu
 	private IPDialMenu m_ipDialMenu = new IPDialMenu();
@@ -201,6 +240,15 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		initMenus(true);
 		
 		// initialize the bitmap of replace incoming call screen
+		init45OSIncomingCall();
+		
+		// init sync schedule
+		initSyncSchedule();
+	}
+	
+	//! initialize the bitmap of replace incoming call screen
+	private void init45OSIncomingCall(){
+		
 		(new Thread(){
 			public void run(){
 				try{
@@ -362,6 +410,42 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	}
 	
 	/**
+	 * initialize the schedule of sync
+	 */
+	public synchronized void initSyncSchedule(){
+		
+		destroySyncSchedule();
+		
+		if(getProperties().getYuchAccessToken().length() > 0
+		&& getProperties().getYuchRefreshToken().length() > 0
+		&& getProperties().getSyncAutoOrManual()){
+			
+			if(mSyncScheduleHandler == -1){
+				
+				mSyncScheduleHandler = invokeLater(new Runnable() {
+					
+					public void run() {
+						if(System.currentTimeMillis() - mSyncFormerTime >= SyncAutoInterval - 1000){
+							startSync();
+						}						
+					}
+				}, SyncAutoInterval, true);
+			}
+			
+		}
+	}
+	
+	/**
+	 * destroy the sync schedule
+	 */
+	public synchronized void destroySyncSchedule(){
+		if(mSyncScheduleHandler != -1){
+			cancelInvokeLater(mSyncScheduleHandler);
+			mSyncScheduleHandler = -1;
+		}
+	}
+	
+	/**
 	 * get the db index class
 	 * @return
 	 */
@@ -377,6 +461,89 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		return m_prop;
 	}
 	
+	/**
+	 * this thread will initialize the SyncMain to read the Calendar/Contact/Task
+	 */
+	private Thread		mStartSyncThread = null;
+	
+	/**
+	 * start sync the calendar/contacts/task 
+	 */
+	public void startSync(){
+		
+		// run sync proccess in YuchCaller context
+		//
+		invokeLater(new Runnable() {
+			
+			public void run() {
+				
+				if(m_syncMain == null){
+					
+					if(mStartSyncThread == null){
+						
+						synchronized(this){
+							
+							mStartSyncThread = new Thread(){
+								public void run(){
+									m_syncMain = new SyncMain(YuchCaller.this);
+									m_syncMain.startSync();
+									
+									synchronized(YuchCaller.this){
+										mStartSyncThread = null;
+									}
+								}
+							};
+							
+							mStartSyncThread.start();
+						}
+					}
+					
+				}else{
+					
+					if(mStartSyncThread == null){ // SyncMain must be constructed
+						m_syncMain.startSync();
+					}					
+				}
+				
+				// set the sync former time
+				mSyncFormerTime = System.currentTimeMillis();
+			}
+		});
+		
+	}
+	
+	/**
+	 * get the sync main
+	 * @return
+	 */
+	public SyncMain getSyncMain(){
+		return m_syncMain;
+	}
+	
+	/**
+	 * destroy sync data
+	 */
+	public void destroySyncData(){
+		
+		for(int i = 0;i < AbsSync.fsm_syncTypeString.length;i++){
+			
+			String tFilename = YuchCallerProp.fsm_rootPath_back + "YuchCaller/" + AbsSync.fsm_syncTypeString[i] + ".data";
+			try{
+				FileConnection fc = (FileConnection) Connector.open(tFilename,Connector.READ_WRITE);
+				try{
+					if(fc.exists()){
+						fc.delete();
+					}
+				}finally{
+					fc.close();
+					fc = null;
+				}
+			}catch(Exception e){
+				SetErrorString("DSD", e);
+			}
+		}	
+	}
+		
 	/**
 	 * popup a dialog to show user some message
 	 * @param _msg
@@ -524,6 +691,11 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	public void callHeld(int callId) {}
 	public void callIncoming(int callId) {
 			
+		if(!getProperties().isEnableCaller()){
+			m_replaceIncomingCallScreen = null;
+			return;
+		}
+		
 		if(fsm_OS_version.startsWith("4.5") && m_replaceIncomingCallScreen == null){
 			PhoneCall t_call = Phone.getCall(callId);			
 			m_replaceIncomingCallScreen = new ReplaceIncomingCallScreen(parsePhoneNumber(t_call.getDisplayPhoneNumber()),this);
@@ -539,9 +711,11 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		}
 		
 	}
+	
 	public void callInitiated(int callId) {
 		replaceActivePhoneCallManager(callId);
-	}	
+	}
+	
 	public void callRemoved(int callId) {}
 	public void callResumed(int callId) {}
 	public void callWaiting(int callid) {}
@@ -578,6 +752,29 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	 * @param callId
 	 */
 	private void replaceActivePhoneCallManager_impl(int callId){
+		
+		if(!getProperties().isEnableCaller()){
+			// disable the caller
+			//
+			if(m_activePhoneCallManager != null){
+				try{
+					Screen t_screen = UiApplication.getUiApplication().getActiveScreen();
+					
+					Field tOrg = m_activePhoneCallManager.getField(0);
+					m_activePhoneCallManager.deleteAll();
+					t_screen.deleteAll();
+					t_screen.add(tOrg);
+					
+				}catch(Exception ex){
+					SetErrorString("RAPCM0", ex);
+				}
+				
+				
+				m_activePhoneCallManager = null;
+			}
+			
+			return;
+		}
 
 		if(m_activePhoneCallManager == null){
 			try{
@@ -592,7 +789,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 				t_screen.add(m_activePhoneCallManager);
 					
 			}catch(Exception ex){
-				SetErrorString("RAPCM", ex);
+				SetErrorString("RAPCM1", ex);
 			}
 		}
 		
@@ -647,9 +844,14 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		}else{
 			
 			String apn = findNetworkAPN();
-			if(apn != null){
+			if(apn != null){				
+				t_append += ";WapGatewayAPN=" + apn + ";WapGatewayIP=";
 				
-				t_append += ";WapGatewayAPN=" + apn + ";WapGatewayIP=10.0.0.172";
+				if(t_append.equals("ctwap")){
+					t_append += "10.0.0.200";
+				}else{
+					t_append += "10.0.0.172";
+				}
 			}
 		}
 				
@@ -833,7 +1035,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		
 		return t_radioNotAvail && (WLANInfo.getAPInfo() == null);
 	}
-	
+		
 	//! get the prefix of tele attribute
 	public String getPrefixByTelAttr(int _attr){
 		switch(_attr){
@@ -866,6 +1068,31 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		}
 	
 		return t_info;
+	}
+	
+	//! sync done flurry statistics
+	public void syncDoneFlurryStat(final int contact,final int calendar,final int task){
+		
+		// event for flurry agent
+		// invoke later to make sure flurry run in YuchCaller context
+		invokeLater(new Runnable() {
+			public void run() {
+				Hashtable table = new Hashtable();
+				if(contact != 0){
+					table.put("contact", new Integer(contact));
+				}
+				
+				if(calendar != 0){
+					table.put("calendar", new Integer(calendar));
+				}
+				
+				if(task != 0){
+					table.put("task", new Integer(task));
+				}
+				
+				FlurryAgent.onEvent("Validate_Sync",table);				
+			}
+		});
 	}
 	
 	public synchronized String GetAllErrorString(){

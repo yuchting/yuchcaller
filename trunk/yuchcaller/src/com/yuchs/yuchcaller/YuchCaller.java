@@ -844,9 +844,14 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		}else{
 			
 			String apn = findNetworkAPN();
-			if(apn != null){
+			if(apn != null){				
+				t_append += ";WapGatewayAPN=" + apn + ";WapGatewayIP=";
 				
-				t_append += ";WapGatewayAPN=" + apn + ";WapGatewayIP=10.0.0.172";
+				if(t_append.equals("ctwap")){
+					t_append += "10.0.0.200";
+				}else{
+					t_append += "10.0.0.172";
+				}
 			}
 		}
 				
