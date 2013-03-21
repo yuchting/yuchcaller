@@ -42,6 +42,17 @@ public class YuchCallerProp {
 	
 	//  the max font height
 	public final static int		fsm_maxFontHeight		= 50;
+	
+
+	/**
+	 * sync bit mask 
+	 */
+	public static final int	SYNC_MASK_CONTACT	= 1;
+	public static final int	SYNC_MASK_CALENDAR	= 2;
+	public static final int	SYNC_MASK_TASK		= 4;
+	
+	//! whether is enable caller
+	private boolean mEnableCaller			= true;	
     		
 	//! receive phone vibration time
 	private int m_receivePhoneVibrationTime = 100;
@@ -96,6 +107,9 @@ public class YuchCallerProp {
 	//! sync automaticly or manually 
 	private boolean mSyncAutoOrManual		= true;
 	
+	// sync type mask
+	private int mSyncTypeMask				= SYNC_MASK_CONTACT | SYNC_MASK_CALENDAR | SYNC_MASK_TASK;
+	
 	final private YuchCaller	m_mainApp;
 	
 	public YuchCallerProp(YuchCaller _mainApp){
@@ -133,6 +147,9 @@ public class YuchCallerProp {
 		m_hangupPhoneVibrationTime = _time;
 	}
 	
+	public boolean isEnableCaller(){return mEnableCaller;}
+	public void setEnableCaller(boolean _enabled){mEnableCaller = _enabled;}
+	
 	public int getLocationPosition_x(){return m_locationInfoPosition_x;}
 	public synchronized void setLocationPosition_x(int _x){m_locationInfoPosition_x = _x;}
 	
@@ -168,6 +185,9 @@ public class YuchCallerProp {
 	
 	public int getSyncFormerDays(){return mSyncFormerDays;}
 	public synchronized void setSyncFormerDays(int _days){mSyncFormerDays = _days;}
+	
+	public int getSyncTypeMask(){return mSyncTypeMask;}
+	public void setSyncTypeMask(int _mask){mSyncTypeMask = _mask;}
 	
 	/**
 	 * get the index of sync former days in list
@@ -347,6 +367,8 @@ public class YuchCallerProp {
 				    			mAccessToken	= sendReceive.ReadString(in);
 				    			mSyncFormerDays	= sendReceive.ReadInt(in);
 				    			mSyncAutoOrManual= sendReceive.ReadBoolean(in);
+				    			mSyncTypeMask	= sendReceive.ReadInt(in);
+				    			mEnableCaller	= sendReceive.ReadBoolean(in);
 				    		}
 				    
 			    			if(t_currVer == 0 && !YuchCaller.fsm_OS_version.startsWith("4.")){
@@ -389,6 +411,8 @@ public class YuchCallerProp {
 						sendReceive.WriteString(os, mAccessToken);
 						sendReceive.WriteInt(os,mSyncFormerDays);
 						sendReceive.WriteBoolean(os, mSyncAutoOrManual);
+						sendReceive.WriteInt(os, mSyncTypeMask);
+						sendReceive.WriteBoolean(os, mEnableCaller);
 						
 					}finally{
 						os.close();

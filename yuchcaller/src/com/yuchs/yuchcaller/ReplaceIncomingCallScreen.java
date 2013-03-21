@@ -178,7 +178,7 @@ public class ReplaceIncomingCallScreen extends FullScreen {
 	
 	protected void paint(Graphics _g){
 		int t_operation_text_y = YuchCaller.fsm_display_height - sm_displayFont.getHeight();
-					
+							
 		int bg_x = (YuchCaller.fsm_display_width - m_mainApp.m_backgroundBitmap.getWidth()) / 2;
 		int bg_y = YuchCaller.fsm_display_height - m_mainApp.m_backgroundBitmap.getHeight();
 		
@@ -195,6 +195,7 @@ public class ReplaceIncomingCallScreen extends FullScreen {
 		int t_color = _g.getColor();
 		Font t_font = _g.getFont();
 		try{
+			
 			_g.setColor(0xffffff);
 			
 			// display the application text

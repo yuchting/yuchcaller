@@ -98,22 +98,16 @@ public class TaskSync extends GoogleAPISync {
 			}			
 		}
 		
-		StringBuffer sb = new StringBuffer();
-		StringBuffer debug = new StringBuffer();
-		
+		StringBuffer sb = new StringBuffer();		
 		for(int i = 0;i < mSvrSyncDataList.size();i++){
 			Task t = (Task)mSvrSyncDataList.get(i);
 			
 			long tLastMod = getTaskLastMod(t);
 			sb.append(tLastMod);
-			
-			debug.append(tLastMod).append(":").append(t.getId()).append("-").append(t.getTitle()).append("\n");
 		}
 		
 		mAllSvrSyncDataMD5  = getMD5(sb.toString());
 		
-		System.out.println(debug.toString());
-
 		mLogger.LogOut(mYuchAcc + " Load Task Number:" + mSvrSyncDataList.size());
 		
 		storeFormerEvent();
