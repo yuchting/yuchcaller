@@ -300,7 +300,7 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 						if(mReadYuchAccThread == null){
 
 							YuchCallerProp tProp = mMainApp.getProperties();
-							tProp.setYuchAccount(mYuchAccount.getText());
+							tProp.setYuchAccount(mYuchAccount.getText().toLowerCase());
 							tProp.setYuchPass(mYuchPass.getText());
 							
 							tProp.save();

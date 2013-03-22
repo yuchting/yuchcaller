@@ -43,10 +43,12 @@ import net.rim.device.api.compress.GZIPInputStream;
 import net.rim.device.api.compress.GZIPOutputStream;
 import net.rim.device.api.crypto.MD5Digest;
 import net.rim.device.api.io.http.HttpProtocolConstants;
+import net.rim.device.api.util.Arrays;
 
 import com.yuchs.yuchcaller.ConnectorHelper;
 import com.yuchs.yuchcaller.YuchCaller;
 import com.yuchs.yuchcaller.YuchCallerProp;
+import com.yuchs.yuchcaller.sendReceive;
 import com.yuchs.yuchcaller.sync.calendar.CalendarSync;
 import com.yuchs.yuchcaller.sync.contact.ContactSync;
 import com.yuchs.yuchcaller.sync.task.TaskSync;
@@ -429,25 +431,32 @@ public class SyncMain {
 			}
 		}
 		
-		HttpConnection conn = (HttpConnection)ConnectorHelper.open(_url,Connector.READ_WRITE,30000);
+		HttpConnection conn = (HttpConnection)ConnectorHelper.open(_url,Connector.READ_WRITE,10000);
 		try{
-			
-			
+						
 			conn.setRequestMethod(HttpConnection.POST);
-			conn.setRequestProperty(HttpProtocolConstants.HEADER_CONTENT_LENGTH,String.valueOf(tParamByte.length));
-
+			
 			if(_www_form){
 				conn.setRequestProperty("Content-Type","application/x-www-form-urlencoded");
-			}
-			
-			if(_gzip){
-				conn.setRequestProperty("Content-Encoding","gzip");
+				conn.setRequestProperty(HttpProtocolConstants.HEADER_CONTENT_LENGTH,String.valueOf(tParamByte.length));
+			}else{
+
+				// one byte for zip type
+				// because the WAP gateway cannot resend the Content-Encoding header for gzip
+				//
+				conn.setRequestProperty(HttpProtocolConstants.HEADER_CONTENT_LENGTH,String.valueOf(tParamByte.length + 1)); 
 			}
 			
 			OutputStream out = conn.openOutputStream();
 			try{
+				
+				if(!_www_form){
+					out.write(_gzip ? 1 : 0);
+				}
+				
 				out.write(tParamByte);
 				out.flush();
+				
 			}finally{
 				out.close();
 				out = null;
@@ -457,6 +466,7 @@ public class SyncMain {
 			
 		    InputStream in = conn.openInputStream();
 		    try{
+		    	
 		    	int length = (int)conn.getLength();
 		    	int ch;
 		    	byte[] result;
@@ -464,7 +474,7 @@ public class SyncMain {
 		    	if (length != -1){
 		    		
 		    		result = new byte[length];
-		    		in.read(result);
+		    		sendReceive.ForceReadByte(in, result, length);
 		    		
 		    	}else{
 		    		
@@ -473,19 +483,35 @@ public class SyncMain {
 
 				        while ((ch = in.read()) != -1){
 				        	os.write(ch);
-				        }
-				        
+				        }				        
 				        result = os.toByteArray();
+				        
+				        // set the length
+				        length = result.length;
 				        
 		    		}finally{
 		    			os.close();
 		    			os = null;
 		    		}
 			    }
+		    			    	
+		    	if(!_www_form && rc == HttpConnection.HTTP_OK){
+
+			    	// read the zip bit
+			    	_gzip 	= (result[0] == 1);
+			    	length	= length - 1;
+			    	
+			    	result = Arrays.copy(result,1,length);
+			    	
+		    	}else{
+		    		
+		    		_gzip	= false;
+		    	}
 		    	
-		    	if(conn.getHeaderField("Content-Encoding") != null){
+		    	if(_gzip){
 		    		
 		    		ByteArrayInputStream gin = new ByteArrayInputStream(result);
+		    		
 					try{
 						GZIPInputStream zi	= new GZIPInputStream(gin);
 						try{
@@ -495,6 +521,7 @@ public class SyncMain {
 								while((ch = zi.read()) != -1){
 									os.write(ch);
 								}
+								
 								result = os.toByteArray();
 								
 				    		}finally{
@@ -510,7 +537,7 @@ public class SyncMain {
 		        }
 		    	
 		    	if(rc != HttpConnection.HTTP_OK){
-			    	throw new IOException("HTTP response code: " + rc + " msg:" + result);
+			    	throw new IOException("HTTP response code: " + rc + " msg:" + (new String(result)));
 			    }
 		    	
 		    	return result;

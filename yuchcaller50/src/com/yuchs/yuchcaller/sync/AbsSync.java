@@ -205,6 +205,8 @@ public abstract class AbsSync implements PIMListListener{
 				
 		try{
 			
+			reportInfo(mSyncMain.m_mainApp.m_local.getString(yuchcallerlocalResource.SYNC_READING_BB_DATA));
+			
 			PIMList tPIMList = (PIMList)PIM.getInstance().openPIMList(getSyncPIMListType(),PIM.READ_ONLY);
 			try{
 
@@ -251,10 +253,12 @@ public abstract class AbsSync implements PIMListListener{
 				tPIMList.close();
 				tPIMList = null;
 			}
-		    
+
 		}catch(Exception e){
 			reportError("Can not read " + fsm_syncTypeString[getReportLabel()] + " PIMList:",e);
 		}
+		
+		reportInfo(null);
 	}
 
 	/**
@@ -326,8 +330,11 @@ public abstract class AbsSync implements PIMListListener{
 					AbsSyncData d = (AbsSyncData)_addList.elementAt(i);
 										
 					mModifiedProgrammely = true;
-					addPIMItemImpl(tPIMList, d);
-					mModifiedProgrammely = false;
+					try{
+						addPIMItemImpl(tPIMList, d);
+					}finally{
+						mModifiedProgrammely = false;
+					}
 					
 					// added to main list
 					mSyncDataList.addElement(d);
@@ -384,11 +391,13 @@ public abstract class AbsSync implements PIMListListener{
 								if(d.getBBID().equals(getPIMItemUID(item))){
 									
 									mModifiedProgrammely = true;
-									deletePIMItemImpl(item);									
-									mModifiedProgrammely = false;
+									try{
+										deletePIMItemImpl(item);
+									}finally{
+										mModifiedProgrammely = false;
+									}
 									
-									t_eventList.removeElement(item);
-									
+									t_eventList.removeElementAt(idx);									
 									break;
 								}
 							}
@@ -448,8 +457,12 @@ public abstract class AbsSync implements PIMListListener{
 							update.exportData(item);
 							
 							mModifiedProgrammely = true;
-							item.commit();
-							mModifiedProgrammely = false;
+							try{
+								item.commit();
+							}finally{
+								mModifiedProgrammely = false;
+							}
+							
 						}
 					}
 				}
@@ -948,8 +961,6 @@ public abstract class AbsSync implements PIMListListener{
 				}
 			}
 		}
-		
-		
 		
 		if((tAddList != null || tDelList != null || tUpdateList != null || tUploadList != null) && tNeedList == null){
 			readWriteSyncFile(false);

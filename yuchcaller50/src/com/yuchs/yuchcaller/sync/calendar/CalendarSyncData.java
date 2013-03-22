@@ -233,7 +233,7 @@ public class CalendarSyncData extends AbsSyncData{
 				getData().allDay = getBooleanField(event, id);
 				break;
 			case BlackBerryEvent.ATTENDEES:
-				getData().attendees = getStringArrayField(event,id);
+				getData().attendees = getStringArrayField(event,id,-1);
 				break;
 			case BlackBerryEvent.FREE_BUSY:
 				getData().free_busy = getIntField(event, id);

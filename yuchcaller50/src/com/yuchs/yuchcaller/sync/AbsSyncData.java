@@ -361,10 +361,11 @@ public abstract class AbsSyncData {
 	 * get the string array field without 
 	 * @param _item
 	 * @param _id
+	 * @param _resultSize
 	 * @return
 	 */
-	public static String[] getStringArrayField(PIMItem _item,int _id){
-		return getStringArrayField(_item,_id,PIMItem.ATTR_NONE);
+	public static String[] getStringArrayField(PIMItem _item,int _id,int _resultSize){
+		return getStringArrayField(_item,_id,PIMItem.ATTR_NONE,_resultSize);
 	}
 	
 	/**
@@ -372,9 +373,13 @@ public abstract class AbsSyncData {
 	 * @param _item
 	 * @param _id
 	 * @param _attr
+	 * @param _resultSize
 	 * @return
 	 */
-	public static String[] getStringArrayField(PIMItem _item,int _id,int _attr){
+	public static String[] getStringArrayField(PIMItem _item,int _id,int _attr,int _resultSize){
+		
+		String[] result = null;
+		
 		int tCount = _item.countValues(_id);
 		if(tCount > 0){
 			if(_item.getPIMList().getFieldDataType(_id) == PIMItem.STRING_ARRAY){
@@ -382,24 +387,33 @@ public abstract class AbsSyncData {
 				for(int i = 0; i < tCount;i++){
 					// spcific attribute
 					if(_item.getAttributes(_id, i) == _attr){
-						return _item.getStringArray(_id, i);
+						result = _item.getStringArray(_id, i);
 					}
 				}
-				
-				return null;
-				
+								
 			}else if(_item.getPIMList().getFieldDataType(_id) == PIMItem.STRING){
 						
-				String[] tResult = new String[tCount];
+				result = new String[tCount];
 				for(int i = 0 ;i < tCount;i++){
-					tResult[i] = _item.getString(_id, i);
-				}
-				
-				return tResult;
+					result[i] = _item.getString(_id, i);
+				}				
 			}
 		}
 		
-		return null;
+		// resize the result if not equal
+		if(result != null && result.length != _resultSize && _resultSize > 0){
+			
+			String[] tmp = new String[_resultSize];
+			
+			int minSize = Math.min(result.length, _resultSize);
+			for(int i = 0;i < minSize;i++){
+				tmp[i] = result[i];
+			}
+			
+			result = tmp;
+		}
+		
+		return result;
 	}
 	
 	/**

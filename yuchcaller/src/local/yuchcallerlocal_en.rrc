@@ -76,6 +76,7 @@ SYNC_MOD_UPDATED#0="Updated ";
 SYNC_MOD_UPLOADED#0="Uploaded ";
 SYNC_PASS_INIT#0="More than 6 letter or number";
 SYNC_PASS_PREFIX#0="User Pass:";
+SYNC_READING_BB_DATA#0="Initializing BB system data...";
 SYNC_REQUESTING#0="Request sync...";
 SYNC_SIGNIN_BTN#0="Sign in & Credential";
 SYNC_SUCC#0="Sync successfully!";

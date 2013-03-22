@@ -75,7 +75,7 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 	private int	mClientVersionCode;
 	
 	//! receive buffer for adapt the thunk http body
-	private ChannelBuffer mReceiveBuffer 	= new DynamicChannelBuffer(256);
+	private ChannelBuffer mReceiveBuffer 	= new DynamicChannelBuffer(512);
 	
 	/**
 	 * auth code from the www.yuchs.com for check the google auth code 
@@ -106,7 +106,7 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 				throw new Exception("Error GET/POST");
 			}
 			
-			mContentEncoded = request.getHeader(HTTP_CONTENT_ENCODING) != null;
+			
 			mContentLength	= Integer.parseInt(request.getHeader(HTTP_CONTENT_LENGTH));
 			
 			mAuthCode		= request.getHeader("Auth-Code");
@@ -135,42 +135,53 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 		
 		if(mReceiveBuffer.writerIndex() >= mContentLength){
 			
-			mLogger.LogOut("recv Content length:" + mContentLength);
+			mLogger.LogOut("\tRecv Content length:" + mContentLength);
 			
-			byte[] tContentBytes;
-			
-			if(mContentEncoded){
-				InputStream in = new ByteArrayInputStream(mReceiveBuffer.array());			
+			byte[] tContentBytes;			
+			if(mAuthCode == null){
 				
-				try{
-					GZIPInputStream zin = new GZIPInputStream(in);
+				// sync process
+				//
+				InputStream in = new ByteArrayInputStream(mReceiveBuffer.array());
+				mContentEncoded = in.read() == 1;
+				
+				if(mContentEncoded){
+					
 					try{
-						ByteArrayOutputStream os = new ByteArrayOutputStream();
+						GZIPInputStream zin = new GZIPInputStream(in);
 						try{
+							ByteArrayOutputStream os = new ByteArrayOutputStream();
+							try{
 
-							int c;
-							while((c = zin.read()) != -1){
-								os.write(c);
+								int c;
+								while((c = zin.read()) != -1){
+									os.write(c);
+								}
+								
+								tContentBytes	= os.toByteArray();
+														
+							}finally{
+								os.close();
 							}
 							
-							tContentBytes	= os.toByteArray();
-													
 						}finally{
-							os.close();
+							zin.close();
 						}
-						
 					}finally{
-						zin.close();
+						in.close();
+						in = null;
 					}
-				}finally{
-					in.close();
-					in = null;
+					
+				}else{
+					tContentBytes = new byte[mContentLength - 1];
+					sendReceive.ForceReadByte(in, tContentBytes, tContentBytes.length);
 				}
-				
-			}else{			
+			}else{
+				// www.yuchs.com retrieve the AuthCode Token
+				//
 				tContentBytes = mReceiveBuffer.array();
 			}
-			
+						
 			triggerProcess(tContentBytes,e);
 		}
 	}
@@ -180,7 +191,7 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 	 */
 	private void triggerProcess(byte[] _bytes,MessageEvent e)throws Exception{
 		
-		mLogger.LogOut("triggerProcess length:" + _bytes.length);
+		mLogger.LogOut("\tTriggerProcess length:" + _bytes.length);
 		
 		// attempt to zip the data
 		boolean zip = false;
@@ -206,6 +217,7 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 
 			GoogleAPISync tSync;
 			InputStream in = new ByteArrayInputStream(_bytes);
+			
 			try{
 				mClientVersionCode = sendReceive.ReadShort(in);			
 				String tType = sendReceive.ReadString(in);
@@ -228,26 +240,48 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 			}
 			
 			tResultBytes = tSync.getResult();
-			
-//			if(tResultBytes.length != 0){
-//				ByteArrayOutputStream os = new ByteArrayOutputStream();
-//				try{
-//					GZIPOutputStream zos = new GZIPOutputStream(os,6);
-//					try{
-//						zos.write(tResultBytes);				
-//					}finally{
-//						zos.close();
-//					}
-//					
-//					byte[] zipBytes = os.toByteArray();
-//					if(zipBytes.length < tResultBytes.length){
-//						tResultBytes = zipBytes;
-//						zip = true;
-//					}
-//				}finally{
-//					os.close();
-//				}
-//			}
+				
+			ByteArrayOutputStream fos = new ByteArrayOutputStream();
+			try{
+				
+				byte[] zipBytes = null;
+				
+				if(tResultBytes.length > 128){
+					ByteArrayOutputStream os = new ByteArrayOutputStream();
+					try{
+						// try to zip it  
+						GZIPOutputStream zos = new GZIPOutputStream(os,6);
+						try{
+							zos.write(tResultBytes);				
+						}finally{
+							zos.close();
+						}
+						byte[] testZip = os.toByteArray();
+						if(testZip.length < tResultBytes.length){
+							zipBytes = testZip;
+						}
+					}finally{
+						os.close();
+					}
+				}
+				
+				if(zipBytes != null ){
+					
+					fos.write(1);
+					fos.write(zipBytes);
+					
+					zip = true;
+					
+				}else{
+					fos.write(0);
+					fos.write(tResultBytes);
+				}
+				
+				tResultBytes = fos.toByteArray();
+				
+			}finally{
+				fos.close();
+			}
 		}
 		
 		// write the response 
@@ -257,14 +291,11 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 		HttpResponse response	= new DefaultHttpResponse(HttpVersion.HTTP_1_1,HttpResponseStatus.OK);
 		response.setContent(buffer);
 		response.setHeader(HTTP_CONTENT_LENGTH, response.getContent().writerIndex());
-		if(zip){
-			response.setHeader(HTTP_CONTENT_ENCODING, "gzip");
-		}
+		
 		mLogger.LogOut("WriteBack Result Length:" + response.getContent().writerIndex() + " with zip " + zip);
 		
+		// write back
 		Channel ch = e.getChannel();
-		
-		// Write the initial line and the header.
 		ch.write(response);
 		ch.disconnect();
 		ch.close();

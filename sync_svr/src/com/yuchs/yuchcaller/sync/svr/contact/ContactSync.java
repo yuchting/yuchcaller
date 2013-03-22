@@ -107,7 +107,9 @@ public class ContactSync extends GoogleAPISync {
 					mSvrSyncDataList.add(e);
 					sb.append(e.getUpdated().getValue());
 					
-//					if(e.getUpdated().getValue() > 1363060875000L){
+					System.out.println("retrieve: " + e.getName().getFullName());					
+					
+//					if(e.getUpdated().getValue() > 1363744517000L){
 //						System.out.println("delete " + e.getName().getFullName());
 //						e.delete();						
 //					}
