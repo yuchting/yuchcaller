@@ -38,8 +38,9 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.services.tasks.model.Task;
-import com.yuchs.yuchcaller.sync.svr.task.TaskSyncData;
+import com.google.gdata.data.contacts.ContactEntry;
+import com.google.gdata.data.extensions.Name;
+import com.yuchs.yuchcaller.sync.svr.contact.ContactSyncData;
 
 public abstract class GoogleAPISync {
 
@@ -325,16 +326,19 @@ public abstract class GoogleAPISync {
 //					tName.hasNameSuffix() 	? tName.getNameSuffix().getValue():null,
 //				};
 //				
-//				test_flag:
-//				for(String s : names){
-//					ContactSyncData cc = (ContactSyncData)d;
-//					
-//					for(String s1 : cc.getData().names){
-//						if(s != null && s1 != null && s.equals(s1) && s.equals("晓东")){
-//							break test_flag;
+//				if(((ContactSyncData)d).getData() != null){
+//					test_flag:
+//					for(String s : names){
+//						ContactSyncData cc = (ContactSyncData)d;
+//						
+//						for(String s1 : cc.getData().names){
+//							if(s != null && s1 != null && s.equals(s1) && s.equals("一帆")){
+//								break test_flag;
+//							}
 //						}
 //					}
 //				}
+				
 				
 //				if(d instanceof TaskSyncData){
 //					Task task = (Task)g;
@@ -388,7 +392,7 @@ public abstract class GoogleAPISync {
 		del_total:
 		for(GoogleAPISyncData d : mClientSyncDataList){
 			
-			if(d.getLastMod() != -1){
+			if(d.getLastMod() != -1 && !d.getGID().isEmpty()){
 				
 				for(Object g : mSvrSyncDataList){
 					
@@ -439,7 +443,7 @@ public abstract class GoogleAPISync {
 					tUploadList = new Vector<GoogleAPISyncData>();
 				}
 				
-				// upload event to google calendar
+				// upload data to google
 				Object g = uploadGoogleData(d);
 				
 				d.setGID(getGoogleDataId(g));

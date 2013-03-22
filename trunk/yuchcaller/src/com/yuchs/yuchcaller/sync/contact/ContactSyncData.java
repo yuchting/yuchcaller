@@ -178,14 +178,14 @@ public class ContactSyncData extends AbsSyncData {
 				setBBID(getStringField(contact,id));
 				break;
 			case BlackBerryContact.NAME:
-				getData().names = getStringArrayField(contact, id);
+				getData().names = getStringArrayField(contact, id,ContactData.NAME_SIZE);
 				break;
 			case BlackBerryContact.NICKNAME:
 				getData().nickname = getStringField(contact,id);
 				break;
 			case BlackBerryContact.ADDR:
-				getData().addr_work = getStringArrayField(contact, id,BlackBerryContact.ATTR_WORK);
-				getData().addr_home = getStringArrayField(contact, id,BlackBerryContact.ATTR_HOME);
+				getData().addr_work = getStringArrayField(contact, id,BlackBerryContact.ATTR_WORK,ContactData.ADDR_SIZE);
+				getData().addr_home = getStringArrayField(contact, id,BlackBerryContact.ATTR_HOME,ContactData.ADDR_SIZE);
 				break;
 			case BlackBerryContact.TEL:
 				getData().tel = new String[ContactData.TEL_SIZE];

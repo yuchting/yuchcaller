@@ -51,6 +51,7 @@ public class CalendarData implements AbsData{
 	public static final int CLASS_CONFIDENTIAL 	= 0;
 	public static final int CLASS_PRIVATE 		= 1;
 	public static final int CLASS_PUBLIC 			= 2;
+	
 		
 	/**
 	 * summary of the calendar

@@ -44,6 +44,8 @@ public class ContactData implements GoogleAPIData {
 	public static final int NAME_PREFIX = 3;
 	public static final int NAME_SUFFIX = 4;
 	
+	public static final int NAME_SIZE = NAME_SUFFIX + 1;
+	
 	/**
 	 * ADDR string array index
 	 */
