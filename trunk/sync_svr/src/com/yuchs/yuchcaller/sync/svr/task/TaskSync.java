@@ -107,10 +107,9 @@ public class TaskSync extends GoogleAPISync {
 		}
 		
 		mAllSvrSyncDataMD5  = getMD5(sb.toString());
+		storeFormerEvent();
 		
 		mLogger.LogOut(mYuchAcc + " Load Task Number:" + mSvrSyncDataList.size());
-		
-		storeFormerEvent();
 	}
 	
 	/**

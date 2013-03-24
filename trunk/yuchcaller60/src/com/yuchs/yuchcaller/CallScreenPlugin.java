@@ -38,6 +38,10 @@ public class CallScreenPlugin {
 		
 		try{
 
+			if(!m_mainApp.getProperties().isEnableCaller()){
+				return true;
+			}
+			
 			ScreenModel screenModel = new ScreenModel(callId);
 			if(!screenModel.isSupported()){
 				m_mainApp.SetErrorString("screenModel.isSupported() is false , device " + DeviceInfo.getDeviceName() + " is locked!");

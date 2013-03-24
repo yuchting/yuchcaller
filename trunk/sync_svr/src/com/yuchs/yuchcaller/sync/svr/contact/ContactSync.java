@@ -107,21 +107,19 @@ public class ContactSync extends GoogleAPISync {
 					mSvrSyncDataList.add(e);
 					sb.append(e.getUpdated().getValue());
 					
-					System.out.println("retrieve: " + e.getName().getFullName());					
-					
+//					System.out.println("retrieve: " + e.getName().getFullName());				
 //					if(e.getUpdated().getValue() > 1363744517000L){
 //						System.out.println("delete " + e.getName().getFullName());
 //						e.delete();						
 //					}
 				}
 			}
-		}		
+		}	
 		
 		mAllSvrSyncDataMD5 = getMD5(sb.toString());
+		storeFormerEvent();
 		
 		mLogger.LogOut(mYuchAcc + " Load Contact Number:" + mSvrSyncDataList.size());
-		
-		storeFormerEvent();
 	}
 	
 	

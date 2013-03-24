@@ -29,6 +29,7 @@ package com.yuchs.yuchcaller;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.Random;
@@ -149,8 +150,11 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	//! sync schedule (invokeLater) handler
 	private int				mSyncScheduleHandler = -1;
 	
+	//! sync schedule in night timer 
+	private int				mSyncScheduleNightTimer = 0;
+	
 	//! auto sync interval 20 minutes
-	public static long		SyncAutoInterval	= 30 * 60000;
+	public static long		SyncAutoInterval	= 60 * 60000;
 	
 	//! former time of sync
 	private long			mSyncFormerTime		= 0;
@@ -424,8 +428,21 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 				
 				mSyncScheduleHandler = invokeLater(new Runnable() {
 					
-					public void run() {
+					public void run() {						
 						if(System.currentTimeMillis() - mSyncFormerTime >= SyncAutoInterval - 1000){
+							Calendar calendar = Calendar.getInstance();
+							Date	timeDate = new Date();
+							
+							calendar.setTime(timeDate);
+							
+							int hours = calendar.get(Calendar.HOUR_OF_DAY);
+							if(hours >= 23 || hours <= 7){
+								if(++mSyncScheduleNightTimer <= 2){
+									return;
+								}
+							}
+							mSyncScheduleNightTimer = 0;
+							
 							startSync();
 						}						
 					}
