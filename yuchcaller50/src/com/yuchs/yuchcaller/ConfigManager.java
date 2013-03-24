@@ -116,7 +116,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	
 	private EditField 		m_IPDialPrefix			= null;
 	private CheckboxField	m_showSystemMenu		= null;
-	private CheckboxField	mEnableCaller			= null;
+	private CheckboxField	mDisableLocationInfo	= null;
 	
 	private ColorSampleField m_locationTextColorSample = null;
 	
@@ -350,8 +350,8 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			m_showSystemMenu	= new CheckboxField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SHOW_SYSTEM_MENU), m_mainApp.getProperties().showSystemMenu());
 			m_advanceManager.add(m_showSystemMenu);
 			
-			mEnableCaller		= new CheckboxField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_ENABLE_CALLER), m_mainApp.getProperties().isEnableCaller());
-			m_advanceManager.add(mEnableCaller);			
+			mDisableLocationInfo	= new CheckboxField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_ENABLE_CALLER), !m_mainApp.getProperties().isEnableCaller());
+			m_advanceManager.add(mDisableLocationInfo);			
 			
 			m_showDebugScreenBtn	= new ButtonField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SHOW_DEBUG),
 														ButtonField.CONSUME_CLICK | ButtonField.NEVER_DIRTY);
@@ -513,7 +513,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 				tProp.setLocationHeight(MathUtilities.clamp(20, getTextFieldNum(m_locationInfoHeight), YuchCallerProp.fsm_maxFontHeight));
 				
 				tProp.setBoldFont(m_locationBoldFont.getChecked());
-				tProp.setEnableCaller(mEnableCaller.getChecked());
+				tProp.setEnableCaller(!mDisableLocationInfo.getChecked());
 				
 				boolean t_initMenu = false;
 				
@@ -697,7 +697,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		}
 		
 		if(mSyncErrorTextField == null){
-			mSyncErrorTextField = new ColorActiveRichTextField(sb.toString(),EditField.READONLY,0xd20005);
+			mSyncErrorTextField = new ColorActiveRichTextField(sb.toString(),EditField.READONLY | EditField.NON_FOCUSABLE,0xd20005);
 			mSyncErrorTextField.setFont(mReportTextFont);
 			
 			add(mSyncErrorTextField);
@@ -716,7 +716,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		}
 		
 		if(mSyncInfoTextField == null){
-			mSyncInfoTextField = new ActiveRichTextField(sb.toString(),EditField.READONLY);
+			mSyncInfoTextField = new ActiveRichTextField(sb.toString(),EditField.READONLY | EditField.NON_FOCUSABLE);
 			mSyncInfoTextField.setFont(mReportTextFont);
 			
 			add(mSyncInfoTextField);

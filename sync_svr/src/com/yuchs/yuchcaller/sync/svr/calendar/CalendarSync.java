@@ -119,9 +119,10 @@ public class CalendarSync extends GoogleAPISync{
 			sb.append(tLastMod);
 		}
 		
-		mAllSvrSyncDataMD5 = getMD5(sb.toString());
-				
+		mAllSvrSyncDataMD5 = getMD5(sb.toString());				
 		storeFormerEvent();
+		
+		mLogger.LogOut(mYuchAcc + " Load CalendarEvent Number:" + mSvrSyncDataList.size());
 	}
 	
 	@Override

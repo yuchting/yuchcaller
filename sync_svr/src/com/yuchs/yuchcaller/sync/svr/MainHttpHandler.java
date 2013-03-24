@@ -103,9 +103,18 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 			HttpRequest request = (HttpRequest) message;
 			
 			if(request.getMethod() != HttpMethod.POST){
-				throw new Exception("Error GET/POST");
-			}
-			
+				// redirect the GET request to www.yuchs.com
+				HttpResponse response	= new DefaultHttpResponse(HttpVersion.HTTP_1_1,HttpResponseStatus.FOUND);
+				response.setHeader("Location","http://www.yuchs.com");
+				
+				// write back
+				Channel ch = e.getChannel();
+				ch.write(response);
+				ch.disconnect();
+				ch.close();
+				
+				return;
+			}			
 			
 			mContentLength	= Integer.parseInt(request.getHeader(HTTP_CONTENT_LENGTH));
 			
