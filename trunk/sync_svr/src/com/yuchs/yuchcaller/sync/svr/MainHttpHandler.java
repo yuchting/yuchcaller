@@ -304,10 +304,20 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 		mLogger.LogOut("WriteBack Result Length:" + response.getContent().writerIndex() + " with zip " + zip);
 		
 		// write back
-		Channel ch = e.getChannel();
-		ch.write(response);
-		ch.disconnect();
-		ch.close();
+		try{
+			Channel ch = e.getChannel();
+			if(ch.isWritable()){
+				try{
+					ch.write(response);
+					ch.disconnect();
+				}finally{
+					ch.close();
+				}
+			}
+			
+		}catch(Exception ex){
+			mLogger.PrinterException(ex);
+		}
 	}
 
 	@Override
@@ -330,13 +340,15 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 
 	private void sendError(ChannelHandlerContext ctx, HttpResponseStatus status,ExceptionEvent e) {
 		
-		HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
-		
-		response.setHeader(HTTP_CONTENT_TYPE, "text/plain; charset=UTF-8");		
-		response.setContent(ChannelBuffers.copiedBuffer("Failure: " + status.toString() + "\r\n" + e.getCause().getMessage(), CharsetUtil.UTF_8));
-
 		Channel ch = ctx.getChannel();
 		if(ch.isWritable()){
+			
+			HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
+			
+			response.setHeader(HTTP_CONTENT_TYPE, "text/plain; charset=UTF-8");		
+			response.setContent(ChannelBuffers.copiedBuffer("Failure: " + status.toString() + "\r\n" + e.getCause().getMessage(), CharsetUtil.UTF_8));
+
+			
 			// Close the connection as soon as the error message is sent.
 			ch.write(response);
 			ch.close();

@@ -49,7 +49,13 @@ public class ContactSyncData extends AbsSyncData {
 	 * @return
 	 */
 	protected boolean needCalculateMD5(long minTime,int idx){
-		// all contact need calculate MD5
+		
+		// names is empty contact don't need calculate MD5
+		//
+		if(getData() != null && getData().names == null){
+			return false;			
+		}
+		
 		return true;
 	}
 

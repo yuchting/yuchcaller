@@ -212,12 +212,6 @@ public class CalendarSync extends GoogleAPISync{
 //		DateTime end = new DateTime(endDate, TimeZone.getTimeZone("UTC"));
 //		event.setEnd(new EventDateTime().setDateTime(end));
 
-		
-		Event tEvent = new Event();
-		data.exportGoogleData(tEvent,mTimeZoneID);
-						
-		tEvent = mService.events().insert("primary", tEvent).execute();
-		
 		// ouput debug info
 		String tDebugInfo = mYuchAcc + " uploadEvent:" + data.getBBID();
 		if(data.getAPIData() != null){
@@ -225,7 +219,13 @@ public class CalendarSync extends GoogleAPISync{
 			tDebugInfo += " " + cd.summary;
 		}
 		mLogger.LogOut(tDebugInfo);
-		
+				
+		// execute event
+		Event tEvent = new Event();
+		data.exportGoogleData(tEvent,mTimeZoneID);
+						
+		tEvent = mService.events().insert("primary", tEvent).execute();
+				
 		return tEvent;
 	}
 	
@@ -237,14 +237,7 @@ public class CalendarSync extends GoogleAPISync{
 	 */
 	@Override
 	protected Object updateGoogleData(Object o,GoogleAPISyncData data)throws Exception{
-			
-		Event tEvent = (Event)o;
-		data.exportGoogleData(tEvent,mTimeZoneID);
-		
-		tEvent = mService.events().update("primary", data.getGID(),tEvent).execute();
-		data.setGID(tEvent.getId());
-		data.setLastMod(getEventLastMod(tEvent));		
-		
+				
 		// ouput debug info
 		String tDebugInfo = mYuchAcc + " updateEvent:" + data.getBBID();
 		if(data.getAPIData() != null){
@@ -252,6 +245,15 @@ public class CalendarSync extends GoogleAPISync{
 			tDebugInfo += " " + cd.summary;
 		}
 		mLogger.LogOut(tDebugInfo);
+		
+		// execute the event
+		Event tEvent = (Event)o;
+		data.exportGoogleData(tEvent,mTimeZoneID);
+		
+		tEvent = mService.events().update("primary", data.getGID(),tEvent).execute();
+		
+		data.setGID(tEvent.getId());
+		data.setLastMod(getEventLastMod(tEvent));	
 		
 		return tEvent;
 	}
@@ -265,17 +267,17 @@ public class CalendarSync extends GoogleAPISync{
 	protected void deleteGoogleData(GoogleAPISyncData data)throws Exception{
 		try{ 
 			
-			mService.events().delete("primary", data.getGID()).execute();
-			
 			// ouput debug info
 			String tDebugInfo = mYuchAcc + " deleteEvent:" + data.getBBID();
 			if(data.getAPIData() != null){
 				CalendarData cd = (CalendarData)data.getAPIData();
 				tDebugInfo += " " + cd.summary;
 			}
-			
 			mLogger.LogOut(tDebugInfo);
 			
+			// execute delete the event
+			mService.events().delete("primary", data.getGID()).execute();
+						
 		}catch(Exception e){
 			mLogger.PrinterException(mYuchAcc,e);
 		}

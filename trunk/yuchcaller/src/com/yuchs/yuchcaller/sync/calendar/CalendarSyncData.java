@@ -128,9 +128,16 @@ public class CalendarSyncData extends AbsSyncData{
 				tRecurring += ";INTERVAL=" + repeat.getInt(RepeatRule.INTERVAL);
 			}catch(Exception e){}
 			
-			try{
-				tRecurring += ";BYDAY=" + repeat.getInt(RepeatRule.DAY_IN_MONTH);
-			}catch(Exception e){}
+			
+			// follow repeat type Google RFC2445 is invalid
+			// RRULE:REQU=MONTHLY;INTERVAL=1;BYDAY=25
+			//
+			// follow is right
+			// RRULE:REQU=MONTHLY;INTERVAL=1;
+			//
+//			try{
+//				tRecurring += ";BYDAY=" + repeat.getInt(RepeatRule.DAY_IN_MONTH);
+//			}catch(Exception e){}
 			
 			try{
 				tRecurring += ";BYDAY=" + repeat.getInt(RepeatRule.DAY_IN_YEAR);
