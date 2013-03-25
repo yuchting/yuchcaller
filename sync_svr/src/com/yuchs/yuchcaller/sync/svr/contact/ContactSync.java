@@ -169,8 +169,6 @@ public class ContactSync extends GoogleAPISync {
 		
 		if(contact != null){
 			
-			contact.delete();
-			
 			// ouput debug info
 			String tDebugInfo = mYuchAcc + " deleteContact:" + g.getBBID();
 			if(g.getAPIData() != null){
@@ -178,6 +176,9 @@ public class ContactSync extends GoogleAPISync {
 				tDebugInfo += " " + cd.names[ContactData.NAME_GIVEN] + cd.names[ContactData.NAME_FAMILY];
 			}
 			mLogger.LogOut(tDebugInfo);
+						
+			// delete execute
+			contact.delete();
 		}		
 	}
 
@@ -187,28 +188,7 @@ public class ContactSync extends GoogleAPISync {
 		if(contact != null){
 			
 			g.exportGoogleData(contact, mTimeZoneID);
-			
-			URL editUrl = new URL(contact.getEditLink().getHref());
-			try{
-				
-				contact = myService.update(editUrl, contact);
-				
-			}catch(NullPointerException e){
-				if(e.getMessage().startsWith("No authentication header information")){
-					
-					mGoogleCredential.refreshToken();
-					
-					contact = myService.update(editUrl, contact);
-					
-				}else{
-					throw e;
-				}
-			}
-			
-			
-			g.setGID(ContactSyncData.getContactEntryId(contact));
-			g.setLastMod(contact.getUpdated().getValue());
-			
+
 			// ouput debug info
 			String tDebugInfo = mYuchAcc + " updateContact:" + g.getBBID();
 			if(g.getAPIData() != null){
@@ -216,6 +196,23 @@ public class ContactSync extends GoogleAPISync {
 				tDebugInfo += " " + cd.names[ContactData.NAME_GIVEN] + cd.names[ContactData.NAME_FAMILY];
 			}
 			mLogger.LogOut(tDebugInfo);
+			
+			// update execute
+			URL editUrl = new URL(contact.getEditLink().getHref());
+			try{
+				contact = myService.update(editUrl, contact);
+			}catch(NullPointerException e){
+				if(e.getMessage().startsWith("No authentication header information")){
+					mGoogleCredential.refreshToken();
+					
+					contact = myService.update(editUrl, contact);					
+				}else{
+					throw e;
+				}
+			}
+			
+			g.setGID(ContactSyncData.getContactEntryId(contact));
+			g.setLastMod(contact.getUpdated().getValue());
 		}
 		
 		return contact;
@@ -226,30 +223,30 @@ public class ContactSync extends GoogleAPISync {
 		
 		ContactEntry contact = new ContactEntry();
 		g.exportGoogleData(contact, mTimeZoneID);
-
-		try{
-			
-			contact = myService.insert(getContactURL(""), contact);
-			
-		}catch(NullPointerException e){
-			if(e.getMessage().startsWith("No authentication header information")){
-				
-				mGoogleCredential.refreshToken();
-				
-				contact = myService.insert(getContactURL(""), contact);
-				
-			}else{
-				throw e;
-			}
-		}
 		
 		// ouput debug info
 		String tDebugInfo = mYuchAcc + " uploadContact:" + g.getBBID();
 		if(g.getAPIData() != null){
 			ContactData cd = (ContactData)g.getAPIData();
-			tDebugInfo += " " + cd.names[ContactData.NAME_GIVEN] + cd.names[ContactData.NAME_FAMILY];
+			if(cd.names != null){
+				tDebugInfo += " " + cd.names[ContactData.NAME_GIVEN] + cd.names[ContactData.NAME_FAMILY];
+			}else{
+				tDebugInfo += " NullNames!!"; 
+			}
 		}
 		mLogger.LogOut(tDebugInfo);
+
+		// upload execute
+		try{
+			contact = myService.insert(getContactURL(""), contact);
+		}catch(NullPointerException e){
+			if(e.getMessage().startsWith("No authentication header information")){
+				mGoogleCredential.refreshToken();
+				contact = myService.insert(getContactURL(""), contact);
+			}else{
+				throw e;
+			}
+		}
 		
 		return contact;
 	}
