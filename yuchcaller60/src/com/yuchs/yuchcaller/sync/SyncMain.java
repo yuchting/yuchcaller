@@ -471,7 +471,7 @@ public class SyncMain {
 		    	int ch;
 		    	byte[] result;
 		    	
-		    	if (length != -1){
+		    	if (length > 0){
 		    		
 		    		result = new byte[length];
 		    		sendReceive.ForceReadByte(in, result, length);
@@ -495,7 +495,7 @@ public class SyncMain {
 		    		}
 			    }
 		    			    	
-		    	if(!_www_form && rc == HttpConnection.HTTP_OK){
+		    	if(!_www_form && rc == HttpConnection.HTTP_OK && length > 1){
 
 			    	// read the zip bit
 			    	_gzip 	= (result[0] == 1);

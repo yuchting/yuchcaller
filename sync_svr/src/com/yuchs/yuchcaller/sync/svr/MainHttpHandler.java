@@ -341,7 +341,7 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 	private void sendError(ChannelHandlerContext ctx, HttpResponseStatus status,ExceptionEvent e) {
 		
 		Channel ch = ctx.getChannel();
-		if(ch.isWritable()){
+		if(ch.isWritable() && ch.isConnected()){
 			
 			HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
 			
