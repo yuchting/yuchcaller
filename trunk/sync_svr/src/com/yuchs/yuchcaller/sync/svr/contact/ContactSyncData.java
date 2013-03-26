@@ -159,10 +159,10 @@ public class ContactSyncData extends GoogleAPISyncData {
 				if(addr.getRel() != null){
 					
 					// search the type
-					for(int j = 0;j < GoogleAddressSchemasTypes.length;i++){
+					for(int j = 0;j < GoogleAddressSchemasTypes.length;j++){
 						
 						if(addr.getRel().endsWith(GoogleAddressSchemasTypes[j])){
-							addreeses[i] = addr;
+							addreeses[j] = addr;
 													
 							// remove it and add again
 							tList.remove(i);

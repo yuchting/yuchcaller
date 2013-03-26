@@ -625,24 +625,32 @@ public abstract class AbsSync implements PIMListListener{
 				
 				long tSyncMinTime = System.currentTimeMillis() - mSyncMain.m_mainApp.getProperties().getSyncFormerDays() * 24 * 3600000L;
 				
+				reportInfo("repare MD5");
+				
 				String md5 = prepareSyncMD5(tSyncMinTime);
 				
 				writeAccountInfo(os,md5,tSyncMinTime,0);
 				
 				String url = SyncMainURL + YuchCaller.getHTTPAppendString();
 				
+				reportInfo("requesting...");
+				
 				String tResultStr = new String(SyncMain.requestPOSTHTTP(url,os.toByteArray(),true),"UTF-8");
 										
 				if(tResultStr.equals("succ")){
-					
+				
 					// successfully!
 					reportInfo(SyncSuccessfullyWithoutChanged);
 					
 				}else if(tResultStr.equals("diff")){
+				
+					reportInfo("requesting diff");
 					
 					// write the diff sign
 					InputStream diffIn = new ByteArrayInputStream(SyncMain.requestPOSTHTTP(url, outputDiffList(md5,tSyncMinTime) ,true));
 					try{
+						
+						reportInfo("requesting need");
 						
 						Vector tNeedList = processDiffList(diffIn);
 						if(tNeedList != null){
