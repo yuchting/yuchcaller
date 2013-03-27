@@ -879,6 +879,11 @@ public abstract class AbsSync implements PIMListListener{
 		
 		// get the add list
 		int num = sendReceive.ReadInt(in);
+		
+		if(getReportLabel() == PIM.CONTACT_LIST){
+			mSyncMain.m_mainApp.SetErrorString("processDiffList 0 " + num);
+		}
+		
 		for(int i = 0;i < num;i++){
 			AbsSyncData e = newSyncData();
 			e.input(in);
@@ -890,9 +895,14 @@ public abstract class AbsSync implements PIMListListener{
 			
 			mSyncModNumber[0] = num;
 		}
-		
+
 		// get the delete list
 		num = sendReceive.ReadInt(in);
+		
+		if(getReportLabel() == PIM.CONTACT_LIST){
+			mSyncMain.m_mainApp.SetErrorString("processDiffList 1 " + num);
+		}
+		
 		for(int i = 0;i < num;i++){
 			
 			if(tDelList == null){
@@ -907,6 +917,11 @@ public abstract class AbsSync implements PIMListListener{
 		
 		// get the update list
 		num = sendReceive.ReadInt(in);
+		
+		if(getReportLabel() == PIM.CONTACT_LIST){
+			mSyncMain.m_mainApp.SetErrorString("processDiffList 2 " + num);
+		}
+		
 		for(int i = 0;i < num;i++){
 			AbsSyncData e = newSyncData();
 			e.input(in);
@@ -921,6 +936,11 @@ public abstract class AbsSync implements PIMListListener{
 		
 		// get the upload list
 		num = sendReceive.ReadInt(in);
+		
+		if(getReportLabel() == PIM.CONTACT_LIST){
+			mSyncMain.m_mainApp.SetErrorString("processDiffList 3 " + num);
+		}
+		
 		for(int i = 0;i < num;i++){
 			AbsSyncData e = newSyncData();
 			
@@ -938,6 +958,11 @@ public abstract class AbsSync implements PIMListListener{
 		
 		// get the need list
 		num = sendReceive.ReadInt(in);
+		
+		if(getReportLabel() == PIM.CONTACT_LIST){
+			mSyncMain.m_mainApp.SetErrorString("processDiffList 3 " + num);
+		}
+		
 		for(int i = 0;i < num;i++){
 			if(tNeedList == null){
 				tNeedList = new Vector();
@@ -985,6 +1010,10 @@ public abstract class AbsSync implements PIMListListener{
 	 */
 	protected void sendNeedList(Vector needList,String _url,String _md5,long minSyncTime)throws Exception{
 		
+		if(getReportLabel() == PIM.CONTACT_LIST){
+			mSyncMain.m_mainApp.SetErrorString("sendNeedList 0 ");
+		}
+		
 		ByteArrayOutputStream os = new ByteArrayOutputStream();
 		try{
 			
@@ -997,6 +1026,11 @@ public abstract class AbsSync implements PIMListListener{
 				AbsSyncData d = (AbsSyncData)getSyncData(needList.elementAt(i).toString());
 				d.output(os, true);				
 			}
+			
+			if(getReportLabel() == PIM.CONTACT_LIST){
+				mSyncMain.m_mainApp.SetErrorString("sendNeedList 1 ");
+			}
+			
 			
 			InputStream in = new ByteArrayInputStream(SyncMain.requestPOSTHTTP(_url, os.toByteArray(), true));
 			try{
@@ -1015,6 +1049,10 @@ public abstract class AbsSync implements PIMListListener{
 			}finally{
 				in.close();
 				in = null;
+			}
+			
+			if(getReportLabel() == PIM.CONTACT_LIST){
+				mSyncMain.m_mainApp.SetErrorString("sendNeedList 2 ");
 			}
 			
 		}finally{

@@ -93,7 +93,7 @@ public class sendReceive {
 	public static String[] ReadStringArr(InputStream _stream)throws Exception{
 
 		final int t_size = ReadInt(_stream);
-		if(t_size == 0){
+		if(t_size <= 0){
 			
 			return null;
 			
@@ -113,7 +113,7 @@ public class sendReceive {
 		
 		final int len = ReadInt(_stream);
 		
-		if(len != 0){
+		if(len > 0){
 			byte[] t_buffer = new byte[len];
 			
 			ForceReadByte(_stream,t_buffer,len);
