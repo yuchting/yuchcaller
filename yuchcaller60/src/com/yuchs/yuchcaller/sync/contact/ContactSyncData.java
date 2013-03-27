@@ -150,7 +150,7 @@ public class ContactSyncData extends AbsSyncData {
 	private String[] makeRightSizeArr(String[] arr,int rightSize){
 		
 		if(arr != null){
-			if(arr.length != rightSize){
+			if(arr.length != rightSize && rightSize > 0){
 				String[] newArr = new String[rightSize];
 				for(int i = 0;i < Math.min(rightSize,arr.length);i++){
 					newArr[i] = arr[i];
