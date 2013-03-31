@@ -64,10 +64,10 @@ public class YuchCallerProp {
 	private int m_locationInfoPosition_x	= 0;
 	
 	//! location information position 
-	private int m_locationInfoPosition_y	= getLocationInfoInitPos_y(); 
+	private int m_locationInfoPosition_y	= 0; 
 	
 	//! location information color
-	private int m_locationInfoColor		= YuchCaller.fsm_OS_version.startsWith("4.5")?0:0xffffff;
+	private int m_locationInfoColor		= 0;
 	
 	//! location bold font
 	private boolean m_locationBoldFont		= true;
@@ -93,6 +93,9 @@ public class YuchCallerProp {
 	//! the yuch account google api access token; 
 	private String mAccessToken				= "";
 	
+	//! show phone call time length
+	private boolean mShowPhoneCallTime			= false;
+		
 	//! sync former days list string
 	public final static String[] fsm_formerDaysList = new String[]{
 		"30",
@@ -113,13 +116,19 @@ public class YuchCallerProp {
 	final private YuchCaller	m_mainApp;
 	
 	public YuchCallerProp(YuchCaller _mainApp){
-		m_mainApp		= _mainApp;
+		
+		m_mainApp			= _mainApp;
+		
+		m_locationInfoColor 		= _mainApp.getOSVersion().startsWith("4.5")?0:0xffffff;
+		m_locationInfoPosition_y	= getLocationInfoInitPos_y();
+		
 		writeReadIni(true);
 	}
 	
 	// static function to get the initialize y position of location information label
-	private static int getLocationInfoInitPos_y(){
-		if(YuchCaller.fsm_OS_version.startsWith("4.") 
+	private int getLocationInfoInitPos_y(){
+		
+		if(m_mainApp.getOSVersion().startsWith("4.") 
 		|| !CallScreenPlugin.isPhoneScreenPluginSupported()){
 			return YuchCaller.fsm_display_height - YuchCaller.fsm_display_height / 3 + 12;
 		}else{
@@ -188,6 +197,10 @@ public class YuchCallerProp {
 	
 	public int getSyncTypeMask(){return mSyncTypeMask;}
 	public void setSyncTypeMask(int _mask){mSyncTypeMask = _mask;}
+	
+	public boolean isShowPhoneCallTimeLen(){return mShowPhoneCallTime;}
+	public void setShowPhoneCallTimeLen(boolean show){mShowPhoneCallTime = show;}
+	
 	
 	/**
 	 * get the index of sync former days in list
@@ -369,9 +382,10 @@ public class YuchCallerProp {
 				    			mSyncAutoOrManual= sendReceive.ReadBoolean(in);
 				    			mSyncTypeMask	= sendReceive.ReadInt(in);
 				    			mEnableCaller	= sendReceive.ReadBoolean(in);
+				    			mShowPhoneCallTime = sendReceive.ReadBoolean(in);
 				    		}
 				    
-			    			if(t_currVer == 0 && !YuchCaller.fsm_OS_version.startsWith("4.")){
+			    			if(t_currVer == 0 && !m_mainApp.getOSVersion().startsWith("4.")){
 				    			// some data variables function is changed
 				    			//
 				    			m_locationInfoPosition_y = 0;
@@ -413,6 +427,7 @@ public class YuchCallerProp {
 						sendReceive.WriteBoolean(os, mSyncAutoOrManual);
 						sendReceive.WriteInt(os, mSyncTypeMask);
 						sendReceive.WriteBoolean(os, mEnableCaller);
+						sendReceive.WriteBoolean(os, mShowPhoneCallTime);
 						
 					}finally{
 						os.close();

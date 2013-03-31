@@ -365,7 +365,7 @@ public class Main {
 	
 	private void startNetty(int _port){
 		
-		mMainLogger = new Logger("");
+		mMainLogger = new Logger("sync_log/");
 		mMainLogger.EnabelSystemOut(true);
 				
 		ServerBootstrap bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
@@ -390,6 +390,6 @@ public class Main {
 		
 		bootstrap.bind(new InetSocketAddress(_port));
 		
-		mMainLogger.LogOut("Server start on " + _port);
+		mMainLogger.LogOut("YuchCaller Sync Server start on " + _port);
 	}
 }

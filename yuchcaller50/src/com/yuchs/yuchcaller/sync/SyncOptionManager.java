@@ -128,7 +128,6 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 			mAccountMgr = new VerticalFieldManager();
 			
 			TextField tDescText = new TextField(Field.NON_FOCUSABLE);
-			tDescText.setFont(Font.getDefault().derive(Font.getDefault().getStyle(),Font.getDefault().getHeight() * 5 / 6));
 			tDescText.setText(mMainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SYNC_DESC));
 			
 			mAccountMgr.add(tDescText);
@@ -322,13 +321,19 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 						}
 					}
 					
-					
 				}else{
 					
-					mMainApp.DialogAlert("Please Enter right yuch account and pass!");
+					mMainApp.DialogAlert(mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_ILLEAGAL_ACC_PASS_PROMPT));
 				}
 				
 			}else if(field == mSigninBtn){
+				
+				if(mMainApp.getOSVersion().startsWith("4.") || mMainApp.getOSVersion().startsWith("5.")){
+					mMainApp.DialogAlert(mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_SIGN_IN_PROMPT));
+					return;
+				}
+				
+				YuchCaller.openURL("http://www.yuchs.com");
 				
 			}else if(field == mSyncBtn){
 				
