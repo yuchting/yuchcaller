@@ -1,32 +1,30 @@
 #summary Simple Manual
 
-== <b>语电通</b>介绍 ==
-    * <b>免费、开源</b>
+== 语电通介绍 ==
+    * <strong>免费、开源</strong>
      * 免费就不用解释了，谁不愿意接受免费的午餐呢？
      * 开源会带来更加透明、安全的软件，让用户放心使用。<br />
-    * <b>功能专一，数据库庞大</b>
+    * <strong>功能专一，数据库庞大</strong>
      * 来电显示最主要的功能就是显示、查询电话号码的地域、运营商种类等等信息，<b>语电通</b>就是为此而诞生的。
-     * 数据库庞大。<b>语电通</b>使用最新的2012年10月的电话数据，一共 <b>267235</b> 条移动电话号码，全中国 <b>411</b> 个市级地区的号码的数据库。<br />
-    * <b>软件体积小，无后台图标，集成系统设置菜单</b>
-     * 软件编译生成之后，带有庞大数据库的软件cod文件只有 <b>360KB</b> 多，比一般来电显示软件要小。
+     * 数据库庞大。<strong>语电通</strong>使用最新的2012年10月的电话数据，一共 <strong>274209</strong> 条移动电话号码，全中国 <strong>411</strong> 个市级地区的号码的数据库。<br />
+    * <strong>软件体积小，无后台图标，集成系统设置菜单</strong>
+     * 软件编译生成之后，带有庞大数据库的软件cod文件只有 <b>430KB</b> 多，比一般来电显示软件要小。
      * 软件没有后台图标，集成进系统设置菜单，使得<b>语电通</b>完全和系统融为一体。<br />
-    * <b>运行内存小，查询速度快</b>
+    * <strong>运行内存小，查询速度快</strong>
      * 运行内存只有 <b>1M</b>，对于32M运行内存的83系列的机器，完全不是问题。
      * <b>语电通</b>能够提供十分快捷的查询速度，来电时完全不用担心会阻塞电话的接听。
-    现今为止，语电通已经为 [http://ota.yuchs.com/yc_img.php?user=true&xxx.jpg] 位用户提供 [http://ota.yuchs.com/yc_img.php?xx.jpg] 次有效查询。_ (统计数据来自于NB的[http://www.flurry.com/ Flurry]) _
+    现今为止，语电通已经为 [http://ota.yuchs.com/yc_img.php?user=true&xxx.jpg] 位用户提供 [http://ota.yuchs.com/yc_img.php?xx.jpg] 次有效查询。_ (统计数据来自于NB的[http://www.flurry.com/ Flurry]) _ 语电通会定期查询最新版本，也会上传一些统计信息（查询成功与否的信息。绝对不会上传隐私信息，请相信开源的开发者），所以会产生一些手机上网流量，但是非常少，请不用担心。
+
+== 同步谷歌日历、联系人和任务 ==
+   0.3.96 版本之后的语电通就已经有了同步谷歌日历、联系人、任务的功能，能够代替已经停止维护的Google Sync，作为黑莓手机不二的同步选择。具体的功能介绍请查看[https://code.google.com/p/yuchcaller/wiki/Sync_Feature 这里]。
 
 == 下载 ==
    黑莓新手请看[http://code.google.com/p/yuchberry/wiki/Update_Method 客户端安装方法]（和语盒客户端安装方法一致）。各个版本的 [https://code.google.com/p/yuchcaller/wiki/Promote_list 改进列表|更新内容]，使用第三方主题时，可能会使用默认的来电、去电界面。
-    * <b>推荐</b>使用OTA方式，手机直接访问[http://ota.yuchs.com/#yuchcaller http://ota.yuchs.com]下载安装。
+    * <b>推荐</b>使用OTA方式，手机直接访问<strong> [http://ota.yuchs.com/#yuchcaller ota.yuchs.com] </strong>下载安装。
     * 压缩包方式下载
-|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.2.28_for_4.5os.zip 黑莓4.5系统] || 0.2.28 版本||
-|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.2.28_for_5.0os.zip 黑莓5.0系统] || 0.2.28 版本（已知 9000 8900 8520 型号支持不完全）||
-|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.2.28_for_6.0os.zip 黑莓6.0+系统] || 0.2.28 版本 ||
+|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.3.96_for_4.5os.zip 黑莓4.5系统] || 0.3.96 版本（可能 8700 机型支持不完全）||
+|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.3.96_for_5.0os.zip 黑莓5.0系统] || 0.3.96 版本（已知 9000 8900 8520 型号支持不完全）||
+|| [http://yuchcaller.googlecode.com/files/yuchcaller_0.3.96_for_6.0os.zip 黑莓6.0+系统] || 0.3.96 版本 ||
 
 == 赞助 ==
   如果您仍然能够慷慨解囊赞助这个开源项目，我们会感谢您的无私，并[http://code.google.com/p/yuchberry/wiki/Thanks_sheet 铭记在心]，详情请访问[http://code.google.com/p/yuchberry/wiki/Sponsor_yuchberry 这里]。
-
-== 截图 ==
-
-[http://clip2net.com/clip/m85555/1353330994-a-01-10kb.png]    [http://clip2net.com/clip/m85555/1353331024-a-02-8kb.png]<br />
-[http://clip2net.com/clip/m85555/1353331106-9700-42kb.png]    [http://clip2net.com/clip/m85555/1353331168-9700-01-45kb.png]
