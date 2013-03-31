@@ -93,8 +93,16 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 
 	public final static int 		fsm_display_width		= Display.getWidth();
 	public final static int 		fsm_display_height		= Display.getHeight();
-	public final static String	fsm_OS_version			= CodeModuleManager.getModuleVersion((CodeModuleManager.getModuleHandleForObject("")));
-	public final static long		fsm_PIN					= DeviceInfo.getDeviceId();
+	public final String	m_OS_version			= CodeModuleManager.getModuleVersion((CodeModuleManager.getModuleHandleForObject("")));
+	//public final long		m_PIN					= DeviceInfo.getDeviceId();
+	
+	/**
+	 * get the os version
+	 * @return
+	 */
+	public String getOSVersion(){
+		return m_OS_version;
+	}
 		
 	// current Client version
 	public final String			ClientVersion			= ApplicationDescriptor.currentApplicationDescriptor().getVersion();
@@ -161,6 +169,9 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 
 	//! ip dial menu
 	private IPDialMenu m_ipDialMenu = new IPDialMenu();
+	
+	//! call start time
+	private long			mCallStartTime		= 0;
 
 	/**
 	 * replace vertical field manager for acvtive phone call screen's manager
@@ -257,7 +268,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 			public void run(){
 				try{
 
-					if(m_backgroundBitmap == null && fsm_OS_version.startsWith("4.5")){
+					if(m_backgroundBitmap == null && getOSVersion().startsWith("4.5")){
 							
 						byte[] bytes = IOUtilities.streamToBytes(YuchCaller.this.getClass().getResourceAsStream("/background.png"));		
 						m_backgroundBitmap =  EncodedImage.createEncodedImage(bytes , 0, bytes .length).getBitmap();
@@ -686,7 +697,10 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 			Alert.startVibrate(getProperties().getRecvPhoneVibrationTime());
 		}
 		
-		replaceActivePhoneCallManager(callId);		
+		replaceActivePhoneCallManager(callId);
+		
+		// record the start time
+		mCallStartTime = System.currentTimeMillis();
 	}
 
 	public void callDisconnected(int callId) {
@@ -695,6 +709,49 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		}
 		
 		closeReplaceIncomingCallScreen();
+		
+		// show call duration
+		if(getProperties().isShowPhoneCallTimeLen() && mCallStartTime != 0){
+			
+			int delta = (int)((System.currentTimeMillis() - mCallStartTime) / 1000);
+			if(delta >= 0){
+				int hours		= delta / 3600;
+				int minutes		= (delta / 60) % 60;
+				int seconds		= delta % 60;
+				
+				StringBuffer sb = new StringBuffer(m_local.getString(yuchcallerlocalResource.PHONE_DURATION_PREFIX));
+				if(hours > 0){
+					sb.append(hours);
+					if(hours == 1){
+						sb.append(m_local.getString(yuchcallerlocalResource.PHONE_HOUR));
+					}else{
+						sb.append(m_local.getString(yuchcallerlocalResource.PHONE_HOURS));
+					}
+				}
+				
+				if(minutes > 0){
+					sb.append(minutes);
+					if(minutes == 1){
+						sb.append(m_local.getString(yuchcallerlocalResource.PHONE_MINUTE));
+					}else{
+						sb.append(m_local.getString(yuchcallerlocalResource.PHONE_MINUTES));
+					}
+				}
+				
+				if(seconds > 0){
+					sb.append(seconds);
+					if(seconds == 1){
+						sb.append(m_local.getString(yuchcallerlocalResource.PHONE_SECOND));
+					}else{
+						sb.append(m_local.getString(yuchcallerlocalResource.PHONE_SECONDS));
+					}
+				}
+				
+				DialogAlert(sb.toString());
+			}
+		}
+		
+		mCallStartTime = 0;
 	}
 
 	public void callDirectConnectConnected(int callId) {}
@@ -713,7 +770,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 			return;
 		}
 		
-		if(fsm_OS_version.startsWith("4.5") && m_replaceIncomingCallScreen == null){
+		if(getOSVersion().startsWith("4.5") && m_replaceIncomingCallScreen == null){
 			PhoneCall t_call = Phone.getCall(callId);			
 			m_replaceIncomingCallScreen = new ReplaceIncomingCallScreen(parsePhoneNumber(t_call.getDisplayPhoneNumber()),this);
 			
@@ -723,7 +780,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 				SetErrorString("CI",ex);
 				m_replaceIncomingCallScreen = null;
 			}
-		}else if(!fsm_OS_version.startsWith("4")){
+		}else if(!getOSVersion().startsWith("4")){
 			m_callScreenPlugin.apply(callId,CallScreenPlugin.INCOMING);
 		}
 		
@@ -753,7 +810,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	 */
 	private void replaceActivePhoneCallManager(int callId){
 		
-		if(fsm_OS_version.startsWith("4.")){
+		if(getOSVersion().startsWith("4.")){
 			replaceActivePhoneCallManager_impl(callId);
 		}else{
 			// 5.0 os has native method to display
@@ -903,12 +960,22 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 	//! former check time 
 	private long	m_formerCheckTime	= 0;
 	
+	//! enable dialog prompt when check version is over
+	private boolean mCheckVersionDialogPrompt = false;
+	
+	//! enable dialog prompt when check version is over
+	public synchronized void enableCheckVersionDialogPrompt(){
+		mCheckVersionDialogPrompt = true;		
+	}
+	
 	// download the version to get know the version
 	public synchronized void checkVersion(){
 		
-		// check new version per one day 
-		if(System.currentTimeMillis() - m_formerCheckTime < 24 * 3600000){
-			return;			
+		if(!mCheckVersionDialogPrompt){ // is auto check version
+			// check new version per one day 
+			if(System.currentTimeMillis() - m_formerCheckTime < 24 * 3600000){
+				return;			
+			}
 		}
 		
 		m_formerCheckTime = System.currentTimeMillis();
@@ -940,12 +1007,17 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 							        	os.write(ch);
 							        }
 							        result = new String(os.toByteArray(),"UTF-8");
-						    	}
+						    	}						    	
 						    	
 						    	if(isRightVersionString(result) && !result.equals(ClientVersion)){
 						    		// popup dialog to lead 
 						    		//
 						    		popupLatestVersionDlg(result);
+						    	}else{
+						    		
+						    		if(mCheckVersionDialogPrompt){
+						    			DialogAlert(m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_CHECK_VERSION_PROMPT));
+						    		}
 						    	}
 						    	
 						    }finally{
@@ -963,6 +1035,7 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 										
 					synchronized (YuchCaller.this) {
 						m_checkVersionThread = null;
+				    	mCheckVersionDialogPrompt = false;				    	
 					}					
 				}
 			};

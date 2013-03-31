@@ -48,6 +48,7 @@ import net.rim.device.api.ui.component.NullField;
 import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.component.TextField;
+import net.rim.device.api.ui.container.HorizontalFieldManager;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.util.MathUtilities;
 
@@ -98,8 +99,11 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		yuchcallerlocalResource.PHONE_CONFIG_COLOR_12,		
 	};
 			
-	//! font to show main label 
-	private Font		m_mainLabelBoldFont = getFont().derive(getFont().getStyle() | Font.BOLD , getFont().getHeight());
+	//! font to sub label 
+	private Font		m_subLabelBoldFont = getFont().derive(getFont().getStyle() | Font.BOLD);
+	
+	//! font of clickable label 
+	private Font		m_mainLabelBoldFont = getFont().derive(getFont().getStyle() | Font.BOLD ,getFont().getHeight() * 6 / 5);
 	
 	//! the config editField of recv-phone vibration
 	private EditField m_recvVibrationTime = null;
@@ -115,12 +119,14 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	private EditField m_searchNumberInput			= null;
 	
 	private EditField 		m_IPDialPrefix			= null;
+	private CheckboxField	mShowPhoneCallTime		= null;
 	private CheckboxField	m_showSystemMenu		= null;
 	private CheckboxField	mDisableLocationInfo	= null;
 	
 	private ColorSampleField m_locationTextColorSample = null;
 	
 	private ButtonField		m_showDebugScreenBtn	= null;
+	private ButtonField		mCheckVersionBtn		= null;
 	
 	//! advance switch label
 	private LabelField	m_advanceSwitchLabel		= null;
@@ -176,7 +182,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 				
 		// search the phone
 		LabelField t_label = new LabelField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SEARCH),Field.NON_FOCUSABLE);
-		t_label.setFont(m_mainLabelBoldFont);
+		t_label.setFont(m_subLabelBoldFont);
 		add(t_label);
 		
 		// create the EditField to return dirty false
@@ -195,7 +201,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 		add(new SeparatorField(Field.NON_FOCUSABLE));
 		
 		t_label	= new LabelField(_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_INTEL_SEARCH),Field.NON_FOCUSABLE);
-		t_label.setFont(m_mainLabelBoldFont);
+		t_label.setFont(m_subLabelBoldFont);
 		add(t_label);
 		
 		m_intelSearchInput	= new InputEditField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_INTEL_SEARCH_PROMPT),0);
@@ -262,7 +268,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			m_advanceManager = new VerticalFieldManager();
 			
 			LabelField t_label = new LabelField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_VIBRATION),Field.NON_FOCUSABLE);
-			t_label.setFont(m_mainLabelBoldFont);
+			t_label.setFont(m_subLabelBoldFont);
 			m_advanceManager.add(t_label);
 			
 			m_recvVibrationTime = new EditField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_RECV_VIBRATE_TIME),
@@ -286,13 +292,13 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			m_advanceManager.add(new SeparatorField());
 			
 			t_label = new LabelField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL),Field.NON_FOCUSABLE);
-			t_label.setFont(m_mainLabelBoldFont);
+			t_label.setFont(m_subLabelBoldFont);
 			m_advanceManager.add(t_label);
 			
 			String t_pos_prompt_x;
 			String t_pos_prompt_y;
 			
-			if(YuchCaller.fsm_OS_version.startsWith("4.")){
+			if(m_mainApp.getOSVersion().startsWith("4.")){
 				t_pos_prompt_x = m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_POSITION_X);
 				t_pos_prompt_y = m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CALL_TEXT_POSITION_Y);
 			}else{
@@ -339,7 +345,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			m_advanceManager.add(new SeparatorField());
 			
 			t_label = new LabelField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_OTHER),Field.NON_FOCUSABLE);
-			t_label.setFont(m_mainLabelBoldFont);
+			t_label.setFont(m_subLabelBoldFont);
 			m_advanceManager.add(t_label);
 			
 			m_IPDialPrefix = new EditField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_IP_DIAL),m_mainApp.getProperties().getIPDialNumber(),
@@ -347,17 +353,30 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			
 			m_advanceManager.add(m_IPDialPrefix);
 			
+			mShowPhoneCallTime = new CheckboxField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SHOW_PHONECALL_LENGTH), 
+													m_mainApp.getProperties().isShowPhoneCallTimeLen());
+			m_advanceManager.add(mShowPhoneCallTime);
+			
 			m_showSystemMenu	= new CheckboxField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SHOW_SYSTEM_MENU), m_mainApp.getProperties().showSystemMenu());
 			m_advanceManager.add(m_showSystemMenu);
 			
 			mDisableLocationInfo	= new CheckboxField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_ENABLE_CALLER), !m_mainApp.getProperties().isEnableCaller());
 			m_advanceManager.add(mDisableLocationInfo);			
-			
+						
+			// add the check version button and show debug Screen button
+			//
+			HorizontalFieldManager t_btnMgr = new HorizontalFieldManager(Manager.NO_HORIZONTAL_SCROLL);
+			mCheckVersionBtn		= new ButtonField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_CHECK_VERSION_BTN),
+															ButtonField.CONSUME_CLICK | ButtonField.NEVER_DIRTY);
+			t_btnMgr.add(mCheckVersionBtn);
+			mCheckVersionBtn.setChangeListener(this);
+
 			m_showDebugScreenBtn	= new ButtonField(m_mainApp.m_local.getString(yuchcallerlocalResource.PHONE_CONFIG_SHOW_DEBUG),
 														ButtonField.CONSUME_CLICK | ButtonField.NEVER_DIRTY);
-			m_advanceManager.add(m_showDebugScreenBtn);
+			t_btnMgr.add(m_showDebugScreenBtn);
 			m_showDebugScreenBtn.setChangeListener(this);
 			
+			m_advanceManager.add(t_btnMgr);
 		}
 		
 		if(m_advanceManagerNull.getManager() != null){
@@ -460,6 +479,11 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 			
 			mSyncSwitchLabel.setText(getSyncConfigSwitchLabelText());
 			
+		}else if(mCheckVersionBtn == field){
+			
+			m_mainApp.enableCheckVersionDialogPrompt();
+			m_mainApp.checkVersion();
+			
 		}else if(field instanceof ClickLabel){
 			
 			// is intel-search result label
@@ -514,6 +538,8 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 				
 				tProp.setBoldFont(m_locationBoldFont.getChecked());
 				tProp.setEnableCaller(!mDisableLocationInfo.getChecked());
+				
+				tProp.setShowPhoneCallTimeLen(mShowPhoneCallTime.getChecked());
 				
 				boolean t_initMenu = false;
 				
@@ -890,7 +916,7 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 	 * @author tzz
 	 *
 	 */
-	final class ClickLabel extends LabelField{
+	final static class ClickLabel extends LabelField{
 	
 		public SpecialNumber m_speNumber = null;
 		

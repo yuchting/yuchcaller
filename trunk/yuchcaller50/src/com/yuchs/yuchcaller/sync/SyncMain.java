@@ -310,8 +310,8 @@ public class SyncMain {
 	public void reportError(String error,int _type){
 		
 		if(error != null && error.length() > 0){
-			error = insertTimePrompt(AbsSync.fsm_syncTypeString[_type],"Error",error);		
-			m_mainApp.SetErrorString(error);
+			m_mainApp.SetErrorString(AbsSync.fsm_syncTypeString[_type] + " Error: " + error);
+			error = insertTimePrompt(AbsSync.fsm_syncTypeString[_type],"Error",error);
 		}
 		
 		mErrorStr[_type] = error;
@@ -330,8 +330,8 @@ public class SyncMain {
 	public void reportInfo(String info,int _type){
 		
 		if(info != null && info.length() > 0){
+			m_mainApp.SetErrorString(AbsSync.fsm_syncTypeString[_type] + " Info: " + info);
 			info = insertTimePrompt(AbsSync.fsm_syncTypeString[_type],"Info",info);
-			m_mainApp.SetErrorString(info);
 		}
 		
 		mInfoStr[_type] = info;
@@ -471,7 +471,7 @@ public class SyncMain {
 		    	int ch;
 		    	byte[] result;
 		    	
-		    	if (length != -1){
+		    	if (length > 0){
 		    		
 		    		result = new byte[length];
 		    		sendReceive.ForceReadByte(in, result, length);
@@ -495,7 +495,7 @@ public class SyncMain {
 		    		}
 			    }
 		    			    	
-		    	if(!_www_form && rc == HttpConnection.HTTP_OK){
+		    	if(!_www_form && rc == HttpConnection.HTTP_OK && length > 1){
 
 			    	// read the zip bit
 			    	_gzip 	= (result[0] == 1);
