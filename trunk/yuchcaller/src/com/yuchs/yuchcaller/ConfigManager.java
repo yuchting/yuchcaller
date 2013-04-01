@@ -537,9 +537,14 @@ public class ConfigManager extends VerticalFieldManager implements FieldChangeLi
 				tProp.setLocationHeight(MathUtilities.clamp(20, getTextFieldNum(m_locationInfoHeight), YuchCallerProp.fsm_maxFontHeight));
 				
 				tProp.setBoldFont(m_locationBoldFont.getChecked());
+				tProp.setShowPhoneCallTimeLen(mShowPhoneCallTime.getChecked());
+				
+				boolean tEnableCaller = tProp.isEnableCaller();
 				tProp.setEnableCaller(!mDisableLocationInfo.getChecked());
 				
-				tProp.setShowPhoneCallTimeLen(mShowPhoneCallTime.getChecked());
+				if(tEnableCaller != tProp.isEnableCaller()){
+					m_mainApp.initDisplayLocation(false);
+				}				
 				
 				boolean t_initMenu = false;
 				

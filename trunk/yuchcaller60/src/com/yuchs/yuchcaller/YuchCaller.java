@@ -245,20 +245,17 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		// init Flurry
 		initFlurry();
 		
-		// register the Phone lister
-		Phone.addPhoneListener(this);
-		
 		// initialize the database
 		initDbIndex();
 		
 		// add menu to device application
 		initMenus(true);
 		
-		// initialize the bitmap of replace incoming call screen
-		init45OSIncomingCall();
-		
 		// init sync schedule
 		initSyncSchedule();
+
+		// init display location
+		initDisplayLocation(true);
 	}
 	
 	//! initialize the bitmap of replace incoming call screen
@@ -267,24 +264,56 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 		(new Thread(){
 			public void run(){
 				try{
-
-					if(m_backgroundBitmap == null && getOSVersion().startsWith("4.5")){
+					
+					synchronized(YuchCaller.this){
+						
+						if(m_backgroundBitmap == null && getOSVersion().startsWith("4.5")){
 							
-						byte[] bytes = IOUtilities.streamToBytes(YuchCaller.this.getClass().getResourceAsStream("/background.png"));		
-						m_backgroundBitmap =  EncodedImage.createEncodedImage(bytes , 0, bytes .length).getBitmap();
-						 
-						bytes = IOUtilities.streamToBytes(YuchCaller.this.getClass().getResourceAsStream("/answer.png"));		
-						m_answerBitmap =  EncodedImage.createEncodedImage(bytes , 0, bytes .length).getBitmap();
-						 
-						bytes = IOUtilities.streamToBytes(YuchCaller.this.getClass().getResourceAsStream("/ignore.png"));		
-						m_ignoreBitmap =  EncodedImage.createEncodedImage(bytes , 0, bytes .length).getBitmap();
-					}
+							byte[] bytes = IOUtilities.streamToBytes(YuchCaller.this.getClass().getResourceAsStream("/background.png"));		
+							m_backgroundBitmap =  EncodedImage.createEncodedImage(bytes , 0, bytes .length).getBitmap();
+							 
+							bytes = IOUtilities.streamToBytes(YuchCaller.this.getClass().getResourceAsStream("/answer.png"));		
+							m_answerBitmap =  EncodedImage.createEncodedImage(bytes , 0, bytes .length).getBitmap();
+							 
+							bytes = IOUtilities.streamToBytes(YuchCaller.this.getClass().getResourceAsStream("/ignore.png"));		
+							m_ignoreBitmap =  EncodedImage.createEncodedImage(bytes , 0, bytes .length).getBitmap();
+						}
+					}					
 										
 				}catch(Exception ex){
 					SetErrorString("RCS", ex);
 				}
 			}
 		}).start();
+	}
+	
+	//! init display location
+	public void initDisplayLocation(boolean systemInit){
+		
+		try{
+			// register the Phone lister
+			if(getProperties().isEnableCaller()){
+				
+				// initialize the bitmap of replace incoming call screen
+				init45OSIncomingCall();
+				
+				Phone.addPhoneListener(this);
+				
+			}else{
+				
+				if(!systemInit){
+					// remove phone list
+					Phone.removePhoneListener(this);	
+				}			
+
+				synchronized(YuchCaller.this){
+					m_backgroundBitmap = null;
+				}
+			}
+		
+		}catch(Exception e){
+			SetErrorString("IDL",e);
+		}
 	}
 	
 	/**
