@@ -52,7 +52,7 @@ public class Main {
 	 */
 	public static void main(String[] args) throws Exception {		
 		
-		(new Main()).startNetty(80);
+		(new Main()).startNetty(80,args != null && args.length > 0 && "debug".equals(args[0]));
 		
 		//System.getProperties().put("socksProxySet","true");
 		//System.getProperties().put("socksProxyHost","127.0.0.1");
@@ -363,11 +363,12 @@ public class Main {
 	// timer of read data for channel 
 	private Timer mReadTimeOutTimer = new HashedWheelTimer();
 	
-	private void startNetty(int _port){
+	private void startNetty(int _port,boolean enableSystemOutLog){
 		
 		mMainLogger = new Logger("sync_log/");
-		mMainLogger.EnabelSystemOut(true);
-				
+		mMainLogger.EnabelSystemOut(enableSystemOutLog);
+		System.out.println("YuchCaller sync server arg's enableSystemOutLog:" + enableSystemOutLog);
+		
 		ServerBootstrap bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
 		bootstrap.setPipelineFactory(new ChannelPipelineFactory(){
 			
