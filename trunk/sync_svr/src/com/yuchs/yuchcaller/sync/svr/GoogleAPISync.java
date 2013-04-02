@@ -38,9 +38,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.gdata.data.contacts.ContactEntry;
-import com.google.gdata.data.extensions.Name;
-import com.yuchs.yuchcaller.sync.svr.contact.ContactSyncData;
 
 public abstract class GoogleAPISync {
 
@@ -371,7 +368,14 @@ public abstract class GoogleAPISync {
 					if(d.getGID().equals(getGoogleDataId(g))){
 						
 						if(d.getLastMod() == -1){
-							deleteGoogleData(d);
+							try{
+								deleteGoogleData(d);
+							}catch(Exception e){
+								// export problem exception
+								exportHexString(d);
+								throw e;
+							}
+							
 						}
 						
 						continue add_total;
@@ -443,13 +447,21 @@ public abstract class GoogleAPISync {
 					tUploadList = new Vector<GoogleAPISyncData>();
 				}
 				
-				// upload data to google
-				Object g = uploadGoogleData(d);
-				
-				d.setGID(getGoogleDataId(g));
-				d.setLastMod(getGoogleDataLastMod(g));
-				
-				tUploadList.add(d);
+				try{
+
+					// upload data to google
+					Object g = uploadGoogleData(d);
+					
+					d.setGID(getGoogleDataId(g));
+					d.setLastMod(getGoogleDataLastMod(g));
+					
+					tUploadList.add(d);
+					
+				}catch(Exception e){
+					// export the problem Google API sync data
+					exportHexString(d);					
+					throw e;
+				}
 			}
 		}
 		
@@ -577,9 +589,15 @@ public abstract class GoogleAPISync {
 					
 					for(Object svr : mSvrSyncDataList){
 						if(client.getGID().equals(getGoogleDataId(svr))){
-							
 							mSvrSyncDataList.remove(svr);
-							mSvrSyncDataList.add(updateGoogleData(svr,client));
+							
+							try{								
+								mSvrSyncDataList.add(updateGoogleData(svr,client));
+							}catch(Exception e){
+								// export the problem
+								exportHexString(client);
+								throw e;
+							}
 							
 							sendReceive.WriteString(os, client.getBBID());
 							sendReceive.WriteLong(os,client.getLastMod());
@@ -610,6 +628,38 @@ public abstract class GoogleAPISync {
 	}
 	
 	/**
+	 * convert data to hex string
+	 * @param data
+	 * @return
+	 */
+	public static String convertToHex(byte[] data) {
+		
+        StringBuffer buf = new StringBuffer();
+        
+        int halfbyte;
+        int two_halfs;
+        for (int i = 0; i < data.length; i++) {
+        	
+            halfbyte = (data[i] >>> 4) & 0x0F;
+            two_halfs = 0;
+            
+            do{
+            	
+                if ((0 <= halfbyte) && (halfbyte <= 9)){
+                    buf.append((char) ('0' + halfbyte));
+                }else{
+                    buf.append((char) ('a' + (halfbyte - 10)));
+                }
+                
+                halfbyte = data[i] & 0x0F;
+                
+            } while(two_halfs++ < 1);
+        }
+        
+        return buf.toString();
+    }
+	
+	/**
 	 * get the MD5
 	 * @param str
 	 * @return
@@ -618,21 +668,30 @@ public abstract class GoogleAPISync {
 	
         MessageDigest messageDigest = MessageDigest.getInstance("MD5");  
         messageDigest.reset();
-        messageDigest.update(str.getBytes("UTF-8"));  
-    
-        byte[] byteArray = messageDigest.digest();  
-  
-        StringBuffer md5StrBuff = new StringBuffer();  
-  
-        for (int i = 0; i < byteArray.length; i++) {              
-            if (Integer.toHexString(0xFF & byteArray[i]).length() == 1)  
-                md5StrBuff.append("0").append(Integer.toHexString(0xFF & byteArray[i]));  
-            else  
-                md5StrBuff.append(Integer.toHexString(0xFF & byteArray[i]));  
-        }  
-  
-        return md5StrBuff.toString();
-    } 
+        messageDigest.update(str.getBytes("UTF-8")); 
+               
+        return convertToHex(messageDigest.digest());
+    }
+	
+	/**
+	 * export bytes array to log file
+	 * @ 
+	 */
+	protected void exportHexString(GoogleAPISyncData d){
+		
+		try{
+			
+			ByteArrayOutputStream os = new ByteArrayOutputStream();
+			try{
+				d.output(os, true);
+				mLogger.LogOut("data:" + convertToHex(os.toByteArray()));
+			}finally{
+				os.close();
+			}
+		}catch(Exception e){
+			mLogger.PrinterException(e);
+		}
+	}
 	
 	/**
 	 * buffered events list
