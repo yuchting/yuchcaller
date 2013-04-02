@@ -496,12 +496,18 @@ public class ContactSyncData extends GoogleAPISyncData {
 		}
 		
 		if(contact.hasBirthday()){
+			
 			String dateStr = contact.getBirthday().getWhen();
+			
 			if(dateStr.startsWith("00")){
 				dateStr = dateStr.replace("00", "19");
+			}else if(dateStr.startsWith("--")){
+				// maybe some date will return 
+				// "--12-26"
+				dateStr = dateStr.replace("--", "1900-");
 			}
 			
-			SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");			
+			SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 			getData().birthday = format.parse(dateStr).getTime() + TimeZone.getTimeZone(timeZoneID).getRawOffset();
 		}
 		
