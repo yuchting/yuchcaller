@@ -172,10 +172,29 @@ public class CalendarSyncData extends GoogleAPISyncData{
 		// repeat type
 		//
 		if(!getData().repeat_type.isEmpty()){
+			
 			List<String> tRecurrence = new ArrayList<String>();
 			
 			String[] arr = getData().repeat_type.split("\n");
 			for(String re : arr){
+				
+				if(re.indexOf("FREQ=YEARLY") != -1){
+					
+					String util = "";
+					int idx = re.indexOf(";UNTIL="); 
+					if(idx != -1){
+						int endIdx = re.indexOf(";",idx + 1);
+						if(endIdx == -1){
+							util = re.substring(idx);
+						}else{
+							util = re.substring(idx,endIdx);
+						}					
+					}
+					// Google calendar is NOT support relative date by year
+					//
+					re = "RRULE:FREQ=YEARLY;INTERVAL=1" + util;
+				}
+				
 				tRecurrence.add(re);
 			}
 			

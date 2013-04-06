@@ -674,6 +674,27 @@ public abstract class GoogleAPISync {
     }
 	
 	/**
+	 * convert the string hex to bytes
+	 * @param stringData
+	 * @throws Exception
+	 */
+	public static byte[] convertToBytes(String stringData)throws Exception{
+		
+		ByteArrayOutputStream os = new ByteArrayOutputStream();
+		try{
+			for(int i = 0;i < stringData.length();i+=2){
+				String hex = Character.toString(stringData.charAt(i)) + stringData.charAt(i+1);
+				os.write(Integer.parseInt(hex,16));
+			}
+			
+			return os.toByteArray();
+			
+		}finally{
+			os.close();
+		}
+	}
+	
+	/**
 	 * export bytes array to log file
 	 * @ 
 	 */
