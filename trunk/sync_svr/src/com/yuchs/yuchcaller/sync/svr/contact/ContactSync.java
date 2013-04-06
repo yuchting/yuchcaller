@@ -27,6 +27,7 @@
  */
 package com.yuchs.yuchcaller.sync.svr.contact;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
@@ -220,6 +221,11 @@ public class ContactSync extends GoogleAPISync {
 
 	@Override
 	protected Object uploadGoogleData(GoogleAPISyncData g) throws Exception {
+		
+//		g = new ContactSyncData();
+//		InputStream in = new ByteArrayInputStream(convertToBytes("09000000343336393834323331100000003266326131363234386135663962326401b90fd83d01000001000000000500000009000000526976656e20e9ab9806000000e9bb8ee587a4000000000000000000000000000000000000000000000000090000000e0000002b383631383632313639393532360000000000000000000000000e0000002b38363133383136303335313636000000000000000000000000000000000000000009000000415020e5a4a7e78e8b000000000000000000000000"));
+//		g.input(in);
+//		in.close();		
 		
 		ContactEntry contact = new ContactEntry();
 		g.exportGoogleData(contact, mTimeZoneID);

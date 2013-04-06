@@ -23,7 +23,7 @@ public class DbGenerate {
 	public static final int	fsm_version = 274209;
 		
 	private Vector<String>			m_province	= new Vector<String>();
-	private Vector<String>			m_city		= new Vector<String>();
+	private Vector<CityNumber>		m_city		= new Vector<CityNumber>();
 	private Vector<String>			m_carrierList		= new Vector<String>();	
 	
 	private Vector<CellPhoneData>	m_cellPhone		= new Vector<CellPhoneData>();
@@ -31,6 +31,16 @@ public class DbGenerate {
 	private Vector<SpecialNumber>	m_specialNumber = new Vector<SpecialNumber>();
 	
 	private Logger					m_log		= new Logger("");
+	
+	class CityNumber{
+		int areaId;
+		String cityName;
+		
+		@Override
+		public String toString(){
+			return Integer.toString(areaId) + " " + cityName;
+		}
+	}
 	
 	/**
 	 * @param args
@@ -79,9 +89,9 @@ public class DbGenerate {
 					
 					t_phoneNum		= Integer.parseInt(t_param[0]);
 					t_provinceId	= addList(m_province,t_param[1]);
-					t_cityId		= addList(m_city,t_param[2]);
 					t_carrierId		= findCarrier(t_param[3],t_param[1]);
 					t_areaId		= Integer.parseInt(t_param[4]);
+					t_cityId		= addCity(t_param[2],t_areaId);
 					
 					t_added 		= true;
 					
@@ -140,6 +150,7 @@ public class DbGenerate {
 			in.close();
 		}
 		
+		
 		// sort the phone data
 		Collections.sort(m_phone);
 		Collections.sort(m_specialNumber);
@@ -154,14 +165,36 @@ public class DbGenerate {
 	
 	// add the string to list to return idx
 	private static int addList(Vector<String> _list,String _province){
-		int t_idx;
-		if((t_idx = _list.indexOf(_province)) == -1){
-			_list.add(_province);
-			
-			t_idx = _list.size() - 1;
+		
+		for(int i = 0;i < _list.size();i++){
+			if(_list.get(i).indexOf(_province) != -1){
+				return i;
+			}
 		}
 		
-		return t_idx;
+		_list.add(_province);
+		return _list.size() -1;
+	}
+	
+	// add the string to list to return idx
+	private int addCity(String _city,int _areaId){
+		CityNumber cn;
+		for(int i = 0;i < m_city.size();i++){
+			cn = m_city.get(i);
+			if(cn.areaId == _areaId){
+				if(cn.cityName.indexOf(_city) == -1){
+					cn.cityName = cn.cityName + " " + _city; 
+				}
+				return i;
+			}
+		}
+		
+		cn = new CityNumber();
+		cn.areaId = _areaId;
+		cn.cityName = _city;
+		m_city.add(cn);
+		
+		return m_city.size() - 1;
 	}
 	
 	// find the carrier idx
@@ -208,7 +241,12 @@ public class DbGenerate {
 		// write the table
 		sendReceive.WriteStringVector(t_orig, m_carrierList);
 		sendReceive.WriteStringVector(t_orig, m_province);
-		sendReceive.WriteStringVector(t_orig, m_city);
+		
+		final int t_size = m_city.size();
+		sendReceive.WriteInt(t_orig,t_size);
+		for(int i = 0;i < t_size;i++){
+			sendReceive.WriteString(t_orig,m_city.get(i).cityName);
+		}
 				
 		// special number
 		sendReceive.WriteInt(t_orig,m_specialNumber.size());

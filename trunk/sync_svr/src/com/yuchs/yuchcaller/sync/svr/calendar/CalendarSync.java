@@ -27,6 +27,7 @@
  */
 package com.yuchs.yuchcaller.sync.svr.calendar;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.Date;
 import java.util.List;
@@ -211,7 +212,12 @@ public class CalendarSync extends GoogleAPISync{
 //		event.setStart(new EventDateTime().setDateTime(start));
 //		DateTime end = new DateTime(endDate, TimeZone.getTimeZone("UTC"));
 //		event.setEnd(new EventDateTime().setDateTime(end));
-
+		
+//		data = new CalendarSyncData();
+//		InputStream in = new ByteArrayInputStream(convertToBytes("0a0000002d343731393734363631000000000000000000000000010c000000e69bb9e7ab8be7949fe697a5804d1be233010000003c52e233010000000000008403000000000000000000000000012e0000005252554c453a465245513d594541524c593b494e54455256414c3d313b42594d4f4e54483d313334323137373238"));
+//		data.input(in);
+//		in.close();
+		
 		// ouput debug info
 		String tDebugInfo = mYuchAcc + " uploadEvent:" + data.getBBID();
 		if(data.getAPIData() != null){
