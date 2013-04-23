@@ -304,7 +304,8 @@ public class YuchCaller extends Application implements OptionsProvider,PhoneList
 				if(!systemInit){
 					// remove phone list
 					Phone.removePhoneListener(this);	
-				}			
+				}
+				
 
 				synchronized(YuchCaller.this){
 					m_backgroundBitmap = null;

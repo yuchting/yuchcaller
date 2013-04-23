@@ -20,7 +20,7 @@ public class DbGenerate {
 	
 	public static final String fsm_outputFilename = "yuchcaller.db";
 	
-	public static final int	fsm_version = 274209;
+	public static final int	fsm_version = 276849;
 		
 	private Vector<String>			m_province	= new Vector<String>();
 	private Vector<CityNumber>		m_city		= new Vector<CityNumber>();

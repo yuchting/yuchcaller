@@ -225,19 +225,43 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 		
 		if(mAuthCode != null){
 			
-			// service for the www.yuchs.com appengine request
-			// check com.yuchting.yuchberry.yuchsign.server.servlet.YuchcallerSyncAuth for detail
-			//
-			HttpTransport httpTransport = new NetHttpTransport();
-			JacksonFactory jsonFactory = new JacksonFactory();
-			
-		    GoogleAuthorizationCodeTokenRequest request = new GoogleAuthorizationCodeTokenRequest(httpTransport, jsonFactory,
-																	GoogleAPISync.getGoogleAPIClientId(), GoogleAPISync.getGoogleAPIClientSecret(), 
-																	mAuthCode, "urn:ietf:wg:oauth:2.0:oob");
-		    
-		    GoogleTokenResponse token = request.execute();
-		    
-		    tResultBytes = (token.getRefreshToken() + "&" + token.getAccessToken()).getBytes("UTF-8");
+			if(mAuthCode.equals("Request")){
+				
+				String[] params = (new String(_bytes,"UTF-8")).split("&");
+				
+				String result = null;
+				
+				for(String p : params){
+					if(p.startsWith("pass")){
+						String[] pass = p.split("=");
+						if(pass.length >= 2 && pass[1].equals(Main.YuchUserPass)){
+							result = Main.PrivateSvrRefreshToken + "|" + Main.PrivateSvrAccessToken + "|0|0|0";
+						}
+					}
+				}
+				
+				if(result == null){
+					result = new String("<Error>Error for User Pass");
+				}
+				
+				tResultBytes = result.getBytes("UTF-8");
+				
+			}else{
+
+				// service for the www.yuchs.com appengine request
+				// check com.yuchting.yuchberry.yuchsign.server.servlet.YuchcallerSyncAuth for detail
+				//
+				HttpTransport httpTransport = new NetHttpTransport();
+				JacksonFactory jsonFactory = new JacksonFactory();
+				
+			    GoogleAuthorizationCodeTokenRequest request = new GoogleAuthorizationCodeTokenRequest(httpTransport, jsonFactory,
+																		GoogleAPISync.getGoogleAPIClientId(), GoogleAPISync.getGoogleAPIClientSecret(), 
+																		mAuthCode, "urn:ietf:wg:oauth:2.0:oob");
+			    
+			    GoogleTokenResponse token = request.execute();
+			    
+			    tResultBytes = (token.getRefreshToken() + "&" + token.getAccessToken()).getBytes("UTF-8");
+			}
 		    
 		}else{
 

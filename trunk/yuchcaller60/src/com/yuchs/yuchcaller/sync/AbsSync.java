@@ -45,7 +45,6 @@ import local.yuchcallerlocalResource;
 
 import net.rim.blackberry.api.pdap.BlackBerryPIMList;
 import net.rim.blackberry.api.pdap.PIMListListener;
-import net.rim.device.api.system.DeviceInfo;
 import net.rim.device.api.util.Arrays;
 
 import com.yuchs.yuchcaller.YuchCaller;
@@ -588,7 +587,16 @@ public abstract class AbsSync implements PIMListListener{
 	/**
 	 * sync main URL
 	 */
-	private static String SyncMainURL = DeviceInfo.isSimulator() ? "http://127.0.0.1" : "http://sync.yuchs.com";
+	private String getSyncMainURL(){
+		
+		YuchCallerProp prop = mSyncMain.m_mainApp.getProperties();
+		
+		if(prop.getYuchAccount().indexOf('@') != -1){
+			return "http://sync.yuchs.com";
+		}else{
+			return "http://" + prop.getYuchAccount();
+		}
+	}
 	
 	/**
 	 * sync request
@@ -632,7 +640,7 @@ public abstract class AbsSync implements PIMListListener{
 				
 				writeAccountInfo(os,md5,tSyncMinTime,0);
 				
-				String url = SyncMainURL + YuchCaller.getHTTPAppendString();
+				String url = getSyncMainURL() + YuchCaller.getHTTPAppendString();
 				
 				reportInfo("requesting...");
 				
