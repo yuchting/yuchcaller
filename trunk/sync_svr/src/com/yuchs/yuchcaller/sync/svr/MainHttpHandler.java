@@ -102,7 +102,8 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 			
 			HttpRequest request = (HttpRequest) message;
 			
-			if(request.getMethod() != HttpMethod.POST){
+			if(request.getMethod() == HttpMethod.GET){
+				
 				// redirect the GET request to www.yuchs.com
 				HttpResponse response	= new DefaultHttpResponse(HttpVersion.HTTP_1_1,HttpResponseStatus.FOUND);
 				response.setHeader("Location","http://www.yuchs.com");
@@ -114,13 +115,29 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 				ch.close();
 				
 				return;
-			}			
+				
+			}else if(request.getMethod() == HttpMethod.OPTIONS){
+				
+				// allow the OPTIONS if XMLHttpRequest requested in http://api.yuchs.com/passgen.html
+				//
+				HttpResponse response	= new DefaultHttpResponse(HttpVersion.HTTP_1_1,HttpResponseStatus.OK);
+				response.setHeader("Access-Control-Allow-Origin", "*");
+				response.setHeader("Access-Control-Allow-Methods", "POST");
+				response.setHeader("Access-Control-Allow-Headers","auth-code, origin, content-length, content-type");
+				
+				// write back
+				Channel ch = e.getChannel();
+				ch.write(response);
+				ch.disconnect();
+				ch.close();
+				
+				return;
+			}
 			
 			mContentLength	= Integer.parseInt(request.getHeader(HTTP_CONTENT_LENGTH));
-			
 			mAuthCode		= request.getHeader("Auth-Code");
-			
-			tCb = request.getContent();
+						
+			tCb				= request.getContent();
 			
 		}else if(message instanceof DefaultHttpChunk ){
 			
@@ -300,6 +317,10 @@ public class MainHttpHandler extends SimpleChannelUpstreamHandler {
 		HttpResponse response	= new DefaultHttpResponse(HttpVersion.HTTP_1_1,HttpResponseStatus.OK);
 		response.setContent(buffer);
 		response.setHeader(HTTP_CONTENT_LENGTH, response.getContent().writerIndex());
+		
+		if(mAuthCode != null){
+			response.setHeader("Access-Control-Allow-Origin", "*");
+		}
 		
 		mLogger.LogOut("WriteBack Result Length:" + response.getContent().writerIndex() + " with zip " + zip);
 		
