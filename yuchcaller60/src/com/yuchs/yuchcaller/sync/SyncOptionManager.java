@@ -291,8 +291,18 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 		if(context != FieldChangeListener.PROGRAMMATIC){
 			
 			if(field == mLoginBtn){			
-				if(isValidateEmail(mYuchAccount.getText())
-				&& isValidateUserPass(mYuchPass.getText())){
+				if(mYuchAccount.getText().length() > 0
+				&& mYuchPass.getText().length() > 0){
+					
+					if(mYuchAccount.getText().indexOf('@') != -1){
+						
+						if(!isValidateEmail(mYuchAccount.getText())
+						|| !isValidateUserPass(mYuchPass.getText())){
+							
+							mMainApp.DialogAlert(mMainApp.m_local.getString(yuchcallerlocalResource.SYNC_ILLEAGAL_ACC_PASS_PROMPT));
+							return;
+						}
+					}
 
 					synchronized(this){
 						
@@ -439,11 +449,18 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 			
 			if(tProp.getYuchAccessToken().length() == 0 || tProp.getYuchRefreshToken().length() == 0){
 				
-				// request the yuch server
+				// request the yuch server				
+				String url;
 				
-				//String url = "http://192.168.100.116:8888/f/login/" + YuchCaller.getHTTPAppendString();
-				//String url = "http://192.168.10.7:8888/f/login/" + YuchCaller.getHTTPAppendString();
-				String url = "http://www.yuchs.com/f/login/" + YuchCaller.getHTTPAppendString();
+				if(tProp.getYuchAccount().indexOf('@') == -1){
+					url = "http://" + tProp.getYuchAccount() + YuchCaller.getHTTPAppendString();
+				}else{
+					
+					//url = "http://192.168.100.116:8888/f/login/" + YuchCaller.getHTTPAppendString();
+					//url = "http://192.168.10.7:8888/f/login/" + YuchCaller.getHTTPAppendString();
+					url = "http://www.yuchs.com/f/login/" + YuchCaller.getHTTPAppendString();
+				}
+				
 							
 				String[] tParamName = {
 					"acc",	"pass",	"type",
@@ -451,12 +468,20 @@ public class SyncOptionManager extends VerticalFieldManager implements FieldChan
 				
 				String[] tParamValue = {
 					tProp.getYuchAccount(),
-					tProp.getYuchPass(),				
+					tProp.getYuchPass(),
 					"yuchcaller",
+				};
+				
+				String[] tHeaderName = {
+					"Auth-Code",	
+				};
+				
+				String[] tHeaderValue = {
+					"Request",
 				};
 			
 				try{
-					String tResult = SyncMain.requestPOSTHTTP(url,tParamName,tParamValue);
+					String tResult = SyncMain.requestPOSTHTTP(url,tParamName,tParamValue,tHeaderName,tHeaderValue);
 					
 					if(tResult.startsWith("<Error>")){
 						reportError(tResult.substring(7));

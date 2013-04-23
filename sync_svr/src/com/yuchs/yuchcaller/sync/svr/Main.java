@@ -27,6 +27,8 @@
  */
 package com.yuchs.yuchcaller.sync.svr;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 
@@ -360,14 +362,65 @@ public class Main {
 		
 	}
 	
+
+	// config.xml read user pass
+	public static String YuchUserPass = "";
+	
+	// access token for client read via private yuchcaller server
+	public static String PrivateSvrAccessToken = "";
+	
+	// refresh token for client read via private yuchcaller server
+	public static String PrivateSvrRefreshToken = "";
+	
+	private String parseXmlProperty(String content, String propertyName){
+		
+		int idx = content.indexOf(propertyName);
+		int end;
+		if(idx != -1){
+			idx = content.indexOf("\"",idx) + 1;
+			end = content.indexOf("\"",idx);
+			
+			return content.substring(idx,end);
+		}
+		
+		return "";
+	}
+	
+	/**
+	 * load the yuchbox's config.xml file to parse the access pass and token
+	 */
+	private void loadConfigXml(){
+		try{
+			File xmlfile = new File("./config.xml");
+			FileInputStream in = new FileInputStream(xmlfile);
+			try{
+				byte[] bytes = new byte[(int)xmlfile.length()];
+				in.read(bytes);
+				
+				String content = new String(bytes,"UTF-8");
+				
+				YuchUserPass 			= parseXmlProperty(content,"userPassword");
+				PrivateSvrAccessToken 	= parseXmlProperty(content,"yc_AccessToken");
+				PrivateSvrRefreshToken 	= parseXmlProperty(content,"yc_RefreshToken");
+				
+			}finally{
+				in.close();
+			}
+			
+			System.out.println("Read YuchBox's Config.xml OK!");			
+		}catch(Exception e){}
+	}
+	
 	// timer of read data for channel 
-	private Timer mReadTimeOutTimer = new HashedWheelTimer();
+	private Timer mReadTimeOutTimer = new HashedWheelTimer();	
 	
 	private void startNetty(int _port,boolean enableSystemOutLog){
 		
 		mMainLogger = new Logger("sync_log/");
 		mMainLogger.EnabelSystemOut(enableSystemOutLog);
 		System.out.println("YuchCaller sync server arg's enableSystemOutLog:" + enableSystemOutLog);
+		
+		loadConfigXml();
 		
 		ServerBootstrap bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
 		bootstrap.setPipelineFactory(new ChannelPipelineFactory(){

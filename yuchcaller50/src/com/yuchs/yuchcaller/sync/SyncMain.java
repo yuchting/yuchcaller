@@ -357,29 +357,38 @@ public class SyncMain {
 	
 	/**
 	 * request the url via POST
+	 * 
 	 * @param _url
 	 * @param _paramsName
 	 * @param _paramsValue
-	 * @param _gzip
+	 * @param headerName
+	 * @param headerValue
 	 * @return
 	 * @throws Exception
 	 */
-	public static String requestPOSTHTTP(String _url,String[] _paramsName,String[] _paramsValue)throws Exception{
+	public static String requestPOSTHTTP(String _url,String[] _paramsName,String[] _paramsValue,String[] headerName,String[] headerValue)throws Exception{
 		
-		if(_paramsName == null || _paramsValue == null || _paramsName.length != _paramsValue.length){
-			throw new IllegalArgumentException("_paramsName == null || _paramsValue == null || _paramsName.length != _paramsValue.length");
-		}
+		String contentStr;
 		
-		StringBuffer tParam = new StringBuffer();
-		for(int i = 0;i < _paramsName.length;i++){
-			if(tParam.length() != 0){
-				tParam.append('&');
+		if(_paramsName != null && _paramsValue != null){
+			
+			StringBuffer tParam = new StringBuffer();
+			
+			for(int i = 0;i < _paramsName.length;i++){
+				if(tParam.length() != 0){
+					tParam.append('&');
+				}
+				
+				tParam.append(_paramsName[i]).append('=').append(_paramsValue[i]);
 			}
 			
-			tParam.append(_paramsName[i]).append('=').append(_paramsValue[i]);
+			contentStr = tParam.toString();
+			
+		}else{
+			contentStr = "";
 		}
 		
-		return new String(requestPOSTHTTP(_url,tParam.toString().getBytes("UTF-8"),false,true),"UTF-8");
+		return new String(requestPOSTHTTP(_url,contentStr.getBytes("UTF-8"),headerName,headerValue,false,true),"UTF-8");
 		
 	}
 	
@@ -395,6 +404,7 @@ public class SyncMain {
 		return requestPOSTHTTP(_url,_content,_gzip,false);
 	}
 	
+
 	/**
 	 * post the http request directly by content
 	 * @param _url
@@ -404,6 +414,22 @@ public class SyncMain {
 	 * @throws Exception
 	 */
 	public static byte[] requestPOSTHTTP(String _url,byte[] _content,boolean _gzip,boolean _www_form)throws Exception{
+		return requestPOSTHTTP(_url,_content,null,null,_gzip,_www_form);
+	}
+	
+	/**
+	 * sub function
+	 * 
+	 * @param _url
+	 * @param _content
+	 * @param headerName
+	 * @param headerValue
+	 * @param _gzip
+	 * @param _www_form
+	 * @return
+	 * @throws Exception
+	 */
+	private static byte[] requestPOSTHTTP(String _url,byte[] _content,String[] headerName,String[] headerValue,boolean _gzip,boolean _www_form)throws Exception{
 		
 		byte[] tParamByte = _content;
 		
@@ -435,6 +461,13 @@ public class SyncMain {
 		try{
 						
 			conn.setRequestMethod(HttpConnection.POST);
+			
+			// set the http header properties
+			if(headerName != null && headerValue != null){
+				for(int i = 0;i < Math.min(headerName.length,headerValue.length);i++){
+					conn.setRequestProperty(headerName[i],headerValue[i]);
+				}
+			}
 			
 			if(_www_form){
 				conn.setRequestProperty("Content-Type","application/x-www-form-urlencoded");
@@ -552,5 +585,6 @@ public class SyncMain {
 			conn = null;
 		}
 	}
+	
 
 }

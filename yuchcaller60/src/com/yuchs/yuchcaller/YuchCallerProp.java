@@ -81,7 +81,7 @@ public class YuchCallerProp {
 	//! default height
 	private int m_locationInfoHeight		= Font.getDefault().getHeight();
 	
-	//! the yuch account
+	//! the yuch account or sync server ip location
 	private String mYuchAcc					= "";
 	
 	//! the yuch password
