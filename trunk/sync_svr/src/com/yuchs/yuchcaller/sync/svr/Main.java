@@ -372,6 +372,9 @@ public class Main {
 	// refresh token for client read via private yuchcaller server
 	public static String PrivateSvrRefreshToken = "";
 	
+	//
+	private int ListeningPort = 0;
+		
 	private String parseXmlProperty(String content, String propertyName){
 		
 		int idx = content.indexOf(propertyName);
@@ -403,6 +406,13 @@ public class Main {
 				PrivateSvrAccessToken 	= parseXmlProperty(content,"yc_AccessToken");
 				PrivateSvrRefreshToken 	= parseXmlProperty(content,"yc_RefreshToken");
 				
+				String portStr = parseXmlProperty(content,"yc_port");
+				if(!portStr.isEmpty()){
+					try{
+						ListeningPort = Integer.parseInt(portStr);
+					}catch(Exception e){}
+				}
+				
 			}finally{
 				in.close();
 			}
@@ -421,6 +431,10 @@ public class Main {
 		System.out.println("YuchCaller sync server arg's enableSystemOutLog:" + enableSystemOutLog);
 		
 		loadConfigXml();
+		
+		if(ListeningPort != 0){
+			_port = ListeningPort;
+		}
 		
 		ServerBootstrap bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
 		bootstrap.setPipelineFactory(new ChannelPipelineFactory(){
