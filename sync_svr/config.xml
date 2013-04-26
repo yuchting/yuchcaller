@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	请使用 notepad++ ultraEdit 等 UTF8 编辑器编辑此文件
+	请访问 http://code.google.com/p/yuchberry/wiki/YuchCaller_Sync 查看配置细节
+	
+	Please edit this file with notepad++ ultraEdit as UTF8 format
+	please visit http://code.google.com/p/yuchberry/wiki/YuchCaller_Sync to get detail
+-->
+<YuchCaller userPassword="111111" yc_port="80" yc_AccessToken="xxx" yc_RefreshToken="xxx">
+</YuchCaller>
