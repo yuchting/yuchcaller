@@ -27,6 +27,7 @@
  */
 package com.yuchs.yuchcaller.sync.svr.task;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.Vector;
 
@@ -168,6 +169,12 @@ public class TaskSync extends GoogleAPISync {
 
 	@Override
 	protected Object uploadGoogleData(GoogleAPISyncData g) throws Exception {
+		
+//		g = new TaskSyncData();
+//		InputStream in = new ByteArrayInputStream(convertToBytes("0a00000032313436303537353431000000000000000000000000010006000000e68aa5e99480000000000000000000000000"));
+//		g.input(in);
+//		in.close();		
+		
 		Task task = new Task();
 		g.exportGoogleData(task, mTimeZoneID);
 		
