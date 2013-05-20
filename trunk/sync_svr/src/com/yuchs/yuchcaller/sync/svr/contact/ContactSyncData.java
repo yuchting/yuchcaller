@@ -231,7 +231,8 @@ public class ContactSyncData extends GoogleAPISyncData {
 						}else{
 							addNumber.setRel(GoogleSchemaPrefix + type);
 						}
-						addNumber.setPrimary(i == 0);
+						
+						addNumber.setPrimary(i == 0 && tList.isEmpty());
 						addNumber.setPhoneNumber(number);
 						
 						tAddList.add(addNumber);
@@ -301,9 +302,8 @@ public class ContactSyncData extends GoogleAPISyncData {
 						email.setRel(GoogleSchemaPrefix + type);
 						email.setAddress(emailStr);
 						
-						if(i == 0){
-							email.setPrimary(true);
-						}
+						// set the primary
+						email.setPrimary(i == 0 && tList.isEmpty());
 						
 						tAddList.add(email);
 					}					
