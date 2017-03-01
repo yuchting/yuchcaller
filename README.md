@@ -19,7 +19,8 @@ _(2015年3月14日)随着Google Code的关闭，语盒项目整体迁移到Githu
 历次版本更新内容点击[这里](https://code.google.com/p/yuchcaller/wiki/Promote_list)。
 
 #  同步谷歌日历、联系人和任务 
-0.3.96 版本之后的语电通就已经有了同步谷歌日历、联系人、任务的功能，能够代替已经停止维护的Google Sync。具体的功能介绍请查看[这里](https://code.google.com/p/yuchcaller/wiki/Sync_Feature)。
+0.3.96 版本之后的语电通就已经有了同步谷歌日历、联系人、任务的功能，能够代替已经停止维护的Google Sync。具体的功能介绍请查看[这里](https://github.com/yuchting/yuchcaller/wiki/Sync_Feature)。
+**(2017年更新：目前语电通同步功能已经无法使用，非常抱歉)**
 
 #  下载 
 黑莓新手请看[客户端安装方法](https://github.com/yuchting/yuchbox/wiki/Update_Method)（和语盒客户端安装方法一致）。各个版本的 [改进列表|更新内容](https://code.google.com/p/yuchcaller/wiki/Promote_list)，使用第三方主题时，可能会使用默认的来电、去电界面。
